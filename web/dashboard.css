@@ -32,3 +32,11 @@ dialog{max-width:400px;width:calc(100% - 24px);color:#ede9e1;background:#1d1e2a;
 @media(max-width:1180px){.workgrid{grid-template-columns:225px minmax(330px,1fr)}.preview{grid-column:1/-1;min-height:0}.preview .device-shell{width:140px}.page-heading{align-items:start}}
 @media(max-width:720px){.workgrid{grid-template-columns:1fr}.preview{grid-column:auto}.panel{min-height:0}.page-heading{display:block}.session-pill{margin-top:17px;width:max-content}.topbar{padding-inline:14px}.top-actions{gap:6px}.connection{display:none}.top-actions .quiet{display:none}.combat-form{grid-template-columns:2fr 1fr}.combat-form button{grid-column:1/-1}}
 .device-screen .player-card{padding:12px;gap:5px}.device-screen .player-card .eyebrow{font-size:7px;letter-spacing:.1em}.device-screen .player-card h1{font-size:17px}.device-screen .scene-text{font-size:11px}.device-screen .dice-result{font-size:20px}.device-screen .initiative-rows{gap:4px}.device-screen .initiative-rows li{padding:5px;font-size:10px;gap:5px;border-radius:4px}.device-screen .initiative-rows .turn{font-size:7px}
+
+/* One-click player reveal without conflating editing selection with live sharing. */
+.card-action-row{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;padding:4px;border:1px solid #3d3a46;border-radius:11px}
+.card-action-row .card-choice{min-width:0;min-height:52px}
+.card-action-row .quick-share{min-height:34px;padding:5px 10px;border:1px solid #695438;border-radius:8px;background:#302618;color:#f0c68b;font-size:11px;font-weight:750;cursor:pointer}
+.card-action-row .quick-share:hover{background:#49351d}
+.card-action-row .quick-share:focus-visible{outline:2px solid #edc485;outline-offset:2px}
+.card-action-row .quick-share:disabled{opacity:.5;cursor:wait}
