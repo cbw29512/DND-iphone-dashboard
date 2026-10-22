@@ -76,3 +76,11 @@ dialog{max-width:400px;width:calc(100% - 24px);color:#ede9e1;background:#1d1e2a;
 .active-card-action-area label{font-size:10px;display:flex;align-items:center;color:#d3bb97}
 .active-card-action-area select{width:100%;min-width:0}
 .active-card-action-area button{flex:1;min-width:63px}
+
+.monster-picker{display:grid;grid-template-columns:minmax(0,1fr) 65px auto;align-items:center;gap:8px;margin:14px 0;padding:14px;border:1px solid #927246;border-radius:12px;background:#a77b2914}
+.monster-picker strong{grid-column:1/-1;color:#e9c791;font-size:13px}
+.monster-picker input{min-width:0}
+.combat-edit-form{display:grid;grid-template-columns:1fr;gap:6px;padding:12px;border-top:1px solid #746342;background:#272333}
+.combat-edit-form label{font-size:10px;color:#cbb993}
+.combat-edit-form input,.combat-edit-form select{width:100%;min-width:0}
+@media(max-width:550px){.monster-picker{grid-template-columns:minmax(0,1fr) 60px}.monster-picker button{grid-column:1/-1}}
