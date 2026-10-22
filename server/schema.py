@@ -60,4 +60,6 @@ class EncounterMember(BaseModel):
 
 class AttackRoll(BaseModel):
     combatant_id: str
+    mode: Literal["normal", "advantage", "disadvantage"] = "normal"
+    profile_id: str | None = Field(default=None, max_length=120)
     bonus_override: int | None = Field(default=None, ge=-30, le=99)
