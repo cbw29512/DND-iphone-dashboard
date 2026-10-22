@@ -10,7 +10,9 @@ CREATE TABLE IF NOT EXISTS settings (
  id INTEGER PRIMARY KEY CHECK(id = 1), active_card TEXT, active_asset TEXT,
  revision INTEGER NOT NULL DEFAULT 0, scene_text TEXT NOT NULL DEFAULT '',
  dice_text TEXT NOT NULL DEFAULT '', round_number INTEGER NOT NULL DEFAULT 1,
- active_turn TEXT
+ active_turn TEXT,
+ dice_effect TEXT,
+ dice_roll_id TEXT
 );
 INSERT OR IGNORE INTO settings (id) VALUES (1);
 CREATE TABLE IF NOT EXISTS media (
@@ -52,6 +54,11 @@ def initialize():
     DATA.mkdir(parents=True, exist_ok=True)
     with connect() as db:
         db.executescript(SCHEMA)
+        columns = {row[1] for row in db.execute('PRAGMA table_info(settings)')}
+        if 'dice_effect' not in columns:
+            db.execute('ALTER TABLE settings ADD COLUMN dice_effect TEXT')
+        if 'dice_roll_id' not in columns:
+            db.execute('ALTER TABLE settings ADD COLUMN dice_roll_id TEXT')
         db.execute("PRAGMA journal_mode=WAL")
 
 
