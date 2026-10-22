@@ -294,6 +294,18 @@ def create_sample_goblin_fight(request: Request):
                 "INSERT INTO encounter_members(id,encounter_id,name,modifier,attack_bonus,armor_class,visible,position,initiative_group,source_monster_id) VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (str(uuid.uuid4()), encounter_id, name, modifier, bonus, ac, 1, pos, group, "goblin" if group == "goblins" else None)
             )
+        # Verified 2014 SRD goblin basic attacks for the demo only.
+        db.executemany(
+            """INSERT INTO monster_attack_profiles
+               (id,monster_id,attack_name,attack_bonus,damage_count,damage_sides,
+                damage_bonus,damage_type,source_ruleset,source_complete)
+               VALUES (?,?,?,?,?,?,?,?,?,?)
+               ON CONFLICT(id) DO NOTHING""",
+            [
+                ("2014:goblin:scimitar", "goblin", "Scimitar", 4, 1, 6, 2, "slashing", "2014", 1),
+                ("2014:goblin:shortbow", "goblin", "Shortbow", 4, 1, 6, 2, "piercing", "2014", 1),
+            ],
+        )
         revision(db)
     publish()
     return {"id": encounter_id, "created": True}
