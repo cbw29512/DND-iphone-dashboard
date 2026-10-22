@@ -3,7 +3,7 @@ import { api } from './api.js';
 import { button, empty, node } from './dom.js';
 
 export function combatEditor(root, state, refresh) {
-  root.replaceChildren(node('p', { text: 'Track combat privately. Only visible combatants and initiative values reach the player screen.', cls: 'section-caption' }));
+  root.replaceChildren(node('p', { text: 'Prepare your players on top and monsters below. Press Battle to roll initiative and begin.', cls: 'section-caption' }));
   const encounterSection = node('section', { cls: 'encounter-prep' });
   encounterSection.append(node('h3', { text: 'Prepared combats' }));
   const newEncounterName = node('input', { attrs: { placeholder: 'Combat 1 · Goblin Ambush', maxlength: 80, 'aria-label': 'New encounter name' } });
@@ -63,7 +63,7 @@ export function combatEditor(root, state, refresh) {
     launcher.append(slotCard);
   }
   root.append(launcher);
-  const setup = node('details', { cls: 'encounter-setup' });
+  const setup = node('details', { cls: 'encounter-setup', attrs: { open: '' } });
   setup.append(node('summary', { text: 'Prepare / Edit Battles' }));
   const setupBody = node('div', { cls: 'encounter-setup-body' });
   setupBody.append(encounterSection);
@@ -71,7 +71,8 @@ export function combatEditor(root, state, refresh) {
     const block = node('div', { cls: 'encounter-block' });
     block.append(node('strong', { text: encounter.name }));
     const participants = (state.encounter_members || []).filter(m => m.encounter_id === encounter.id);
-    const roster = node('div', { cls: 'combat-card-grid prep-card-grid' });
+    const playersRow = node('div', { cls: 'combat-card-grid prep-card-grid' });
+    const monstersRow = node('div', { cls: 'combat-card-grid prep-card-grid' });
     for (const member of participants) {
       const monster = Boolean(member.source_monster_id) || member.name.toLowerCase().includes('shaman');
       const preview = node('article', { cls: 'combatant-card prep-combatant-card' });
@@ -107,9 +108,16 @@ export function combatEditor(root, state, refresh) {
           await refresh(true);
         }, 'quiet')
       ]));
-      roster.append(preview);
+      (monster ? monstersRow : playersRow).append(preview);
     }
-    block.append(roster);
+    block.append(node('h4', { text: 'PLAYERS · Top Row', cls: 'battle-row-title' }), playersRow);
+    const playerAdder = node('form', { cls: 'battle-add-player' });
+    const playerName = node('input', { attrs: { placeholder: 'Player name', maxlength: 80, required: '' } });
+    const playerAC = node('input', { attrs: { type: 'number', min: 1, max: 99, placeholder: 'AC', required: '' } });
+    const playerDex = node('input', { attrs: { type: 'number', min: -20, max: 30, value: 0, 'aria-label': 'DEX modifier' } });
+    playerAdder.append(playerName, playerAC, playerDex, node('button', { text: '+ Add Player Card', attrs: { type: 'submit' }, cls: 'primary' }));
+    playerAdder.addEventListener('submit', async e => { e.preventDefault(); await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', { method: 'POST', data: { name: playerName.value.trim(), modifier: Number(playerDex.value), armor_class: Number(playerAC.value) } }); await refresh(true); });
+    block.append(playerAdder, node('h4', { text: 'MONSTERS · Bottom Row', cls: 'battle-row-title' }), monstersRow);
     const addForm = node('form', { cls: 'encounter-member-form' });
     const memberName = node('input', { attrs: { placeholder: 'Character or monster', maxlength: 80, required: '', 'aria-label': 'Participant' } });
     const modifier = node('input', { attrs: { type: 'number', value: '0', min: '-20', max: '30', required: '', 'aria-label': 'Initiative modifier' } });
@@ -146,7 +154,7 @@ export function combatEditor(root, state, refresh) {
       }
       await refresh(true);
     }, 'primary'));
-    block.append(addForm, monsterPicker, button('⚄ Roll Initiative & Start Combat', async () => {
+    block.append(monsterPicker, button('⚄ BATTLE · Roll Initiative', async () => {
       if (!confirm('Start ' + encounter.name + '? This replaces the current turn order and rolls initiative for everyone.')) return;
       await api('/encounters/' + encodeURIComponent(encounter.id) + '/start', { method: 'POST' });
       await refresh(true);
@@ -155,23 +163,6 @@ export function combatEditor(root, state, refresh) {
   }
   setup.append(setupBody);
   root.append(setup, node('div', { cls: 'editor-divider' }));
-  const form = node('form', { cls: 'combat-form' });
-  const name = node('input', { attrs: { placeholder: 'Combatant name', required: '', maxlength: 80, 'aria-label': 'Combatant name' } });
-  const init = node('input', { attrs: { type: 'number', value: 10, min: -20, max: 99, required: '', 'aria-label': 'Initiative score' } });
-  const add = node('button', { text: '+ Add', cls: 'primary', attrs: { type: 'submit' } });
-  const token = node('select', { attrs: { 'aria-label': 'VTT artwork for manual combatant' } }, tokenOptions());
-  form.append(name, init, token, add);
-  const hiddenLabel = node('label', { text: ' Hide this combatant from the player display', cls: 'section-caption' });
-  const hidden = node('input', { attrs: { type: 'checkbox', style: 'width:auto;min-height:0;margin-right:8px' } });
-  hiddenLabel.prepend(hidden);
-  form.addEventListener('submit', async event => {
-    event.preventDefault();
-    try {
-      await api('/combatants', { method: 'POST', data: { name: name.value, initiative: Number(init.value), visible: !hidden.checked, token_asset_id: token.value || null } });
-      await refresh();
-    } catch (error) { console.error('Unable to add combatant', error); }
-  });
-  root.append(form, hiddenLabel);
   const settings = state.settings;
   root.append(node('div', { cls: 'toolbar' }, [node('strong', { text: `Turn Order · Round ${settings.round_number}` }),
     node('div', { cls: 'controls' }, [button('Next Turn →', async () => { await api('/combat/next', { method: 'POST' }); await refresh(); }, 'primary'),
