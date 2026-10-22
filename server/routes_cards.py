@@ -269,3 +269,31 @@ def monster_attack(request: Request, body: AttackRoll):
         revision(db)
     publish()
     return {"natural": natural, "dice": raw, "mode": body.mode, "bonus": bonus, "total": total, "hit": hit, "damage": damage, "damage_rolls": damage_rolls, "damage_type": profile["damage_type"]}
+
+
+@router.post("/encounters/sample-goblin-fight")
+def create_sample_goblin_fight(request: Request):
+    """Idempotent example only; players and shaman are illustrative, not RAW cards."""
+    require_write(request)
+    title = "TEST · Two Heroes vs Goblins and Shaman"
+    template = [
+        ("Hero · Fighter", 2, 0, 18, None),
+        ("Hero · Wizard", 2, 0, 13, None),
+        ("Goblin 1", 2, 4, 15, "goblins"),
+        ("Goblin 2", 2, 4, 15, "goblins"),
+        ("Goblin Shaman · example", 2, 0, 13, None),
+    ]
+    with connect() as db:
+        existing = db.execute("SELECT id FROM encounters WHERE name=?", (title,)).fetchone()
+        if existing:
+            return {"id": existing["id"], "created": False}
+        encounter_id = str(uuid.uuid4())
+        db.execute("INSERT INTO encounters(id,name) VALUES (?,?)", (encounter_id, title))
+        for pos, (name, modifier, bonus, ac, group) in enumerate(template):
+            db.execute(
+                "INSERT INTO encounter_members(id,encounter_id,name,modifier,attack_bonus,armor_class,visible,position,initiative_group) VALUES (?,?,?,?,?,?,?,?,?)",
+                (str(uuid.uuid4()), encounter_id, name, modifier, bonus, ac, 1, pos, group)
+            )
+        revision(db)
+    publish()
+    return {"id": encounter_id, "created": True}
