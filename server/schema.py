@@ -36,6 +36,7 @@ class Combatant(BaseModel):
     hp_max: int | None = Field(default=None, ge=1, le=99999)
     private_note: str = Field(default="", max_length=1000)
     visible: bool = True
+    token_asset_id: str | None = Field(default=None, max_length=80)
 
 
 class NextTurn(BaseModel):
