@@ -24,7 +24,7 @@ def public_state(card_override=None, asset_override=None):
                 asset = db.execute("SELECT id,name FROM media WHERE category=? ORDER BY position LIMIT 1", (active,)).fetchone()
             result["content"] = {"asset": dict(asset) if asset else None}
         elif active == "initiative":
-            combatants = db.execute("SELECT id,name,initiative FROM combatants WHERE visible=1 ORDER BY initiative DESC,position ASC").fetchall()
+            combatants = db.execute("SELECT c.id,c.name,c.initiative,c.token_asset_id AS asset_id FROM combatants c WHERE c.visible=1 ORDER BY c.initiative DESC,c.position ASC").fetchall()
             visible = [dict(x) for x in combatants]
             result["content"] = {"round": settings["round_number"], "active_turn": settings["active_turn"] if any(x["id"] == settings["active_turn"] for x in visible) else None, "combatants": visible}
         elif active == "scene":
