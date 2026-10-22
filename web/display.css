@@ -6,3 +6,8 @@ html,body{height:100%;overscroll-behavior:none}body.player-body{background:#0506
 .initiative-rows li.current{background:#a47b3d45;border-color:#e3b674}.initiative-rows .roll{font-weight:850;color:#e8bc79;min-width:2ch}.initiative-rows .turn{margin-left:auto;font-size:.5em;color:#edca8f}
 .dice-result{font-size:clamp(42px,9vw,115px);font-weight:800;color:#f4ce91;text-align:center;line-height:1.15;overflow-wrap:anywhere}
 .pair-screen{z-index:10}.pair-card input{text-align:center;font-size:30px;letter-spacing:.25em}.display-status{position:fixed;bottom:8px;right:8px;padding:5px 9px;border-radius:25px;background:#10131acc;color:#858991;font-size:10px;z-index:5;pointer-events:none}.display-status:empty{display:none}
+
+/* Keep the player image inside the viewport in both orientations. Grid auto-minimums
+   must never allow a tall portrait asset to expand the landscape canvas. */
+.player-root{position:fixed;inset:0;width:100%;height:100dvh;min-width:0;min-height:0;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.player-root>.artwork{display:block;max-width:100%;max-height:100%;min-width:0;min-height:0;width:100%;height:100%;object-fit:contain}
