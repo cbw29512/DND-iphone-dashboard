@@ -22,3 +22,21 @@ def test_sample_goblins_share_initiative_and_shaman_independent(dm, headers):
         advance = dm.post("/api/combat/next", headers=headers)
         assert advance.status_code == 200, advance.text
     assert dm.get("/api/dm/state").json()["settings"]["round_number"] == first_round + 1
+
+
+def test_edit_prepared_and_live_player_cards(dm, headers):
+    sample = dm.post("/api/encounters/sample-goblin-fight", headers=headers).json()
+    encounter = sample["id"]
+    members = dm.get("/api/dm/state").json()["encounter_members"]
+    fighter = next(m for m in members if m["encounter_id"] == encounter and m["name"] == "Hero · Fighter")
+    response = dm.put(f"/api/encounters/{encounter}/members/{fighter['id']}",
+        json={"name": "Jeff", "modifier": 3, "armor_class": 19}, headers=headers)
+    assert response.status_code == 200, response.text
+    assert dm.post(f"/api/encounters/{encounter}/start", headers=headers).status_code == 200
+    combatants = dm.get("/api/dm/state").json()["combatants"]
+    jeff = next(c for c in combatants if c["name"] == "Jeff")
+    assert jeff["armor_class"] == 19
+    response = dm.put(f"/api/combatants/{jeff['id']}",
+        json={"name": "Jeff", "initiative": jeff["initiative"], "armor_class": 20}, headers=headers)
+    assert response.status_code == 200
+    assert next(c for c in dm.get("/api/dm/state").json()["combatants"] if c["id"] == jeff["id"])["armor_class"] == 20
