@@ -63,6 +63,7 @@ class EncounterMember(BaseModel):
     token_asset_id: str | None = Field(default=None, max_length=80)
 
 class MemberEdit(BaseModel):
+    initiative_advantage: bool = False
     name: str = Field(min_length=1, max_length=80)
     modifier: int = Field(ge=-20, le=30)
     armor_class: int | None = Field(default=None, ge=1, le=99)
