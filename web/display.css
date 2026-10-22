@@ -33,3 +33,17 @@ html,body{height:100%;overscroll-behavior:none}body.player-body{background:#0506
 .initiative-attack-critical.nat20{color:#ffd680;animation:attack-pop 1.7s ease-out}
 @keyframes attack-pop{0%{transform:scale(.4);opacity:0}20%{transform:scale(1.25);opacity:1}65%{transform:scale(1)}100%{opacity:1}}
 @media(prefers-reduced-motion:reduce){.initiative-attack-critical{animation:none!important}}
+
+/* Compact damage/condition labels for the upright player display. */
+.initiative-damage-type{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:4px 12px;border:1px solid #6b6170;border-radius:20px;font-weight:850;font-size:clamp(12px,2.5vw,20px)}
+.initiative-damage-type.damage-fire{color:#ffbd8a;border-color:#cb734b}
+.initiative-damage-type.damage-cold{color:#a4dfff;border-color:#5e99bb}
+.initiative-damage-type.damage-poison{color:#c0e998;border-color:#85aa64}
+.initiative-damage-type.damage-acid{color:#bbf280;border-color:#81a557}
+.initiative-damage-type.damage-lightning{color:#f7e48b;border-color:#bea54b}
+.initiative-damage-number{font-size:clamp(38px,9vh,90px);line-height:1;font-weight:900;color:#f6f1e7}
+.initiative-effect{font-weight:900;font-size:clamp(15px,3vw,28px);color:#eddba5}
+.initiative-effect-save{font-size:clamp(10px,2vw,17px);color:#d8d8df}
+.device-screen .initiative-damage-number{font-size:27px}
+.device-screen .initiative-effect,.device-screen .initiative-damage-type{font-size:8px}
+.device-screen .initiative-effect-save{font-size:7px}
