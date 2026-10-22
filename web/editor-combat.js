@@ -24,16 +24,37 @@ export function combatEditor(root, state, refresh) {
     const block = node('div', { cls: 'encounter-block' });
     block.append(node('strong', { text: encounter.name }));
     const participants = (state.encounter_members || []).filter(m => m.encounter_id === encounter.id);
-    const roster = node('ul', { cls: 'encounter-roster' });
+    const roster = node('div', { cls: 'combat-card-grid prep-card-grid' });
     for (const member of participants) {
-      const entry = node('li', {}, [
-        node('span', { text: member.name + (member.initiative_group ? ' · Group ' + member.initiative_group : '') + ' · Init ' + (member.modifier >= 0 ? '+' : '') + member.modifier + ' · Hit ' + (member.attack_bonus >= 0 ? '+' : '') + member.attack_bonus }),
+      const monster = Boolean(member.source_monster_id) || member.name.toLowerCase().includes('shaman');
+      const preview = node('article', { cls: 'combatant-card prep-combatant-card' });
+      const portrait = node('div', { cls: 'combatant-card-portrait' });
+      if (member.token_asset_id) portrait.append(node('img', { attrs: {
+        src: '/api/media/' + encodeURIComponent(member.token_asset_id), alt: member.name
+      } }));
+      else portrait.append(node('span', { text: member.name.slice(0,2).toUpperCase(), cls: 'combatant-card-monogram' }));
+      const details = node('div', { cls: 'combatant-card-content' }, [
+        node('div', { cls: 'combatant-card-heading' }, [
+          node('strong', { text: member.name }),
+          node('span', { text: monster ? 'MONSTER' : 'PLAYER', cls: 'combatant-card-badge' })
+        ]),
+        node('div', { cls: 'combatant-card-stats' }, [
+          node('span', { text: 'DEX / INIT ' + (member.modifier >= 0 ? '+' : '') + member.modifier }),
+          node('span', { text: 'AC ' + (member.armor_class ?? '—') })
+        ]),
+        ...(member.initiative_group ? [node('p', { cls: 'combatant-card-note', text: 'Shared initiative: ' + member.initiative_group })] : []),
+        node('p', { cls: 'combatant-card-note', text: monster
+          ? (state.attack_profiles || []).filter(p => p.source_complete && p.monster_id === member.source_monster_id)
+              .map(p => p.attack_name + ' +' + p.attack_bonus + ' (' + p.damage_count + 'd' + p.damage_sides + (p.damage_bonus >= 0 ? '+' : '') + p.damage_bonus + ' ' + p.damage_type + ')').join(' · ') || 'No verified attacks or spells loaded'
+          : 'Player controls their own actions' })
+      ]);
+      preview.append(portrait, details, node('div', { cls: 'combatant-card-actions' }, [
         button('Remove', async () => {
           await api('/encounters/' + encodeURIComponent(encounter.id) + '/members/' + encodeURIComponent(member.id), { method: 'DELETE' });
           await refresh(true);
         }, 'quiet')
-      ]);
-      roster.append(entry);
+      ]));
+      roster.append(preview);
     }
     block.append(roster);
     const addForm = node('form', { cls: 'encounter-member-form' });
@@ -53,7 +74,7 @@ export function combatEditor(root, state, refresh) {
         await refresh(true);
       } catch (error) { console.error('Encounter participant failed', error); }
     });
-    block.append(addForm, button('▶ Start Combat', async () => {
+    block.append(addForm, button('⚄ Roll Initiative & Start Combat', async () => {
       if (!confirm('Start ' + encounter.name + '? This replaces the current turn order and rolls initiative for everyone.')) return;
       await api('/encounters/' + encodeURIComponent(encounter.id) + '/start', { method: 'POST' });
       await refresh(true);
@@ -83,29 +104,6 @@ export function combatEditor(root, state, refresh) {
     node('div', { cls: 'controls' }, [button('Next Turn →', async () => { await api('/combat/next', { method: 'POST' }); await refresh(); }, 'primary'),
       button('Reset Round', async () => { await api('/combat/reset', { method: 'POST' }); await refresh(); })])]));
   const active = state.combatants.find(c => c.id === settings.active_turn);
-  if (active) {
-    const attackControls = node('div', { cls: 'attack-controls' });
-    const profiles = (state.attack_profiles || []).filter(p => p.source_complete && p.monster_id === active.source_monster_id);
-    const options = profiles.map(p => node('option', { text: p.attack_name + ' · +' + p.attack_bonus + ' · ' + p.damage_count + 'd' + p.damage_sides + ' ' + p.damage_bonus, attrs: { value: p.id } }));
-    const choice = node('select', { attrs: { 'aria-label': 'Verified monster attack' } }, options);
-    const targetChoices = [node('option', { text: 'Unspecified target (show roll)', attrs: { value: '' } }),
-      ...state.combatants.filter(c => c.id !== active.id && c.armor_class !== null).map(c =>
-        node('option', { text: c.name + ' · AC ' + c.armor_class, attrs: { value: c.id } }))
-    ];
-    const targetChoice = node('select', { attrs: { 'aria-label': 'Attack target with saved AC' } }, targetChoices);
-    attackControls.append(node('strong', { text: active.name + ' · Attack' }));
-    if (!profiles.length) attackControls.append(node('p', { text: 'No imported RAW attack profile for this monster yet.', cls: 'section-caption' }));
-    else {
-      attackControls.append(choice, targetChoice);
-      for (const [mode,label] of [['normal','Attack'],['advantage','ADV'],['disadvantage','DIS']]) {
-        attackControls.append(button(label, async () => {
-          await api('/combat/attack', { method: 'POST', data: { combatant_id: active.id, profile_id: choice.value, target_id: targetChoice.value || null, mode } });
-          await refresh(true);
-        }, 'primary'));
-      }
-    }
-    root.append(attackControls);
-  }
   const cards = node('div', { cls: 'combat-card-grid' });
   for (const item of state.combatants) {
     const isActive = item.id === settings.active_turn;
@@ -133,8 +131,30 @@ export function combatEditor(root, state, refresh) {
       ...(item.initiative_group ? [node('p', { text: 'Shared initiative: ' + item.initiative_group, cls: 'combatant-card-note' })] : []),
       ...(isMonster ? [node('p', { text: (state.attack_profiles || []).filter(profile => profile.source_complete && profile.monster_id === item.source_monster_id).map(profile => profile.attack_name).join(' · ') || 'Attacks/spells not yet sourced', cls: 'combatant-card-note' })] : []),
     ]));
-    const actions = node('div', { cls: 'combatant-card-actions' });
-    if (isActive) actions.append(node('strong', { text: isMonster ? 'Attack controls shown above' : 'Player rolls at table · Next Turn' }));
+    if (isActive) {
+      const activeActions = node('div', { cls: 'active-card-action-area' });
+      const profiles = (state.attack_profiles || []).filter(p => p.source_complete && p.monster_id === item.source_monster_id);
+      if (!isMonster) activeActions.append(node('p', { cls: 'combatant-card-note', text: 'Player turn — they roll and choose their actions.' }));
+      else if (!profiles.length) activeActions.append(node('p', { cls: 'combatant-card-note', text: 'No verified attacks or spells available for this monster yet.' }));
+      else {
+        const move = node('select', { attrs: { 'aria-label': 'Choose monster attack' } },
+          profiles.map(p => node('option', { text: p.attack_name + ' · +' + p.attack_bonus + ' · ' + p.damage_count + 'd' + p.damage_sides + (p.damage_bonus >= 0 ? '+' : '') + p.damage_bonus + ' ' + p.damage_type, attrs: { value: p.id } })));
+        const targets = state.combatants.filter(c => c.id !== item.id && c.armor_class !== null && !c.source_monster_id);
+        const target = node('select', { attrs: { 'aria-label': 'Choose player target' } },
+          targets.map(t => node('option', { text: t.name + ' (AC ' + t.armor_class + ')', attrs: { value: t.id } })));
+        activeActions.append(node('label', { text: 'Attack' }), move, node('label', { text: 'Target' }), target);
+        if (!targets.length) activeActions.append(node('p', { cls: 'combatant-card-note', text: 'Add a player with AC to resolve hit or miss.' }));
+        for (const [mode,label] of [['normal','Attack'],['advantage','ADV'],['disadvantage','DIS']]) {
+          activeActions.append(button(label, async () => {
+            await api('/combat/attack', { method: 'POST', data: { combatant_id: item.id, profile_id: move.value, target_id: target.value || null, mode } });
+            await refresh(true);
+          }, 'primary'));
+        }
+      }
+      card.append(activeActions);
+    }
+        const actions = node('div', { cls: 'combatant-card-actions' });
+    if (isActive) actions.append(button('Next Turn →', async () => { await api('/combat/next', { method: 'POST' }); await refresh(true); }, 'primary'));
     actions.append(button('Remove', async () => { await api('/combatants/' + item.id, { method: 'DELETE' }); await refresh(true); }, 'quiet'));
     card.append(actions);
     cards.append(card);
