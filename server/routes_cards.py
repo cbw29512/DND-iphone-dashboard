@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query, Request
 from .database import connect, revision
 from .realtime import publish
-from .schema import CardKind, Combatant, Dice, Roll, Scene, Selection, Share
+from .schema import CardKind, Combatant, Dice, Roll, Scene, Selection, Share, EncounterNew, EncounterMember
 from .security import require, require_write
 from .view import full_state, public_state
 
@@ -148,3 +148,76 @@ def roll(request: Request, body: Roll):
         revision(db)
     publish()
     return {"total": total, "rolls": values, "modifier": body.modifier}
+
+
+@router.post("/encounters")
+def create_encounter(request: Request, body: EncounterNew):
+    require_write(request)
+    identity = str(uuid.uuid4())
+    with connect() as db:
+        db.execute("INSERT INTO encounters(id,name) VALUES (?,?)", (identity, body.name.strip()))
+        revision(db)
+    publish()
+    return {"id": identity}
+
+
+@router.post("/encounters/{encounter_id}/members")
+def add_member(request: Request, encounter_id: str, body: EncounterMember):
+    require_write(request)
+    identity = str(uuid.uuid4())
+    with connect() as db:
+        if not db.execute("SELECT id FROM encounters WHERE id=?", (encounter_id,)).fetchone():
+            raise HTTPException(404, "Encounter not found")
+        if body.token_asset_id and not db.execute(
+            "SELECT id FROM media WHERE id=? AND category='gallery'", (body.token_asset_id,)
+        ).fetchone():
+            raise HTTPException(400, "Token artwork not found")
+        pos = db.execute("SELECT COUNT(*) FROM encounter_members WHERE encounter_id=?", (encounter_id,)).fetchone()[0]
+        db.execute(
+            "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,position) VALUES (?,?,?,?,?,?,?)",
+            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, pos)
+        )
+        revision(db)
+    publish()
+    return {"id": identity}
+
+
+@router.delete("/encounters/{encounter_id}/members/{member_id}")
+def delete_member(request: Request, encounter_id: str, member_id: str):
+    require_write(request)
+    with connect() as db:
+        db.execute("DELETE FROM encounter_members WHERE id=? AND encounter_id=?", (member_id, encounter_id))
+        revision(db)
+    publish()
+    return {"ok": True}
+
+
+@router.post("/encounters/{encounter_id}/start")
+def start_encounter(request: Request, encounter_id: str):
+    require_write(request)
+    with connect() as db:
+        if not db.execute("SELECT id FROM encounters WHERE id=?", (encounter_id,)).fetchone():
+            raise HTTPException(404, "Encounter not found")
+        members = db.execute(
+            "SELECT name,modifier,visible,token_asset_id FROM encounter_members WHERE encounter_id=? ORDER BY position,rowid",
+            (encounter_id,)
+        ).fetchall()
+        if not members:
+            raise HTTPException(409, "Add participants before starting combat")
+        db.execute("DELETE FROM combatants")
+        scores = []
+        for index, member in enumerate(members):
+            natural = 1 + secrets.randbelow(20)
+            total = natural + member["modifier"]
+            identity = str(uuid.uuid4())
+            db.execute(
+                "INSERT INTO combatants(id,name,initiative,position,visible,token_asset_id) VALUES (?,?,?,?,?,?)",
+                (identity, member["name"], total, index, member["visible"], member["token_asset_id"])
+            )
+            scores.append({"name": member["name"], "roll": natural, "modifier": member["modifier"], "total": total, "position": index})
+        scores.sort(key=lambda x: (-x["total"], x["position"]))
+        first = db.execute("SELECT id FROM combatants ORDER BY initiative DESC,position ASC LIMIT 1").fetchone()["id"]
+        db.execute("UPDATE settings SET round_number=1,active_turn=?,active_card='initiative' WHERE id=1", (first,))
+        revision(db)
+    publish()
+    return {"rolls": [{k: v for k, v in score.items() if k != "position"} for score in scores], "round": 1}
