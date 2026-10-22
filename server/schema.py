@@ -52,7 +52,12 @@ class EncounterNew(BaseModel):
     name: str = Field(min_length=1, max_length=80)
 
 class EncounterMember(BaseModel):
+    attack_bonus: int = Field(default=0, ge=-30, le=99)
     name: str = Field(min_length=1, max_length=80)
     modifier: int = Field(default=0, ge=-20, le=30)
     visible: bool = True
     token_asset_id: str | None = Field(default=None, max_length=80)
+
+class AttackRoll(BaseModel):
+    combatant_id: str
+    bonus_override: int | None = Field(default=None, ge=-30, le=99)
