@@ -119,7 +119,7 @@ def advance(request: Request):
         index = order.index(current) if current in order else -1
         next_index = (index + 1) % len(order)
         next_round = settings["round_number"] + int(index == len(order) - 1)
-        db.execute("UPDATE settings SET active_turn=?,round_number=?,attack_natural=NULL,attack_bonus=NULL,attack_total=NULL,attack_actor=NULL WHERE id=1", (order[next_index], next_round))
+        db.execute("UPDATE settings SET active_turn=?,round_number=?,attack_natural=NULL,attack_bonus=NULL,attack_total=NULL,attack_actor=NULL,attack_damage=NULL,attack_damage_type=NULL,attack_damage_formula=NULL,attack_name=NULL WHERE id=1", (order[next_index], next_round))
         revision(db)
     publish()
     return public_state()
@@ -229,19 +229,28 @@ def monster_attack(request: Request, body: AttackRoll):
     with connect() as db:
         current = db.execute("SELECT active_turn FROM settings WHERE id=1").fetchone()["active_turn"]
         if body.combatant_id != current:
-            raise HTTPException(409, "Only the active combatant can roll an attack")
-        actor = db.execute("SELECT attack_bonus,visible FROM combatants WHERE id=?", (current,)).fetchone()
-        if actor is None:
-            raise HTTPException(404, "Combatant not found")
-        if not actor["visible"]:
-            raise HTTPException(409, "Cannot reveal an attack from a hidden combatant")
-        bonus = body.bonus_override if body.bonus_override is not None else actor["attack_bonus"]
-        natural = 1 + secrets.randbelow(20)
+            raise HTTPException(409, "Only the active combatant may attack")
+        actor = db.execute("SELECT name,attack_bonus,visible FROM combatants WHERE id=?", (current,)).fetchone()
+        if actor is None or not actor["visible"]:
+            raise HTTPException(409, "Cannot display this combatant")
+        profile = None
+        if body.profile_id:
+            profile = db.execute("SELECT * FROM monster_attack_profiles WHERE id=? AND source_complete=1", (body.profile_id,)).fetchone()
+            if profile is None or profile["monster_id"] != actor["name"].casefold().replace(" ", "-"):
+                raise HTTPException(422, "Attack profile does not match the active monster")
+        if profile is None:
+            raise HTTPException(409, "Choose a verified monster attack profile before rolling hit and damage")
+        bonus = profile["attack_bonus"]
+        raw = [1 + secrets.randbelow(20) for _ in range(2 if body.mode != "normal" else 1)]
+        natural = max(raw) if body.mode == "advantage" else min(raw) if body.mode == "disadvantage" else raw[0]
         total = natural + bonus
+        damage_rolls = [1 + secrets.randbelow(profile["damage_sides"]) for _ in range(profile["damage_count"])]
+        damage = sum(damage_rolls) + profile["damage_bonus"]
+        damage_formula = f'{profile["damage_count"]}d{profile["damage_sides"]} {profile["damage_bonus"]:+d}'
         db.execute(
-            "UPDATE settings SET active_card='initiative',attack_natural=?,attack_bonus=?,attack_total=?,attack_actor=? WHERE id=1",
-            (natural,bonus,total,current)
+            "UPDATE settings SET active_card='initiative',attack_natural=?,attack_bonus=?,attack_total=?,attack_actor=?,attack_damage=?,attack_damage_type=?,attack_damage_formula=?,attack_name=? WHERE id=1",
+            (natural, bonus, total, current, damage, profile["damage_type"], damage_formula, profile["attack_name"])
         )
         revision(db)
     publish()
-    return {"natural": natural, "bonus": bonus, "total": total}
+    return {"natural": natural, "dice": raw, "mode": body.mode, "bonus": bonus, "total": total, "damage": damage, "damage_rolls": damage_rolls, "damage_type": profile["damage_type"]}
