@@ -23,12 +23,15 @@ export function combatEditor(root, state, refresh) {
     const ac = node('input', { attrs: { type: 'number', value: current.armor_class ?? '', min: '1', max: '99', placeholder: 'AC', 'aria-label': 'Armor class' } });
     const token = node('select', { attrs: { 'aria-label': 'Card artwork' } }, tokenOptions());
     token.value = current.token_asset_id || '';
+    const initiativeAdv = node('input', { attrs: { type: 'checkbox', 'aria-label': 'Advantage on initiative' } });
+    initiativeAdv.checked = Boolean(current.initiative_advantage);
     form.append(node('label', { text: 'Name' }), name, node('label', { text: current.modifier === undefined ? 'Initiative score' : 'DEX / Initiative modifier' }), dex,
       node('label', { text: 'AC' }), ac, node('label', { text: 'Avatar' }), token);
+    if (current.modifier !== undefined) form.append(node('label', { text: 'Initiative Advantage' }), initiativeAdv);
     form.append(node('button', { text: 'Save Changes', cls: 'primary', attrs: { type: 'submit' } }));
     form.addEventListener('submit', async e => { e.preventDefault(); await save({
       name: name.value.trim(), armor_class: ac.value ? Number(ac.value) : null,
-      token_asset_id: token.value || null, [current.modifier === undefined ? 'initiative' : 'modifier']: Number(dex.value)
+      token_asset_id: token.value || null, [current.modifier === undefined ? 'initiative' : 'modifier']: Number(dex.value), initiative_advantage: initiativeAdv.checked
     }); await refresh(true); });
     card.append(form);
   };
@@ -55,7 +58,7 @@ export function combatEditor(root, state, refresh) {
           node('span', { text: monster ? 'MONSTER' : 'PLAYER', cls: 'combatant-card-badge' })
         ]),
         node('div', { cls: 'combatant-card-stats' }, [
-          node('span', { text: 'DEX / INIT ' + (member.modifier >= 0 ? '+' : '') + member.modifier }),
+          node('span', { text: (member.initiative_advantage ? 'ADV · ' : '') + 'DEX / INIT ' + (member.modifier >= 0 ? '+' : '') + member.modifier }),
           node('span', { text: 'AC ' + (member.armor_class ?? '—') })
         ]),
         ...(member.initiative_group ? [node('p', { cls: 'combatant-card-note', text: 'Shared initiative: ' + member.initiative_group })] : []),
