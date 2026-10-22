@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#15131c">
+  <title>D&D Flex Dashboard | DM</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body data-view="dm">
+  <header><div><small>DM CONTROL CENTER</small><h1>D&D Flex Dashboard</h1></div><a href="./display.html" target="_blank" rel="noopener">Open display preview ↗</a></header>
+  <main>
+    <section class="intro"><h2>Your Flex Cards</h2><p>Select a card, preview its player-safe content, and share it to the display. This first prototype synchronizes tabs on the same browser only.</p></section>
+    <section class="cards" id="cards" aria-label="Flex Cards"></section>
+    <section class="editor" aria-labelledby="edit-title">
+      <div class="section-head"><h2 id="edit-title">Card editor</h2><span id="status" role="status">Local prototype</span></div>
+      <label for="media">Add monster or NPC images</label>
+      <input id="media" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
+      <div class="controls"><button id="previous" type="button">← Previous</button><button id="next" type="button">Next →</button><button id="clear" class="secondary" type="button">Stop Sharing</button></div>
+      <div class="gallery" id="gallery" aria-live="polite"></div>
+    </section>
+  </main>
+</body>
+</html>
