@@ -11,3 +11,18 @@ html,body{height:100%;overscroll-behavior:none}body.player-body{background:#0506
    must never allow a tall portrait asset to expand the landscape canvas. */
 .player-root{position:fixed;inset:0;width:100%;height:100dvh;min-width:0;min-height:0;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
 .player-root>.artwork{display:block;max-width:100%;max-height:100%;min-width:0;min-height:0;width:100%;height:100%;object-fit:contain}
+
+/* Portrait-first encounter screen: pinned round, token upper half, total lower half. */
+.player-card.initiative-split{width:100%;height:100%;padding:0!important;gap:0!important;display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);overflow:hidden}
+.initiative-token-zone{min-height:0;position:relative;display:flex;justify-content:center;align-items:center;background:radial-gradient(ellipse,#302b38,#10121b);overflow:hidden;padding-top:32px}
+.initiative-header{position:absolute;z-index:2;top:0;left:0;right:0;padding:9px 15px;display:flex;justify-content:space-between;background:#070911d9;color:#f1ce91;font-size:clamp(11px,3vw,20px);letter-spacing:.08em}
+.initiative-token{max-height:100%;max-width:100%;width:100%;height:100%;object-fit:contain}
+.initiative-token-placeholder{font-size:clamp(26px,7vw,60px);font-weight:800;color:#e5c085;text-align:center;padding:15px;overflow-wrap:anywhere}
+.initiative-score-zone{min-height:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:#10121c;border-top:2px solid #d8ae6a;text-align:center;padding:8px}
+.initiative-label{color:#c7b193;font-size:clamp(12px,3vw,21px);letter-spacing:.2em;font-weight:800}
+.initiative-big-number{font-weight:900;color:#f6ce87;line-height:1;font-size:clamp(90px,29vh,210px);font-variant-numeric:tabular-nums}
+.initiative-combatant-name{font-size:clamp(18px,5vw,37px);color:#f4eee4;font-weight:800;overflow-wrap:anywhere}
+.device-screen .initiative-header{font-size:7px;padding:3px}
+.device-screen .initiative-big-number{font-size:55px}
+.device-screen .initiative-label{font-size:8px}
+.device-screen .initiative-combatant-name{font-size:10px}

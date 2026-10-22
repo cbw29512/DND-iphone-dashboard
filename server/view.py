@@ -9,7 +9,9 @@ def full_state():
         settings = dict(db.execute("SELECT * FROM settings WHERE id=1").fetchone())
         media = [dict(x) for x in db.execute("SELECT id,category,name,position FROM media ORDER BY category,position,created_at")]
         combatants = [dict(x) for x in db.execute("SELECT * FROM combatants ORDER BY initiative DESC,position ASC")]
-    return {"settings": settings, "media": media, "combatants": combatants}
+        encounters = [dict(x) for x in db.execute("SELECT id,name FROM encounters ORDER BY rowid")]
+        members = [dict(x) for x in db.execute("SELECT id,encounter_id,name,modifier,visible,token_asset_id FROM encounter_members ORDER BY position,rowid")]
+    return {"settings": settings, "media": media, "combatants": combatants, "encounters": encounters, "encounter_members": members}
 
 
 def public_state(card_override=None, asset_override=None):
@@ -24,7 +26,7 @@ def public_state(card_override=None, asset_override=None):
                 asset = db.execute("SELECT id,name FROM media WHERE category=? ORDER BY position LIMIT 1", (active,)).fetchone()
             result["content"] = {"asset": dict(asset) if asset else None}
         elif active == "initiative":
-            combatants = db.execute("SELECT id,name,initiative FROM combatants WHERE visible=1 ORDER BY initiative DESC,position ASC").fetchall()
+            combatants = db.execute("SELECT c.id,c.name,c.initiative,c.token_asset_id AS asset_id FROM combatants c WHERE c.visible=1 ORDER BY c.initiative DESC,c.position ASC").fetchall()
             visible = [dict(x) for x in combatants]
             result["content"] = {"round": settings["round_number"], "active_turn": settings["active_turn"] if any(x["id"] == settings["active_turn"] for x in visible) else None, "combatants": visible}
         elif active == "scene":

@@ -32,3 +32,15 @@ dialog{max-width:400px;width:calc(100% - 24px);color:#ede9e1;background:#1d1e2a;
 @media(max-width:1180px){.workgrid{grid-template-columns:225px minmax(330px,1fr)}.preview{grid-column:1/-1;min-height:0}.preview .device-shell{width:140px}.page-heading{align-items:start}}
 @media(max-width:720px){.workgrid{grid-template-columns:1fr}.preview{grid-column:auto}.panel{min-height:0}.page-heading{display:block}.session-pill{margin-top:17px;width:max-content}.topbar{padding-inline:14px}.top-actions{gap:6px}.connection{display:none}.top-actions .quiet{display:none}.combat-form{grid-template-columns:2fr 1fr}.combat-form button{grid-column:1/-1}}
 .device-screen .player-card{padding:12px;gap:5px}.device-screen .player-card .eyebrow{font-size:7px;letter-spacing:.1em}.device-screen .player-card h1{font-size:17px}.device-screen .scene-text{font-size:11px}.device-screen .dice-result{font-size:20px}.device-screen .initiative-rows{gap:4px}.device-screen .initiative-rows li{padding:5px;font-size:10px;gap:5px;border-radius:4px}.device-screen .initiative-rows .turn{font-size:7px}
+
+/* Saved combats and modifier-based encounter setup. */
+.encounter-prep{display:grid;gap:10px;margin-bottom:18px}
+.encounter-prep h3{font-size:16px;margin:0}
+.encounter-prep>input{width:100%}
+.encounter-block{padding:12px;border:1px solid #46404e;border-radius:12px;background:#151620;display:grid;gap:9px}
+.encounter-block>strong{color:#eacc9b;font-size:14px}
+.encounter-roster{margin:0;padding:0;list-style:none;display:grid;gap:4px}
+.encounter-roster li{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.encounter-member-form{display:grid;grid-template-columns:minmax(100px,2fr) 64px minmax(100px,1fr) auto;gap:6px}
+.encounter-member-form input,.encounter-member-form select{min-width:0}
+@media(max-width:850px){.encounter-member-form{grid-template-columns:minmax(0,1fr) 76px}.encounter-member-form select{grid-column:1/-1}.encounter-member-form button{grid-column:1/-1}}

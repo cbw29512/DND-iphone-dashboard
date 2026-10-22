@@ -24,19 +24,30 @@ export function renderPublic(target, state, compact = false) {
     panel.append(node('p', { text: 'THE FATES HAVE SPOKEN', cls: 'eyebrow' }),
       node('div', { text: content.text || 'Ready to roll', cls: 'dice-result' }));
   } else if (state.card === 'initiative') {
-    panel.classList.add('initiative-card');
-    panel.append(node('p', { text: 'THE ORDER OF BATTLE', cls: 'eyebrow' }), node('h1', { text: `Round ${content.round ?? 1}` }));
-    const list = node('ol', { cls: 'initiative-rows' });
-    for (const combatant of content.combatants ?? []) {
-      const row = node('li', {}, [node('span', { text: combatant.initiative, cls: 'roll' }), node('span', { text: combatant.name })]);
-      if (combatant.id === content.active_turn) {
-        row.classList.add('current');
-        row.append(node('span', { text: '◀ NOW', cls: 'turn' }));
-      }
-      list.append(row);
+    panel.classList.add('initiative-card', 'initiative-split');
+    const combatants = content.combatants ?? [];
+    const current = combatants.find(x => x.id === content.active_turn) ?? combatants[0];
+    const top = node('div', { cls: 'initiative-token-zone' });
+    const header = node('div', { cls: 'initiative-header' }, [
+      node('strong', { text: 'ROUND ' + (content.round ?? 1) }),
+      node('span', { text: 'TURN ' + (current ? combatants.indexOf(current) + 1 : 0) + ' / ' + combatants.length })
+    ]);
+    top.append(header);
+    if (current?.asset_id) {
+      const token = node('img', { cls: 'initiative-token', attrs: {
+        src: '/api/media/' + encodeURIComponent(current.asset_id), alt: current.name
+      } });
+      token.onerror = () => { token.replaceWith(node('div', { cls: 'initiative-token-placeholder', text: current.name })); };
+      top.append(token);
+    } else {
+      top.append(node('div', { cls: 'initiative-token-placeholder', text: current?.name || 'Waiting for combat' }));
     }
-    if (!list.children.length) list.append(node('li', { text: 'Waiting for initiative…' }));
-    panel.append(list);
+    const bottom = node('div', { cls: 'initiative-score-zone' }, [
+      node('div', { cls: 'initiative-label', text: 'INITIATIVE' }),
+      node('div', { cls: 'initiative-big-number', text: current ? String(current.initiative) : '—' }),
+      node('div', { cls: 'initiative-combatant-name', text: current?.name || 'No combatant' }),
+    ]);
+    panel.append(top, bottom);
   }
   target.append(panel);
 }
