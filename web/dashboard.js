@@ -38,7 +38,25 @@ function renderDashboard() {
       node('span', { cls: 'card-icon', text: item.icon }),
       node('span', {}, [node('strong', { text: item.title }), node('small', { text: item.subtitle })])]);
     choice.addEventListener('click', () => { selected = item.id; renderDashboard(); if (previewMode) showPreview().catch(console.error); });
-    list.append(choice);
+    // Separate Prepare and Show actions: selecting a card must never leak it to players.
+    const showNow = button('Show now ↗', async () => {
+      showNow.disabled = true;
+      try {
+        await api('/share', { method: 'POST', data: { card: item.id } });
+        selected = item.id;
+        previewMode = false;
+        notify(item.title + ' shared to the player screen');
+        await refresh(true);
+      } catch (error) {
+        notify(error.message, true);
+      } finally {
+        showNow.disabled = false;
+      }
+    });
+    showNow.classList.add('quick-share');
+    showNow.setAttribute('aria-label', 'Show ' + item.title + ' on player screen');
+    const wrapper = node('div', { cls: 'card-action-row' }, [choice, showNow]);
+    list.append(wrapper);
   }
   $('#editor-title').textContent = card(selected)?.title ?? 'Flex Card';
   $('#editor-kicker').textContent = card(selected)?.kicker ?? 'CURRENT CARD';
