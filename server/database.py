@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS settings (
  revision INTEGER NOT NULL DEFAULT 0, scene_text TEXT NOT NULL DEFAULT '',
  dice_text TEXT NOT NULL DEFAULT '', round_number INTEGER NOT NULL DEFAULT 1,
  active_turn TEXT,
- attack_natural INTEGER, attack_bonus INTEGER, attack_total INTEGER, attack_actor TEXT
+ attack_natural INTEGER, attack_bonus INTEGER, attack_total INTEGER, attack_actor TEXT,
+ attack_damage INTEGER, attack_damage_type TEXT, attack_damage_formula TEXT, attack_name TEXT
 );
 INSERT OR IGNORE INTO settings (id) VALUES (1);
 CREATE TABLE IF NOT EXISTS media (
@@ -31,6 +32,13 @@ CREATE TABLE IF NOT EXISTS encounter_members (
  id TEXT PRIMARY KEY, encounter_id TEXT NOT NULL REFERENCES encounters(id) ON DELETE CASCADE,
  name TEXT NOT NULL, modifier INTEGER NOT NULL DEFAULT 0, visible INTEGER NOT NULL DEFAULT 1,
  token_asset_id TEXT, attack_bonus INTEGER NOT NULL DEFAULT 0, position INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS monster_attack_profiles (
+ id TEXT PRIMARY KEY, monster_id TEXT NOT NULL, attack_name TEXT NOT NULL,
+ attack_bonus INTEGER NOT NULL, damage_count INTEGER NOT NULL,
+ damage_sides INTEGER NOT NULL, damage_bonus INTEGER NOT NULL,
+ damage_type TEXT NOT NULL, source_ruleset TEXT NOT NULL,
+ source_complete INTEGER NOT NULL DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS access (
  token_hash TEXT PRIMARY KEY, role TEXT NOT NULL, expires INTEGER NOT NULL
@@ -70,6 +78,10 @@ def initialize():
             ("settings", "attack_bonus", "INTEGER"),
             ("settings", "attack_total", "INTEGER"),
             ("settings", "attack_actor", "TEXT"),
+            ("settings", "attack_damage", "INTEGER"),
+            ("settings", "attack_damage_type", "TEXT"),
+            ("settings", "attack_damage_formula", "TEXT"),
+            ("settings", "attack_name", "TEXT"),
         ]:
             if column not in {row[1] for row in db.execute(f"PRAGMA table_info({table})")}:
                 db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
