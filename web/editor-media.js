@@ -3,16 +3,33 @@ import { api } from './api.js';
 import { button, empty, node, notify } from './dom.js';
 let preferred = null;
 
+// Browsers otherwise navigate away when an image is dropped outside a valid target.
+// Install only once even though the editor is reconstructed on every state refresh.
+document.addEventListener('dragover', event => {
+  if ([...event.dataTransfer?.types || []].some(type => ['Files', 'text/uri-list', 'text/html'].includes(type))) event.preventDefault();
+});
+document.addEventListener('drop', event => {
+  if ([...event.dataTransfer?.types || []].some(type => ['Files', 'text/uri-list', 'text/html'].includes(type))) {
+    event.preventDefault();
+    if (!event.target.closest('.dropzone')) notify('Use the artwork upload area or Choose Files. Images dragged from another browser tab must first be saved to your computer.', true);
+  }
+});
+
 export function mediaEditor(root, state, kind, refresh) {
   const media = state.media.filter(item => item.category === kind);
   root.replaceChildren(node('p', { cls: 'section-caption', text: kind === 'map'
     ? 'Upload maps and location artwork. Animated GIF files retain their motion.'
     : 'Drag monster art, NPC portraits, or locations from your laptop.' }));
-  const drop = node('label', { cls: 'dropzone' }, [
+  const drop = node('div', { cls: 'dropzone' }, [
     node('div', {}, [node('div', { cls: 'big', text: '↥' }),
       node('strong', { text: 'Drop your artwork here' }), node('span', { text: 'JPG, PNG, WebP, GIF · 12 MB maximum per file' })])]);
   const input = node('input', { attrs: { type: 'file', multiple: '', accept: 'image/jpeg,image/png,image/webp,image/gif', 'aria-label': 'Upload artwork' } });
-  input.addEventListener('change', async () => { await upload([...input.files], kind, refresh); });
+  input.id = `upload-${kind}`;
+  input.addEventListener('change', async () => {
+    const files = [...input.files];
+    input.value = ''; // Selecting the same file again must fire change.
+    await upload(files, kind, refresh);
+  });
   drop.addEventListener('dragenter', event => { event.preventDefault(); drop.classList.add('dragging'); });
   drop.addEventListener('dragover', event => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; drop.classList.add('dragging'); });
   drop.addEventListener('dragleave', () => drop.classList.remove('dragging'));
@@ -22,9 +39,8 @@ export function mediaEditor(root, state, kind, refresh) {
     if (!files.length) { notify('Drop a saved image file, not a browser image link.', true); return; }
     await upload(files, kind, refresh);
   });
-  // Never position a native file input across the drop zone: browsers may
-  // navigate to a dropped image instead of forwarding its drop event.
-  input.classList.add('file-picker');
+  // Native visible picker is a reliable fallback for dragging from other browser tabs.
+  input.classList.add('file-picker-visible');
   drop.append(input); root.append(drop);
   const toolbar = node('div', { cls: 'toolbar' }, [node('strong', { text: 'Art Library' }), node('small', { text: `${media.length} items` })]);
   root.append(toolbar);
