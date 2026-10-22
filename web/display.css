@@ -26,3 +26,10 @@ html,body{height:100%;overscroll-behavior:none}body.player-body{background:#0506
 .device-screen .initiative-big-number{font-size:55px}
 .device-screen .initiative-label{font-size:8px}
 .device-screen .initiative-combatant-name{font-size:10px}
+
+.initiative-roll-breakdown{font-size:clamp(14px,3vw,25px);color:#c3b5a1}
+.initiative-attack-critical{font-size:clamp(18px,4vw,35px);font-weight:900}
+.initiative-attack-critical.nat1{color:#ff8585;animation:attack-pop 1.7s ease-out}
+.initiative-attack-critical.nat20{color:#ffd680;animation:attack-pop 1.7s ease-out}
+@keyframes attack-pop{0%{transform:scale(.4);opacity:0}20%{transform:scale(1.25);opacity:1}65%{transform:scale(1)}100%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.initiative-attack-critical{animation:none!important}}
