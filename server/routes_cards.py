@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query, Request
 from .database import connect, revision
 from .realtime import publish
-from .schema import CardKind, Combatant, Dice, Roll, Scene, Selection, Share, EncounterNew, EncounterMember
+from .schema import CardKind, Combatant, Dice, Roll, Scene, Selection, Share, EncounterNew, EncounterMember, AttackRoll
 from .security import require, require_write
 from .view import full_state, public_state
 
@@ -119,7 +119,7 @@ def advance(request: Request):
         index = order.index(current) if current in order else -1
         next_index = (index + 1) % len(order)
         next_round = settings["round_number"] + int(index == len(order) - 1)
-        db.execute("UPDATE settings SET active_turn=?,round_number=? WHERE id=1", (order[next_index], next_round))
+        db.execute("UPDATE settings SET active_turn=?,round_number=?,attack_natural=NULL,attack_bonus=NULL,attack_total=NULL,attack_actor=NULL WHERE id=1", (order[next_index], next_round))
         revision(db)
     publish()
     return public_state()
@@ -129,7 +129,7 @@ def advance(request: Request):
 def reset(request: Request):
     require_write(request)
     with connect() as db:
-        db.execute("UPDATE settings SET active_turn=NULL,round_number=1 WHERE id=1")
+        db.execute("UPDATE settings SET active_turn=NULL,round_number=1,attack_natural=NULL,attack_bonus=NULL,attack_total=NULL,attack_actor=NULL WHERE id=1")
         revision(db)
     publish()
     return {"ok": True}
@@ -174,8 +174,8 @@ def add_member(request: Request, encounter_id: str, body: EncounterMember):
             raise HTTPException(400, "Token artwork not found")
         pos = db.execute("SELECT COUNT(*) FROM encounter_members WHERE encounter_id=?", (encounter_id,)).fetchone()[0]
         db.execute(
-            "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,position) VALUES (?,?,?,?,?,?,?)",
-            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, pos)
+            "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,position) VALUES (?,?,?,?,?,?,?,?)",
+            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, body.attack_bonus, pos)
         )
         revision(db)
     publish()
@@ -199,7 +199,7 @@ def start_encounter(request: Request, encounter_id: str):
         if not db.execute("SELECT id FROM encounters WHERE id=?", (encounter_id,)).fetchone():
             raise HTTPException(404, "Encounter not found")
         members = db.execute(
-            "SELECT name,modifier,visible,token_asset_id FROM encounter_members WHERE encounter_id=? ORDER BY position,rowid",
+            "SELECT name,modifier,visible,token_asset_id,attack_bonus FROM encounter_members WHERE encounter_id=? ORDER BY position,rowid",
             (encounter_id,)
         ).fetchall()
         if not members:
@@ -211,13 +211,37 @@ def start_encounter(request: Request, encounter_id: str):
             total = natural + member["modifier"]
             identity = str(uuid.uuid4())
             db.execute(
-                "INSERT INTO combatants(id,name,initiative,position,visible,token_asset_id) VALUES (?,?,?,?,?,?)",
-                (identity, member["name"], total, index, member["visible"], member["token_asset_id"])
+                "INSERT INTO combatants(id,name,initiative,position,visible,token_asset_id,attack_bonus) VALUES (?,?,?,?,?,?,?)",
+                (identity, member["name"], total, index, member["visible"], member["token_asset_id"], member["attack_bonus"])
             )
             scores.append({"name": member["name"], "roll": natural, "modifier": member["modifier"], "total": total, "position": index})
         scores.sort(key=lambda x: (-x["total"], x["position"]))
         first = db.execute("SELECT id FROM combatants ORDER BY initiative DESC,position ASC LIMIT 1").fetchone()["id"]
-        db.execute("UPDATE settings SET round_number=1,active_turn=?,active_card='initiative' WHERE id=1", (first,))
+        db.execute("UPDATE settings SET round_number=1,active_turn=?,active_card='initiative',attack_natural=NULL,attack_bonus=NULL,attack_total=NULL,attack_actor=NULL WHERE id=1", (first,))
         revision(db)
     publish()
     return {"rolls": [{k: v for k, v in score.items() if k != "position"} for score in scores], "round": 1}
+
+
+@router.post("/combat/attack")
+def monster_attack(request: Request, body: AttackRoll):
+    require_write(request)
+    with connect() as db:
+        current = db.execute("SELECT active_turn FROM settings WHERE id=1").fetchone()["active_turn"]
+        if body.combatant_id != current:
+            raise HTTPException(409, "Only the active combatant can roll an attack")
+        actor = db.execute("SELECT attack_bonus,visible FROM combatants WHERE id=?", (current,)).fetchone()
+        if actor is None:
+            raise HTTPException(404, "Combatant not found")
+        if not actor["visible"]:
+            raise HTTPException(409, "Cannot reveal an attack from a hidden combatant")
+        bonus = body.bonus_override if body.bonus_override is not None else actor["attack_bonus"]
+        natural = 1 + secrets.randbelow(20)
+        total = natural + bonus
+        db.execute(
+            "UPDATE settings SET active_card='initiative',attack_natural=?,attack_bonus=?,attack_total=?,attack_actor=? WHERE id=1",
+            (natural,bonus,total,current)
+        )
+        revision(db)
+    publish()
+    return {"natural": natural, "bonus": bonus, "total": total}
