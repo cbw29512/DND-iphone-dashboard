@@ -46,6 +46,11 @@ export function renderPublic(target, state, compact = false) {
       node('div', { cls: 'initiative-label', text: content.attack ? 'TO HIT' : 'INITIATIVE' }),
       node('div', { cls: 'initiative-big-number', text: content.attack ? String(content.attack.total) : current ? String(current.initiative) : '—' }),
       ...(content.attack ? [node('div', { cls: 'initiative-roll-breakdown', text: 'd20 (' + content.attack.natural + ') ' + (content.attack.bonus >= 0 ? '+' : '−') + ' ' + Math.abs(content.attack.bonus) })] : []),
+      ...(content.attack ? [
+        node('div', { cls: 'initiative-label', text: 'DAMAGE · ' + (content.attack.damage_type || '').toUpperCase() }),
+        node('div', { cls: 'initiative-damage-number', text: String(content.attack.damage) }),
+        node('div', { cls: 'initiative-roll-breakdown', text: content.attack.damage_formula || '' }),
+      ] : []),
       ...(content.attack?.natural === 1 ? [node('div', { cls: 'initiative-attack-critical nat1', text: '💀 NATURAL 1! 💀' })] : []),
       ...(content.attack?.natural === 20 ? [node('div', { cls: 'initiative-attack-critical nat20', text: '🎉 NATURAL 20! 🎉' })] : []),
       node('div', { cls: 'initiative-combatant-name', text: current?.name || 'No combatant' }),
