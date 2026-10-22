@@ -106,3 +106,11 @@ dialog{max-width:400px;width:calc(100% - 24px);color:#ede9e1;background:#1d1e2a;
 .battle-add-player input{width:100%;min-width:0}
 .battle-add-player button{min-width:124px}
 @media(max-width:700px){.battle-add-player{grid-template-columns:1fr 1fr}.battle-add-player input:first-child{grid-column:1/-1}.battle-add-player button{grid-column:1/-1}}
+
+.monster-library{display:grid;gap:10px;margin:8px 0 18px}
+.monster-library-item{display:flex;align-items:center;gap:8px;padding:12px;border:1px solid #7d654b;border-radius:11px;background:#2b2933}
+.monster-library-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px}
+.monster-library-copy strong{color:#f1d5a2;font-size:14px}
+.monster-library-copy small{color:#c2b5a7;font-size:11px;line-height:1.5}
+.monster-library-item button{min-width:35px;min-height:36px}
+.monster-count{min-width:25px;text-align:center;font-size:19px;color:#f0d3a1}
