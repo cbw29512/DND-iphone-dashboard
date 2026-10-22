@@ -29,13 +29,14 @@ CREATE TABLE IF NOT EXISTS combatants (
  token_asset_id TEXT,
  attack_bonus INTEGER NOT NULL DEFAULT 0,
  armor_class INTEGER,
- initiative_group TEXT
+ initiative_group TEXT,
+ source_monster_id TEXT
 );
 CREATE TABLE IF NOT EXISTS encounters (id TEXT PRIMARY KEY, name TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS encounter_members (
  id TEXT PRIMARY KEY, encounter_id TEXT NOT NULL REFERENCES encounters(id) ON DELETE CASCADE,
  name TEXT NOT NULL, modifier INTEGER NOT NULL DEFAULT 0, visible INTEGER NOT NULL DEFAULT 1,
- token_asset_id TEXT, attack_bonus INTEGER NOT NULL DEFAULT 0, armor_class INTEGER, initiative_group TEXT, position INTEGER NOT NULL DEFAULT 0
+ token_asset_id TEXT, attack_bonus INTEGER NOT NULL DEFAULT 0, armor_class INTEGER, initiative_group TEXT, source_monster_id TEXT, position INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS monster_attack_profiles (
  id TEXT PRIMARY KEY, monster_id TEXT NOT NULL, attack_name TEXT NOT NULL,
@@ -96,6 +97,8 @@ def initialize():
             ("combatants", "armor_class", "INTEGER"),
             ("combatants", "initiative_group", "TEXT"),
             ("encounter_members", "initiative_group", "TEXT"),
+            ("encounter_members", "source_monster_id", "TEXT"),
+            ("combatants", "source_monster_id", "TEXT"),
             ("encounter_members", "armor_class", "INTEGER"),
             ("monster_attack_profiles", "effect_condition", "TEXT"),
             ("monster_attack_profiles", "effect_save_ability", "TEXT"),
