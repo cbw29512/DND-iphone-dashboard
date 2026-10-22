@@ -174,8 +174,8 @@ def add_member(request: Request, encounter_id: str, body: EncounterMember):
             raise HTTPException(400, "Token artwork not found")
         pos = db.execute("SELECT COUNT(*) FROM encounter_members WHERE encounter_id=?", (encounter_id,)).fetchone()[0]
         db.execute(
-            "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group,source_monster_id,position) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, body.attack_bonus, body.armor_class, body.initiative_group, body.source_monster_id, pos)
+            "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group,source_monster_id,initiative_advantage,position) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, body.attack_bonus, body.armor_class, body.initiative_group, body.source_monster_id, 0, pos)
         )
         revision(db)
     publish()
@@ -199,7 +199,7 @@ def start_encounter(request: Request, encounter_id: str):
         if not db.execute("SELECT id FROM encounters WHERE id=?", (encounter_id,)).fetchone():
             raise HTTPException(404, "Encounter not found")
         members = db.execute(
-            "SELECT name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group,source_monster_id FROM encounter_members WHERE encounter_id=? ORDER BY position,rowid",
+            "SELECT name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group,source_monster_id,initiative_advantage FROM encounter_members WHERE encounter_id=? ORDER BY position,rowid",
             (encounter_id,)
         ).fetchall()
         if not members:
@@ -210,13 +210,13 @@ def start_encounter(request: Request, encounter_id: str):
         for index, member in enumerate(members):
             group = member['initiative_group']
             if group:
-                if group in shared_rolls and shared_rolls[group][1] != member['modifier']:
+                if group in shared_rolls and (shared_rolls[group][1] != member['modifier'] or shared_rolls[group][2] != member['initiative_advantage']):
                     raise HTTPException(422, 'Members sharing an initiative group must have the same initiative modifier')
                 if group not in shared_rolls:
-                    shared_rolls[group] = (1 + secrets.randbelow(20), member['modifier'])
+                    shared_rolls[group] = (max(1 + secrets.randbelow(20), 1 + secrets.randbelow(20)) if member['initiative_advantage'] else 1 + secrets.randbelow(20), member['modifier'], member['initiative_advantage'])
                 natural = shared_rolls[group][0]
             else:
-                natural = 1 + secrets.randbelow(20)
+                natural = max(1 + secrets.randbelow(20), 1 + secrets.randbelow(20)) if member['initiative_advantage'] else 1 + secrets.randbelow(20)
             total = natural + member["modifier"]
             identity = str(uuid.uuid4())
             db.execute(
@@ -318,8 +318,8 @@ def edit_encounter_member(request: Request, encounter_id: str, member_id: str, b
         if body.token_asset_id and not db.execute("SELECT 1 FROM media WHERE id=? AND category='gallery'", (body.token_asset_id,)).fetchone():
             raise HTTPException(400, "Artwork not found")
         updated = db.execute(
-            "UPDATE encounter_members SET name=?,modifier=?,armor_class=?,token_asset_id=? WHERE id=? AND encounter_id=?",
-            (body.name.strip(), body.modifier, body.armor_class, body.token_asset_id, member_id, encounter_id))
+            "UPDATE encounter_members SET name=?,modifier=?,armor_class=?,token_asset_id=?,initiative_advantage=? WHERE id=? AND encounter_id=?",
+            (body.name.strip(), body.modifier, body.armor_class, body.token_asset_id, int(body.initiative_advantage), member_id, encounter_id))
         if not updated.rowcount:
             raise HTTPException(404, "Card not found")
         revision(db)
