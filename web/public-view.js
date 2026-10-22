@@ -1,6 +1,21 @@
 /** Player view renderer uses only /api/display/state, with no private DM fields. */
 import { node } from './dom.js';
 
+const DAMAGE_VISUALS = {
+  fire: ['🔥', 'fire'], cold: ['❄️', 'cold'], poison: ['☠️', 'poison'],
+  acid: ['🧪', 'acid'], lightning: ['⚡', 'lightning'], thunder: ['💥', 'thunder'],
+  necrotic: ['💀', 'necrotic'], radiant: ['✨', 'radiant'],
+  psychic: ['🧠', 'psychic'], force: ['✦', 'force'],
+  bludgeoning: ['🔨', 'physical'], piercing: ['🏹', 'physical'], slashing: ['⚔️', 'physical']
+};
+function damageTypeBadge(raw) {
+  const type = String(raw || 'untyped').toLowerCase().trim();
+  const [symbol, theme] = DAMAGE_VISUALS[type] || ['◆', 'other'];
+  return node('div', { cls: 'initiative-damage-type damage-' + theme }, [
+    node('span', { text: symbol, attrs: { 'aria-hidden': 'true' } }),
+    node('span', { text: type.toUpperCase() })
+  ]);
+}
 function placeholder(text = 'Waiting for the DM to share a card') {
   return node('div', { cls: 'screen-empty' }, [node('span', { cls: 'symbol', text: '✧' }), node('p', { text })]);
 }
@@ -46,6 +61,16 @@ export function renderPublic(target, state, compact = false) {
       node('div', { cls: 'initiative-label', text: content.attack ? 'TO HIT' : 'INITIATIVE' }),
       node('div', { cls: 'initiative-big-number', text: content.attack ? String(content.attack.total) : current ? String(current.initiative) : '—' }),
       ...(content.attack ? [node('div', { cls: 'initiative-roll-breakdown', text: 'd20 (' + content.attack.natural + ') ' + (content.attack.bonus >= 0 ? '+' : '−') + ' ' + Math.abs(content.attack.bonus) })] : []),
+      ...(content.attack ? [
+        node('div', { cls: 'initiative-label', text: 'DAMAGE' }),
+        damageTypeBadge(content.attack.damage_type),
+        node('div', { cls: 'initiative-damage-number', text: String(content.attack.damage) }),
+        node('div', { cls: 'initiative-roll-breakdown', text: content.attack.damage_formula || '' }),
+      ] : []),
+      ...(content.attack?.condition ? [
+        node('div', { cls: 'initiative-effect', text: String(content.attack.condition).toUpperCase() }),
+        ...(content.attack.save_dc ? [node('div', { cls: 'initiative-effect-save', text: 'SAVE DC ' + content.attack.save_dc + ' · ' + String(content.attack.save_ability || '').toUpperCase() + ' · ON FAILED SAVE' })] : []),
+      ] : []),
       ...(content.attack?.natural === 1 ? [node('div', { cls: 'initiative-attack-critical nat1', text: '💀 NATURAL 1! 💀' })] : []),
       ...(content.attack?.natural === 20 ? [node('div', { cls: 'initiative-attack-critical nat20', text: '🎉 NATURAL 20! 🎉' })] : []),
       node('div', { cls: 'initiative-combatant-name', text: current?.name || 'No combatant' }),
