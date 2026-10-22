@@ -21,8 +21,24 @@ export function renderPublic(target, state, compact = false) {
     panel.append(node('p', { text: 'A STORY UNFOLDS', cls: 'eyebrow' }),
       node('p', { text: content.text || 'The scene begins…', cls: 'scene-text' }));
   } else if (state.card === 'dice') {
-    panel.append(node('p', { text: 'THE FATES HAVE SPOKEN', cls: 'eyebrow' }),
-      node('div', { text: content.text || 'Ready to roll', cls: 'dice-result' }));
+    panel.classList.add('dice-card');
+    const effect = ['nat1', 'nat20'].includes(content.effect) ? content.effect : null;
+    panel.append(node('div', { text: content.text || 'Ready to roll', cls: 'dice-result' }));
+    if (effect) {
+      const feedback = node('div', {
+        cls: 'dice-critical ' + effect,
+        text: effect === 'nat1' ? '💀 NATURAL 1! 💀' : '🎉 NATURAL 20! 🎉',
+        attrs: { 'aria-label': effect === 'nat1' ? 'Natural one' : 'Natural twenty' },
+      });
+      // Key animation to the roll itself, not to repeated network refreshes.
+      const animationKey = 'iron-lantern-effect-' + (compact ? 'preview' : 'player');
+      const key = String(content.roll_id || '');
+      if (key && target.dataset.lastDiceAnimation !== key) {
+        target.dataset.lastDiceAnimation = key;
+        feedback.classList.add('animate');
+      }
+      panel.append(feedback);
+    }
   } else if (state.card === 'initiative') {
     panel.classList.add('initiative-card');
     panel.append(node('p', { text: 'THE ORDER OF BATTLE', cls: 'eyebrow' }), node('h1', { text: `Round ${content.round ?? 1}` }));
