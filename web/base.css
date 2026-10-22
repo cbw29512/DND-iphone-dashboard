@@ -1,0 +1,15 @@
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#ede9e1;background:#0f1119;font-synthesis:none;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}body{margin:0}button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #f4c875;outline-offset:3px}
+[hidden]{display:none!important}h1,h2,h3,p{margin-top:0}h1,h2,h3{letter-spacing:-.035em}p{line-height:1.55;color:#acafbd}
+a{color:inherit}.eyebrow{font-size:10px;font-weight:850;letter-spacing:.23em;color:#d1ab71;margin:0 0 8px}
+.primary,.outline,.quiet{border-radius:9px;min-height:42px;border:1px solid transparent;padding:10px 14px;font-weight:750;font-size:13px;transition:background .16s,transform .16s}
+.primary{background:linear-gradient(140deg,#e6bd79,#c78d45);color:#24190d;box-shadow:0 3px 22px #ce98421c}.primary:hover{background:#f3c98c}
+.outline{background:#ffffff05;color:#e8e3da;border-color:#4b4650}.outline:hover{background:#ffffff12}.quiet{background:transparent;color:#bfc0cc}.quiet:hover{background:#ffffff12}
+.full{width:100%}label{display:block;font-size:12px;font-weight:760;color:#d4d4db;margin:12px 0 7px}
+input,textarea,select{width:100%;padding:11px 12px;border:1px solid #454451;border-radius:8px;background:#161821;color:#f8f7f3;min-height:42px}
+textarea{min-height:110px;resize:vertical}input::placeholder{color:#767988}.hint{font-size:12px;color:#9194a2}.error{font-size:12px;color:#ef9a9a;min-height:1em}
+.brand-mark{width:54px;height:54px;display:grid;place-items:center;border:1px solid #78603f;border-radius:14px;background:#d2ab7222;color:#e9c28a;font-size:34px;margin:0 auto 20px}
+.login-shell,.pair-screen{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 50% -20%,#43344b 0,transparent 55%),#10111a}
+.login-card,.pair-card{max-width:430px;width:100%;padding:38px;border:1px solid #49424f;background:#1b1b27;border-radius:20px;box-shadow:0 20px 90px #0008;text-align:center}
+.login-card h1,.pair-card h1{font-size:38px;margin-bottom:12px}.login-card label,.pair-card label{text-align:left}.login-card input,.pair-card input{margin-bottom:12px}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition-duration:.01ms!important;animation-duration:.01ms!important}}

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#10121b"><meta name="description" content="A private Dungeons & Dragons display companion for your gaming table.">
+  <title>Iron Lantern — DM Flex Dashboard</title>
+  <link rel="stylesheet" href="/static/base.css"><link rel="stylesheet" href="/static/dashboard.css">
+  <script type="module" src="/static/dashboard.js"></script>
+</head>
+<body>
+  <div id="login" class="login-shell" hidden>
+    <form id="login-form" class="login-card">
+      <div class="brand-mark">✧</div><p class="eyebrow">PRIVATE DM CONTROL CENTER</p>
+      <h1>Iron Lantern</h1><p>Your stories. Your screen. Your rules.</p>
+      <label for="passphrase">DM passphrase</label>
+      <input id="passphrase" type="password" autocomplete="current-password" required placeholder="Enter the passphrase shown on your laptop">
+      <button type="submit" class="primary full">Unlock dashboard →</button>
+      <p class="hint">The passphrase is printed in the laptop server terminal on first launch.</p>
+      <p id="login-error" class="error" role="alert"></p>
+    </form>
+  </div>
+  <div id="app" hidden>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Iron Lantern home"><span class="brand-icon">✧</span><span><strong>Iron Lantern</strong><small>FLEX DASHBOARD</small></span></a>
+      <div class="top-actions"><span id="connection" class="connection"><i></i> Connecting</span>
+        <button id="pair-button" class="outline" type="button">↗ Pair iPhone</button>
+        <button id="logout" class="quiet" type="button" title="Sign out">Sign out</button></div>
+    </header>
+    <main class="workspace">
+      <section class="page-heading"><div><p class="eyebrow">THE GAME MASTER'S DESK</p><h1>Command the scene.</h1>
+        <p>Compose your session on Windows. Share one card to the player screen with a single click.</p></div>
+        <div class="session-pill"><span class="gold-dot"></span> LOCAL SESSION <span class="session-name">The Adventuring Table</span></div>
+      </section>
+      <div class="workgrid">
+        <aside class="panel library" aria-labelledby="library-title"><div class="panel-heading"><p class="eyebrow">YOUR TOOLKIT</p><h2 id="library-title">Flex Cards</h2></div>
+          <nav id="card-list" class="card-list" aria-label="Available Flex Cards"></nav>
+          <div class="library-note">✦ Each card has its own player-safe view. DM notes stay private.</div>
+        </aside>
+        <section class="panel editor" aria-labelledby="editor-title"><div class="editor-top"><div><p id="editor-kicker" class="eyebrow">CURRENT CARD</p><h2 id="editor-title">Artwork Gallery</h2></div>
+            <div class="controls"><button id="preview-button" class="outline" type="button">◉ Preview</button><button id="share" class="primary" type="button">↗ Share to Screen</button></div></div>
+          <div id="editor-content"></div>
+        </section>
+        <aside class="panel preview" aria-labelledby="preview-title"><div class="preview-heading"><div><p class="eyebrow">PLAYER-SAFE OUTPUT</p><h2 id="preview-title">Live Screen</h2></div><span id="live-status" class="tiny-tag">STANDBY</span></div>
+          <div class="device-shell"><div class="device-island"></div><div id="phone-preview" class="device-screen" aria-live="polite"></div></div>
+          <div class="preview-footer"><p id="preview-caption">Nothing shared yet</p><button id="clear" class="outline full" type="button">■ Clear Player Screen</button>
+            <a href="/display" target="_blank" rel="noopener" class="text-link">Open display preview ↗</a></div>
+        </aside>
+      </div>
+      <footer><span>IRON LANTERN <span aria-hidden="true">✧</span> BUILT FOR THE TABLE</span><span>PRIVATE SESSION · ALL CHANGES SAVED LOCALLY</span></footer>
+    </main>
+  </div>
+  <dialog id="pair-dialog" aria-labelledby="pair-title"><div class="modal-head"><h2 id="pair-title">Connect your iPhone</h2><button id="close-dialog" class="quiet" type="button" aria-label="Close">✕</button></div>
+    <p>Open this dashboard's <strong>/display</strong> page in Safari on the same Wi-Fi. Enter the one-time code below.</p>
+    <p id="pair-url" class="pair-url"></p><div id="pair-code" class="pair-code" aria-live="polite">······</div>
+    <p class="hint">Expires after 10 minutes. Only one use.</p><button id="generate-pair" class="primary full" type="button">Generate new code</button>
+    <button id="revoke-pair" class="outline full" type="button">Disconnect all paired devices</button>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
