@@ -12,6 +12,10 @@ export function combatEditor(root, state, refresh) {
     await api('/encounters', { method: 'POST', data: { name: newEncounterName.value.trim() } });
     await refresh(true);
   }, 'primary'));
+  encounterSection.append(button('Load Goblin Test Fight', async () => {
+    await api('/encounters/sample-goblin-fight', { method: 'POST' });
+    await refresh(true);
+  }, 'outline'));
   const tokenOptions = () => [
     node('option', { text: 'Name only (no artwork)', attrs: { value: '' } }),
     ...state.media.filter(m => m.category === 'gallery').map(m => node('option', { text: m.name, attrs: { value: m.id } }))
@@ -23,7 +27,7 @@ export function combatEditor(root, state, refresh) {
     const roster = node('ul', { cls: 'encounter-roster' });
     for (const member of participants) {
       const entry = node('li', {}, [
-        node('span', { text: member.name + ' · Init ' + (member.modifier >= 0 ? '+' : '') + member.modifier + ' · Hit ' + (member.attack_bonus >= 0 ? '+' : '') + member.attack_bonus }),
+        node('span', { text: member.name + (member.initiative_group ? ' · Group ' + member.initiative_group : '') + ' · Init ' + (member.modifier >= 0 ? '+' : '') + member.modifier + ' · Hit ' + (member.attack_bonus >= 0 ? '+' : '') + member.attack_bonus }),
         button('Remove', async () => {
           await api('/encounters/' + encodeURIComponent(encounter.id) + '/members/' + encodeURIComponent(member.id), { method: 'DELETE' });
           await refresh(true);
@@ -38,12 +42,13 @@ export function combatEditor(root, state, refresh) {
     const armorClass = node('input', { attrs: { type: 'number', min: '1', max: '99', placeholder: 'AC', 'aria-label': 'Armor Class (optional)' } });
     const attackBonus = node('input', { attrs: { type: 'number', value: '0', min: '-30', max: '99', required: '', 'aria-label': 'Attack to-hit bonus' } });
     const artwork = node('select', { attrs: { 'aria-label': 'VTT artwork' } }, tokenOptions());
-    addForm.append(memberName, modifier, attackBonus, armorClass, artwork, node('button', { text: '+ Add', cls: 'outline', attrs: { type: 'submit' } }));
+    const initiativeGroup = node('input', { attrs: { placeholder: 'Group (e.g. goblins)', maxlength: 80, 'aria-label': 'Shared initiative group' } });
+    addForm.append(memberName, modifier, attackBonus, armorClass, artwork, initiativeGroup, node('button', { text: '+ Add', cls: 'outline', attrs: { type: 'submit' } }));
     addForm.addEventListener('submit', async event => {
       event.preventDefault();
       try {
         await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', { method: 'POST', data: {
-          name: memberName.value, modifier: Number(modifier.value), attack_bonus: Number(attackBonus.value), armor_class: armorClass.value ? Number(armorClass.value) : null, token_asset_id: artwork.value || null
+          name: memberName.value, modifier: Number(modifier.value), attack_bonus: Number(attackBonus.value), armor_class: armorClass.value ? Number(armorClass.value) : null, token_asset_id: artwork.value || null, initiative_group: initiativeGroup.value.trim() || null, source_monster_id: memberName.value.toLowerCase().trim() === 'goblin' ? 'goblin' : null
         } });
         await refresh(true);
       } catch (error) { console.error('Encounter participant failed', error); }
@@ -80,7 +85,7 @@ export function combatEditor(root, state, refresh) {
   const active = state.combatants.find(c => c.id === settings.active_turn);
   if (active) {
     const attackControls = node('div', { cls: 'attack-controls' });
-    const profiles = (state.attack_profiles || []).filter(p => p.monster_id === active.name.toLowerCase().trim().replace(/\s+/g, '-'));
+    const profiles = (state.attack_profiles || []).filter(p => p.source_complete && p.monster_id === active.source_monster_id);
     const options = profiles.map(p => node('option', { text: p.attack_name + ' · +' + p.attack_bonus + ' · ' + p.damage_count + 'd' + p.damage_sides + ' ' + p.damage_bonus, attrs: { value: p.id } }));
     const choice = node('select', { attrs: { 'aria-label': 'Verified monster attack' } }, options);
     const targetChoices = [node('option', { text: 'Unspecified target (show roll)', attrs: { value: '' } }),

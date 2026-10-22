@@ -10,7 +10,7 @@ def full_state():
         media = [dict(x) for x in db.execute("SELECT id,category,name,position FROM media ORDER BY category,position,created_at")]
         combatants = [dict(x) for x in db.execute("SELECT * FROM combatants ORDER BY initiative DESC,position ASC")]
         encounters = [dict(x) for x in db.execute("SELECT id,name FROM encounters ORDER BY rowid")]
-        members = [dict(x) for x in db.execute("SELECT id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,armor_class FROM encounter_members ORDER BY position,rowid")]
+        members = [dict(x) for x in db.execute("SELECT id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group,source_monster_id FROM encounter_members ORDER BY position,rowid")]
         attack_profiles = [dict(x) for x in db.execute("SELECT * FROM monster_attack_profiles ORDER BY monster_id,attack_name")]
     return {"settings": settings, "media": media, "combatants": combatants, "encounters": encounters, "encounter_members": members, "attack_profiles": attack_profiles}
 
