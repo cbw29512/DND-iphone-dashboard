@@ -62,6 +62,18 @@ class EncounterMember(BaseModel):
     visible: bool = True
     token_asset_id: str | None = Field(default=None, max_length=80)
 
+class MemberEdit(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    modifier: int = Field(ge=-20, le=30)
+    armor_class: int | None = Field(default=None, ge=1, le=99)
+    token_asset_id: str | None = Field(default=None, max_length=80)
+
+class CombatantEdit(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    armor_class: int | None = Field(default=None, ge=1, le=99)
+    initiative: int = Field(ge=-20, le=99)
+    token_asset_id: str | None = Field(default=None, max_length=80)
+
 class AttackRoll(BaseModel):
     combatant_id: str
     target_id: str | None = None
