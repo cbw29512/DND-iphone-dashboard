@@ -79,7 +79,7 @@ export function combatEditor(root, state, refresh) {
   const active = state.combatants.find(c => c.id === settings.active_turn);
   if (active) {
     const attackControls = node('div', { cls: 'attack-controls' });
-    const profiles = (state.attack_profiles || []).filter(p => p.monster_id === active.name.toLowerCase().trim().replace(/\\s+/g, '-'));
+    const profiles = (state.attack_profiles || []).filter(p => p.monster_id === active.name.toLowerCase().trim().replace(/\s+/g, '-'));
     const options = profiles.map(p => node('option', { text: p.attack_name + ' · +' + p.attack_bonus + ' · ' + p.damage_count + 'd' + p.damage_sides + ' ' + p.damage_bonus, attrs: { value: p.id } }));
     const choice = node('select', { attrs: { 'aria-label': 'Verified monster attack' } }, options);
     attackControls.append(node('strong', { text: active.name + ' · Attack' }));
