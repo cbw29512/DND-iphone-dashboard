@@ -66,3 +66,13 @@ dialog{max-width:400px;width:calc(100% - 24px);color:#ede9e1;background:#1d1e2a;
 .combatant-card-note{font-size:11px;color:#bbb9c2;margin:0}
 .combatant-card-actions{padding:9px 12px;border-top:1px solid #3e3b47;display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:11px}
 @media(max-width:580px){.combat-card-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr))}.combatant-card-portrait{height:125px}}
+
+/* Combat test: card selection before initiative and context-sensitive active actions. */
+.prep-card-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr));margin:8px 0}
+.prep-combatant-card .combatant-card-portrait{height:116px}
+.prep-combatant-card .combatant-card-content{padding:10px;gap:7px}
+.prep-combatant-card .combatant-card-heading strong{font-size:13px}
+.active-card-action-area{padding:12px;display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid #776248;background:#24202c}
+.active-card-action-area label{font-size:10px;display:flex;align-items:center;color:#d3bb97}
+.active-card-action-area select{width:100%;min-width:0}
+.active-card-action-area button{flex:1;min-width:63px}
