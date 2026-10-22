@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS settings (
  active_turn TEXT,
  attack_natural INTEGER, attack_bonus INTEGER, attack_total INTEGER, attack_actor TEXT,
  attack_damage INTEGER, attack_damage_type TEXT, attack_damage_formula TEXT, attack_name TEXT,
- attack_condition TEXT, attack_save_ability TEXT, attack_save_dc INTEGER
+ attack_condition TEXT, attack_save_ability TEXT, attack_save_dc INTEGER,
+ attack_target TEXT, attack_target_ac INTEGER, attack_hit INTEGER
 );
 INSERT OR IGNORE INTO settings (id) VALUES (1);
 CREATE TABLE IF NOT EXISTS media (
@@ -26,13 +27,14 @@ CREATE TABLE IF NOT EXISTS combatants (
  position INTEGER NOT NULL, hp_current INTEGER, hp_max INTEGER,
  private_note TEXT NOT NULL DEFAULT '', visible INTEGER NOT NULL DEFAULT 1,
  token_asset_id TEXT,
- attack_bonus INTEGER NOT NULL DEFAULT 0
+ attack_bonus INTEGER NOT NULL DEFAULT 0,
+ armor_class INTEGER
 );
 CREATE TABLE IF NOT EXISTS encounters (id TEXT PRIMARY KEY, name TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS encounter_members (
  id TEXT PRIMARY KEY, encounter_id TEXT NOT NULL REFERENCES encounters(id) ON DELETE CASCADE,
  name TEXT NOT NULL, modifier INTEGER NOT NULL DEFAULT 0, visible INTEGER NOT NULL DEFAULT 1,
- token_asset_id TEXT, attack_bonus INTEGER NOT NULL DEFAULT 0, position INTEGER NOT NULL DEFAULT 0
+ token_asset_id TEXT, attack_bonus INTEGER NOT NULL DEFAULT 0, armor_class INTEGER, position INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS monster_attack_profiles (
  id TEXT PRIMARY KEY, monster_id TEXT NOT NULL, attack_name TEXT NOT NULL,
@@ -87,6 +89,11 @@ def initialize():
             ("settings", "attack_condition", "TEXT"),
             ("settings", "attack_save_ability", "TEXT"),
             ("settings", "attack_save_dc", "INTEGER"),
+            ("settings", "attack_target", "TEXT"),
+            ("settings", "attack_target_ac", "INTEGER"),
+            ("settings", "attack_hit", "INTEGER"),
+            ("combatants", "armor_class", "INTEGER"),
+            ("encounter_members", "armor_class", "INTEGER"),
             ("monster_attack_profiles", "effect_condition", "TEXT"),
             ("monster_attack_profiles", "effect_save_ability", "TEXT"),
             ("monster_attack_profiles", "effect_save_dc", "INTEGER"),
