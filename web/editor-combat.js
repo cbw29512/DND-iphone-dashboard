@@ -48,7 +48,7 @@ export function combatEditor(root, state, refresh) {
       event.preventDefault();
       try {
         await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', { method: 'POST', data: {
-          name: memberName.value, modifier: Number(modifier.value), attack_bonus: Number(attackBonus.value), armor_class: armorClass.value ? Number(armorClass.value) : null, token_asset_id: artwork.value || null, initiative_group: initiativeGroup.value.trim() || null
+          name: memberName.value, modifier: Number(modifier.value), attack_bonus: Number(attackBonus.value), armor_class: armorClass.value ? Number(armorClass.value) : null, token_asset_id: artwork.value || null, initiative_group: initiativeGroup.value.trim() || null, source_monster_id: memberName.value.toLowerCase().trim() === 'goblin' ? 'goblin' : null
         } });
         await refresh(true);
       } catch (error) { console.error('Encounter participant failed', error); }
@@ -85,7 +85,7 @@ export function combatEditor(root, state, refresh) {
   const active = state.combatants.find(c => c.id === settings.active_turn);
   if (active) {
     const attackControls = node('div', { cls: 'attack-controls' });
-    const profiles = (state.attack_profiles || []).filter(p => p.monster_id === active.name.toLowerCase().trim().replace(/\s+/g, '-'));
+    const profiles = (state.attack_profiles || []).filter(p => p.source_complete && p.monster_id === active.source_monster_id);
     const options = profiles.map(p => node('option', { text: p.attack_name + ' · +' + p.attack_bonus + ' · ' + p.damage_count + 'd' + p.damage_sides + ' ' + p.damage_bonus, attrs: { value: p.id } }));
     const choice = node('select', { attrs: { 'aria-label': 'Verified monster attack' } }, options);
     const targetChoices = [node('option', { text: 'Unspecified target (show roll)', attrs: { value: '' } }),
