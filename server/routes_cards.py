@@ -75,7 +75,7 @@ def scene(request: Request, body: Scene):
 def dice(request: Request, body: Dice):
     require_write(request)
     with connect() as db:
-        db.execute("UPDATE settings SET dice_text=? WHERE id=1", (body.text,))
+        db.execute("UPDATE settings SET dice_text=?,dice_effect=NULL,dice_roll_id=? WHERE id=1", (body.text, str(uuid.uuid4())))
         revision(db)
     publish()
     return {"ok": True}
@@ -142,7 +142,8 @@ def roll(request: Request, body: Roll):
     if body.modifier:
         expression += f" {body.modifier:+d}"
     with connect() as db:
-        db.execute("UPDATE settings SET dice_text=? WHERE id=1", (f"{expression}: {total}",))
+        effect = ("nat20" if values[0] == 20 else "nat1" if values[0] == 1 else None) if body.sides == 20 and body.count == 1 else None
+        db.execute("UPDATE settings SET dice_text=?,dice_effect=?,dice_roll_id=? WHERE id=1", (f"{expression}: {total}", effect, str(uuid.uuid4())))
         revision(db)
     publish()
     return {"total": total, "rolls": values, "modifier": body.modifier}

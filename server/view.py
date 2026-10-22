@@ -14,7 +14,7 @@ def full_state():
 
 def public_state(card_override=None, asset_override=None):
     with connect() as db:
-        settings = db.execute("SELECT active_card,active_asset,revision,scene_text,dice_text,round_number,active_turn FROM settings WHERE id=1").fetchone()
+        settings = db.execute("SELECT active_card,active_asset,revision,scene_text,dice_text,dice_effect,dice_roll_id,round_number,active_turn FROM settings WHERE id=1").fetchone()
         active = card_override if card_override in KINDS else (settings["active_card"] if card_override is None else None)
         result = {"card": active, "revision": settings["revision"], "content": None}
         if active in ("gallery", "map"):
@@ -30,5 +30,5 @@ def public_state(card_override=None, asset_override=None):
         elif active == "scene":
             result["content"] = {"text": settings["scene_text"]}
         elif active == "dice":
-            result["content"] = {"text": settings["dice_text"]}
+            result["content"] = {"text": settings["dice_text"], "effect": settings["dice_effect"], "roll_id": settings["dice_roll_id"]}
     return result
