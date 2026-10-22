@@ -119,7 +119,7 @@ def advance(request: Request):
         index = order.index(current) if current in order else -1
         next_index = (index + 1) % len(order)
         next_round = settings["round_number"] + int(index == len(order) - 1)
-        db.execute("UPDATE settings SET active_card='initiative',active_turn=?,round_number=?,attack_natural=NULL,attack_bonus=NULL,attack_total=NULL,attack_actor=NULL,attack_damage=NULL,attack_damage_type=NULL,attack_damage_formula=NULL,attack_name=NULL,attack_condition=NULL,attack_save_ability=NULL,attack_save_dc=NULL WHERE id=1", (order[next_index], next_round))
+        db.execute("UPDATE settings SET active_card='initiative',active_turn=?,round_number=?,attack_natural=NULL,attack_bonus=NULL,attack_total=NULL,attack_actor=NULL,attack_damage=NULL,attack_damage_type=NULL,attack_damage_formula=NULL,attack_name=NULL,attack_condition=NULL,attack_save_ability=NULL,attack_save_dc=NULL,attack_target=NULL,attack_target_ac=NULL,attack_hit=NULL WHERE id=1", (order[next_index], next_round))
         revision(db)
     publish()
     return public_state()
@@ -174,8 +174,8 @@ def add_member(request: Request, encounter_id: str, body: EncounterMember):
             raise HTTPException(400, "Token artwork not found")
         pos = db.execute("SELECT COUNT(*) FROM encounter_members WHERE encounter_id=?", (encounter_id,)).fetchone()[0]
         db.execute(
-            "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,position) VALUES (?,?,?,?,?,?,?,?)",
-            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, body.attack_bonus, pos)
+            "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,armor_class,position) VALUES (?,?,?,?,?,?,?,?,?)",
+            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, body.attack_bonus, body.armor_class, pos)
         )
         revision(db)
     publish()
@@ -199,7 +199,7 @@ def start_encounter(request: Request, encounter_id: str):
         if not db.execute("SELECT id FROM encounters WHERE id=?", (encounter_id,)).fetchone():
             raise HTTPException(404, "Encounter not found")
         members = db.execute(
-            "SELECT name,modifier,visible,token_asset_id,attack_bonus FROM encounter_members WHERE encounter_id=? ORDER BY position,rowid",
+            "SELECT name,modifier,visible,token_asset_id,attack_bonus,armor_class FROM encounter_members WHERE encounter_id=? ORDER BY position,rowid",
             (encounter_id,)
         ).fetchall()
         if not members:
@@ -211,8 +211,8 @@ def start_encounter(request: Request, encounter_id: str):
             total = natural + member["modifier"]
             identity = str(uuid.uuid4())
             db.execute(
-                "INSERT INTO combatants(id,name,initiative,position,visible,token_asset_id,attack_bonus) VALUES (?,?,?,?,?,?,?)",
-                (identity, member["name"], total, index, member["visible"], member["token_asset_id"], member["attack_bonus"])
+                "INSERT INTO combatants(id,name,initiative,position,visible,token_asset_id,attack_bonus,armor_class) VALUES (?,?,?,?,?,?,?,?)",
+                (identity, member["name"], total, index, member["visible"], member["token_asset_id"], member["attack_bonus"], member["armor_class"])
             )
             scores.append({"name": member["name"], "roll": natural, "modifier": member["modifier"], "total": total, "position": index})
         scores.sort(key=lambda x: (-x["total"], x["position"]))
@@ -240,17 +240,23 @@ def monster_attack(request: Request, body: AttackRoll):
                 raise HTTPException(422, "Attack profile does not match the active monster")
         if profile is None:
             raise HTTPException(409, "Choose a verified monster attack profile before rolling hit and damage")
+        target = None
+        if body.target_id:
+            target = db.execute("SELECT id,name,armor_class FROM combatants WHERE id=?", (body.target_id,)).fetchone()
+            if target is None or target["armor_class"] is None:
+                raise HTTPException(422, "Target must have a saved Armor Class")
         bonus = profile["attack_bonus"]
         raw = [1 + secrets.randbelow(20) for _ in range(2 if body.mode != "normal" else 1)]
         natural = max(raw) if body.mode == "advantage" else min(raw) if body.mode == "disadvantage" else raw[0]
         total = natural + bonus
+        hit = (natural == 20 or (natural != 1 and total >= target["armor_class"])) if target else None
         damage_rolls = [1 + secrets.randbelow(profile["damage_sides"]) for _ in range(profile["damage_count"] * (2 if natural == 20 else 1))]
         damage = sum(damage_rolls) + profile["damage_bonus"]
         damage_formula = f'{len(damage_rolls)}d{profile["damage_sides"]} {profile["damage_bonus"]:+d}'
         db.execute(
-            "UPDATE settings SET active_card='initiative',attack_natural=?,attack_bonus=?,attack_total=?,attack_actor=?,attack_damage=?,attack_damage_type=?,attack_damage_formula=?,attack_name=?,attack_condition=?,attack_save_ability=?,attack_save_dc=? WHERE id=1",
-            (natural, bonus, total, current, damage, profile["damage_type"], damage_formula, profile["attack_name"], profile["effect_condition"], profile["effect_save_ability"], profile["effect_save_dc"])
+            "UPDATE settings SET active_card='initiative',attack_natural=?,attack_bonus=?,attack_total=?,attack_actor=?,attack_damage=?,attack_damage_type=?,attack_damage_formula=?,attack_name=?,attack_condition=?,attack_save_ability=?,attack_save_dc=?,attack_target=?,attack_target_ac=?,attack_hit=? WHERE id=1",
+            (natural, bonus, total, current, damage, profile["damage_type"], damage_formula, profile["attack_name"], profile["effect_condition"], profile["effect_save_ability"], profile["effect_save_dc"], target["name"] if target else None, target["armor_class"] if target else None, int(hit) if hit is not None else None)
         )
         revision(db)
     publish()
-    return {"natural": natural, "dice": raw, "mode": body.mode, "bonus": bonus, "total": total, "damage": damage, "damage_rolls": damage_rolls, "damage_type": profile["damage_type"]}
+    return {"natural": natural, "dice": raw, "mode": body.mode, "bonus": bonus, "total": total, "hit": hit, "damage": damage, "damage_rolls": damage_rolls, "damage_type": profile["damage_type"]}
