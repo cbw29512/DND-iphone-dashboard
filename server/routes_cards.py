@@ -119,7 +119,7 @@ def advance(request: Request):
         index = order.index(current) if current in order else -1
         next_index = (index + 1) % len(order)
         next_round = settings["round_number"] + int(index == len(order) - 1)
-        db.execute("UPDATE settings SET active_turn=?,round_number=?,attack_natural=NULL,attack_bonus=NULL,attack_total=NULL,attack_actor=NULL,attack_damage=NULL,attack_damage_type=NULL,attack_damage_formula=NULL,attack_name=NULL WHERE id=1", (order[next_index], next_round))
+        db.execute("UPDATE settings SET active_turn=?,round_number=?,attack_natural=NULL,attack_bonus=NULL,attack_total=NULL,attack_actor=NULL,attack_damage=NULL,attack_damage_type=NULL,attack_damage_formula=NULL,attack_name=NULL,attack_condition=NULL,attack_save_ability=NULL,attack_save_dc=NULL WHERE id=1", (order[next_index], next_round))
         revision(db)
     publish()
     return public_state()
@@ -248,8 +248,8 @@ def monster_attack(request: Request, body: AttackRoll):
         damage = sum(damage_rolls) + profile["damage_bonus"]
         damage_formula = f'{len(damage_rolls)}d{profile["damage_sides"]} {profile["damage_bonus"]:+d}'
         db.execute(
-            "UPDATE settings SET active_card='initiative',attack_natural=?,attack_bonus=?,attack_total=?,attack_actor=?,attack_damage=?,attack_damage_type=?,attack_damage_formula=?,attack_name=? WHERE id=1",
-            (natural, bonus, total, current, damage, profile["damage_type"], damage_formula, profile["attack_name"])
+            "UPDATE settings SET active_card='initiative',attack_natural=?,attack_bonus=?,attack_total=?,attack_actor=?,attack_damage=?,attack_damage_type=?,attack_damage_formula=?,attack_name=?,attack_condition=?,attack_save_ability=?,attack_save_dc=? WHERE id=1",
+            (natural, bonus, total, current, damage, profile["damage_type"], damage_formula, profile["attack_name"], profile["effect_condition"], profile["effect_save_ability"], profile["effect_save_dc"])
         )
         revision(db)
     publish()
