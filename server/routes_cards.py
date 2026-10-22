@@ -174,8 +174,8 @@ def add_member(request: Request, encounter_id: str, body: EncounterMember):
             raise HTTPException(400, "Token artwork not found")
         pos = db.execute("SELECT COUNT(*) FROM encounter_members WHERE encounter_id=?", (encounter_id,)).fetchone()[0]
         db.execute(
-            "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,armor_class,position) VALUES (?,?,?,?,?,?,?,?,?)",
-            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, body.attack_bonus, body.armor_class, pos)
+            "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group,position) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, body.attack_bonus, body.armor_class, body.initiative_group, pos)
         )
         revision(db)
     publish()
@@ -199,22 +199,31 @@ def start_encounter(request: Request, encounter_id: str):
         if not db.execute("SELECT id FROM encounters WHERE id=?", (encounter_id,)).fetchone():
             raise HTTPException(404, "Encounter not found")
         members = db.execute(
-            "SELECT name,modifier,visible,token_asset_id,attack_bonus,armor_class FROM encounter_members WHERE encounter_id=? ORDER BY position,rowid",
+            "SELECT name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group FROM encounter_members WHERE encounter_id=? ORDER BY position,rowid",
             (encounter_id,)
         ).fetchall()
         if not members:
             raise HTTPException(409, "Add participants before starting combat")
         db.execute("DELETE FROM combatants")
         scores = []
+        shared_rolls = {}
         for index, member in enumerate(members):
-            natural = 1 + secrets.randbelow(20)
+            group = member['initiative_group']
+            if group:
+                if group in shared_rolls and shared_rolls[group][1] != member['modifier']:
+                    raise HTTPException(422, 'Members sharing an initiative group must have the same initiative modifier')
+                if group not in shared_rolls:
+                    shared_rolls[group] = (1 + secrets.randbelow(20), member['modifier'])
+                natural = shared_rolls[group][0]
+            else:
+                natural = 1 + secrets.randbelow(20)
             total = natural + member["modifier"]
             identity = str(uuid.uuid4())
             db.execute(
-                "INSERT INTO combatants(id,name,initiative,position,visible,token_asset_id,attack_bonus,armor_class) VALUES (?,?,?,?,?,?,?,?)",
-                (identity, member["name"], total, index, member["visible"], member["token_asset_id"], member["attack_bonus"], member["armor_class"])
+                "INSERT INTO combatants(id,name,initiative,position,visible,token_asset_id,attack_bonus,armor_class,initiative_group) VALUES (?,?,?,?,?,?,?,?,?)",
+                (identity, member["name"], total, index, member["visible"], member["token_asset_id"], member["attack_bonus"], member["armor_class"], member["initiative_group"])
             )
-            scores.append({"name": member["name"], "roll": natural, "modifier": member["modifier"], "total": total, "position": index})
+            scores.append({"name": member["name"], "roll": natural, "modifier": member["modifier"], "total": total, "position": index, "group": group})
         scores.sort(key=lambda x: (-x["total"], x["position"]))
         first = db.execute("SELECT id FROM combatants ORDER BY initiative DESC,position ASC LIMIT 1").fetchone()["id"]
         db.execute("UPDATE settings SET round_number=1,active_turn=?,active_card='initiative',attack_natural=NULL,attack_bonus=NULL,attack_total=NULL,attack_actor=NULL WHERE id=1", (first,))
