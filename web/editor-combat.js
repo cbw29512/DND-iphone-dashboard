@@ -35,14 +35,15 @@ export function combatEditor(root, state, refresh) {
     const addForm = node('form', { cls: 'encounter-member-form' });
     const memberName = node('input', { attrs: { placeholder: 'Character or monster', maxlength: 80, required: '', 'aria-label': 'Participant' } });
     const modifier = node('input', { attrs: { type: 'number', value: '0', min: '-20', max: '30', required: '', 'aria-label': 'Initiative modifier' } });
+    const armorClass = node('input', { attrs: { type: 'number', min: '1', max: '99', placeholder: 'AC', 'aria-label': 'Armor Class (optional)' } });
     const attackBonus = node('input', { attrs: { type: 'number', value: '0', min: '-30', max: '99', required: '', 'aria-label': 'Attack to-hit bonus' } });
     const artwork = node('select', { attrs: { 'aria-label': 'VTT artwork' } }, tokenOptions());
-    addForm.append(memberName, modifier, attackBonus, artwork, node('button', { text: '+ Add', cls: 'outline', attrs: { type: 'submit' } }));
+    addForm.append(memberName, modifier, attackBonus, armorClass, artwork, node('button', { text: '+ Add', cls: 'outline', attrs: { type: 'submit' } }));
     addForm.addEventListener('submit', async event => {
       event.preventDefault();
       try {
         await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', { method: 'POST', data: {
-          name: memberName.value, modifier: Number(modifier.value), attack_bonus: Number(attackBonus.value), token_asset_id: artwork.value || null
+          name: memberName.value, modifier: Number(modifier.value), attack_bonus: Number(attackBonus.value), armor_class: armorClass.value ? Number(armorClass.value) : null, token_asset_id: artwork.value || null
         } });
         await refresh(true);
       } catch (error) { console.error('Encounter participant failed', error); }
@@ -82,13 +83,18 @@ export function combatEditor(root, state, refresh) {
     const profiles = (state.attack_profiles || []).filter(p => p.monster_id === active.name.toLowerCase().trim().replace(/\s+/g, '-'));
     const options = profiles.map(p => node('option', { text: p.attack_name + ' · +' + p.attack_bonus + ' · ' + p.damage_count + 'd' + p.damage_sides + ' ' + p.damage_bonus, attrs: { value: p.id } }));
     const choice = node('select', { attrs: { 'aria-label': 'Verified monster attack' } }, options);
+    const targetChoices = [node('option', { text: 'Unspecified target (show roll)', attrs: { value: '' } }),
+      ...state.combatants.filter(c => c.id !== active.id && c.armor_class !== null).map(c =>
+        node('option', { text: c.name + ' · AC ' + c.armor_class, attrs: { value: c.id } }))
+    ];
+    const targetChoice = node('select', { attrs: { 'aria-label': 'Attack target with saved AC' } }, targetChoices);
     attackControls.append(node('strong', { text: active.name + ' · Attack' }));
     if (!profiles.length) attackControls.append(node('p', { text: 'No imported RAW attack profile for this monster yet.', cls: 'section-caption' }));
     else {
-      attackControls.append(choice);
+      attackControls.append(choice, targetChoice);
       for (const [mode,label] of [['normal','Attack'],['advantage','ADV'],['disadvantage','DIS']]) {
         attackControls.append(button(label, async () => {
-          await api('/combat/attack', { method: 'POST', data: { combatant_id: active.id, profile_id: choice.value, mode } });
+          await api('/combat/attack', { method: 'POST', data: { combatant_id: active.id, profile_id: choice.value, target_id: targetChoice.value || null, mode } });
           await refresh(true);
         }, 'primary'));
       }

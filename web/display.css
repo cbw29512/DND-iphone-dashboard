@@ -47,3 +47,5 @@ html,body{height:100%;overscroll-behavior:none}body.player-body{background:#0506
 .device-screen .initiative-damage-number{font-size:27px}
 .device-screen .initiative-effect,.device-screen .initiative-damage-type{font-size:8px}
 .device-screen .initiative-effect-save{font-size:7px}
+
+.initiative-hit-label{font-size:clamp(15px,3vw,28px);color:#9ce0af;font-weight:900;letter-spacing:.12em}
