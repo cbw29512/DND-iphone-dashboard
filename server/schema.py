@@ -37,6 +37,7 @@ class Combatant(BaseModel):
     private_note: str = Field(default="", max_length=1000)
     visible: bool = True
     token_asset_id: str | None = Field(default=None, max_length=80)
+    armor_class: int | None = Field(default=None, ge=1, le=99)
 
 
 class NextTurn(BaseModel):
@@ -60,6 +61,7 @@ class EncounterMember(BaseModel):
 
 class AttackRoll(BaseModel):
     combatant_id: str
+    target_id: str | None = None
     mode: Literal["normal", "advantage", "disadvantage"] = "normal"
     profile_id: str | None = Field(default=None, max_length=120)
     bonus_override: int | None = Field(default=None, ge=-30, le=99)
