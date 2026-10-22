@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query, Request
 from .database import connect, revision
 from .realtime import publish
-from .schema import CardKind, Combatant, Dice, Roll, Scene, Selection, Share, EncounterNew, EncounterMember, AttackRoll
+from .schema import CardKind, Combatant, Dice, Roll, Scene, Selection, Share, EncounterNew, EncounterMember, MemberEdit, CombatantEdit, AttackRoll
 from .security import require, require_write
 from .view import full_state, public_state
 
@@ -309,3 +309,32 @@ def create_sample_goblin_fight(request: Request):
         revision(db)
     publish()
     return {"id": encounter_id, "created": True}
+
+
+@router.put("/encounters/{encounter_id}/members/{member_id}")
+def edit_encounter_member(request: Request, encounter_id: str, member_id: str, body: MemberEdit):
+    require_write(request)
+    with connect() as db:
+        if body.token_asset_id and not db.execute("SELECT 1 FROM media WHERE id=? AND category='gallery'", (body.token_asset_id,)).fetchone():
+            raise HTTPException(400, "Artwork not found")
+        updated = db.execute(
+            "UPDATE encounter_members SET name=?,modifier=?,armor_class=?,token_asset_id=? WHERE id=? AND encounter_id=?",
+            (body.name.strip(), body.modifier, body.armor_class, body.token_asset_id, member_id, encounter_id))
+        if not updated.rowcount:
+            raise HTTPException(404, "Card not found")
+        revision(db)
+    publish()
+    return {"ok": True}
+
+@router.put("/combatants/{combatant_id}")
+def edit_combatant(request: Request, combatant_id: str, body: CombatantEdit):
+    require_write(request)
+    with connect() as db:
+        updated = db.execute(
+            "UPDATE combatants SET name=?,armor_class=?,initiative=?,token_asset_id=? WHERE id=?",
+            (body.name.strip(), body.armor_class, body.initiative, body.token_asset_id, combatant_id))
+        if not updated.rowcount:
+            raise HTTPException(404, "Combatant not found")
+        revision(db)
+    publish()
+    return {"ok": True}
