@@ -135,25 +135,34 @@ export function combatEditor(root, state, refresh) {
         await refresh(true);
       } catch (error) { console.error('Encounter participant failed', error); }
     });
-    const monsterPicker = node('div', { cls: 'monster-picker' });
-    monsterPicker.append(node('strong', { text: 'Add Monster Card' }));
-    const monsterKind = node('select', { attrs: { 'aria-label': 'Monster library choice' } }, [
-      node('option', { text: 'Goblin · 2014 SRD · Scimitar / Shortbow', attrs: { value: 'goblin' } }),
-      node('option', { text: 'Goblin Shaman · placeholder (no verified spell card)', attrs: { value: 'shaman' } })
-    ]);
-    const monsterCount = node('input', { attrs: { type: 'number', min: 1, max: 10, value: 1, 'aria-label': 'How many monsters' } });
-    monsterPicker.append(monsterKind, monsterCount, button('+ Add Monster', async () => {
-      const type = monsterKind.value;
-      const amount = Math.max(1, Math.min(10, Number(monsterCount.value) || 1));
-      const already = participants.filter(p => type === 'goblin' ? p.source_monster_id === 'goblin' : p.name.startsWith('Goblin Shaman')).length;
-      for (let n = 0; n < amount; n++) {
-        await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', { method: 'POST', data: type === 'goblin'
-          ? { name: 'Goblin ' + (already + n + 1), modifier: 2, attack_bonus: 4, armor_class: 15, source_monster_id: 'goblin', initiative_group: 'goblins' }
-          : { name: 'Goblin Shaman ' + (already + n + 1) + ' · example', modifier: 2, armor_class: 13 }
-        });
-      }
-      await refresh(true);
-    }, 'primary'));
+    const monsterPicker = node('div', { cls: 'monster-library' });
+    monsterPicker.append(node('p', { cls: 'section-caption', text: 'Choose a monster type and use + / − to set the quantity. Each creature gets its own HP and turn, but identical types share initiative.' }));
+    for (const type of [
+      { id: 'goblin', name: 'Goblin', subtitle: '2014 SRD · AC 15 · HP 7 · DEX +2', modifier: 2, ac: 15, attack_bonus: 4, group: 'goblins', source_monster_id: 'goblin' },
+      { id: 'shaman', name: 'Goblin Shaman', subtitle: 'Example only · spells not verified', modifier: 2, ac: 13, attack_bonus: 0, group: null, source_monster_id: null }
+    ]) {
+      const entry = node('div', { cls: 'monster-library-item' });
+      const countNow = participants.filter(p => type.id === 'goblin' ? p.source_monster_id === 'goblin' : p.name.startsWith('Goblin Shaman')).length;
+      const quantity = node('strong', { text: String(countNow), cls: 'monster-count' });
+      const addOne = async () => {
+        await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', { method: 'POST', data: {
+          name: type.name + ' ' + (countNow + 1),
+          modifier: type.modifier, armor_class: type.ac, attack_bonus: type.attack_bonus,
+          source_monster_id: type.source_monster_id, initiative_group: type.group
+        } });
+        await refresh(true);
+      };
+      const removeOne = async () => {
+        const matching = participants.filter(p => type.id === 'goblin' ? p.source_monster_id === 'goblin' : p.name.startsWith('Goblin Shaman'));
+        if (!matching.length) return;
+        await api('/encounters/' + encodeURIComponent(encounter.id) + '/members/' + encodeURIComponent(matching[matching.length - 1].id), { method: 'DELETE' });
+        await refresh(true);
+      };
+      entry.append(node('div', { cls: 'monster-library-copy' }, [
+        node('strong', { text: type.name }), node('small', { text: type.subtitle })
+      ]), button('−', removeOne, 'quiet'), quantity, button('+', addOne, 'primary'));
+      monsterPicker.append(entry);
+    }
     block.append(monsterPicker, button('⚄ BATTLE · Roll Initiative', async () => {
       if (!confirm('Start ' + encounter.name + '? This replaces the current turn order and rolls initiative for everyone.')) return;
       await api('/encounters/' + encodeURIComponent(encounter.id) + '/start', { method: 'POST' });
