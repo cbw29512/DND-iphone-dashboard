@@ -1,26 +1,40 @@
-"""SSE revision notifications; clients resync from the authoritative API."""
+"""Thread-safe revision notifier: endpoints may run in FastAPI worker threads."""
 import asyncio
 import logging
+from threading import RLock
 
 logger = logging.getLogger(__name__)
-subscribers: set[asyncio.Queue] = set()
+_lock = RLock()
+_subscribers: dict[asyncio.Queue, asyncio.AbstractEventLoop] = {}
 
 
 def subscribe() -> asyncio.Queue:
     queue = asyncio.Queue(maxsize=1)
-    subscribers.add(queue)
+    with _lock:
+        _subscribers[queue] = asyncio.get_running_loop()
     return queue
 
 
 def unsubscribe(queue: asyncio.Queue):
-    subscribers.discard(queue)
+    with _lock:
+        _subscribers.pop(queue, None)
+
+
+def _signal(queue: asyncio.Queue):
+    try:
+        if queue.full():
+            queue.get_nowait()
+        queue.put_nowait("refresh")
+    except asyncio.QueueFull:
+        logger.warning("Display event queue unexpectedly full")
 
 
 def publish():
-    for queue in tuple(subscribers):
+    with _lock:
+        active = tuple(_subscribers.items())
+    for queue, loop in active:
         try:
-            if queue.full():
-                queue.get_nowait()
-            queue.put_nowait("refresh")
-        except asyncio.QueueFull:
-            logger.warning("A display update queue is full")
+            loop.call_soon_threadsafe(_signal, queue)
+        except RuntimeError:
+            unsubscribe(queue)
+            logger.warning("Removed a disconnected live-display subscriber")
