@@ -23,7 +23,7 @@ export function combatEditor(root, state, refresh) {
     const roster = node('ul', { cls: 'encounter-roster' });
     for (const member of participants) {
       const entry = node('li', {}, [
-        node('span', { text: member.name + ' (' + (member.modifier >= 0 ? '+' : '') + member.modifier + ')' }),
+        node('span', { text: member.name + ' · Init ' + (member.modifier >= 0 ? '+' : '') + member.modifier + ' · Hit ' + (member.attack_bonus >= 0 ? '+' : '') + member.attack_bonus }),
         button('Remove', async () => {
           await api('/encounters/' + encodeURIComponent(encounter.id) + '/members/' + encodeURIComponent(member.id), { method: 'DELETE' });
           await refresh(true);
@@ -35,13 +35,14 @@ export function combatEditor(root, state, refresh) {
     const addForm = node('form', { cls: 'encounter-member-form' });
     const memberName = node('input', { attrs: { placeholder: 'Character or monster', maxlength: 80, required: '', 'aria-label': 'Participant' } });
     const modifier = node('input', { attrs: { type: 'number', value: '0', min: '-20', max: '30', required: '', 'aria-label': 'Initiative modifier' } });
+    const attackBonus = node('input', { attrs: { type: 'number', value: '0', min: '-30', max: '99', required: '', 'aria-label': 'Attack to-hit bonus' } });
     const artwork = node('select', { attrs: { 'aria-label': 'VTT artwork' } }, tokenOptions());
-    addForm.append(memberName, modifier, artwork, node('button', { text: '+ Add', cls: 'outline', attrs: { type: 'submit' } }));
+    addForm.append(memberName, modifier, attackBonus, artwork, node('button', { text: '+ Add', cls: 'outline', attrs: { type: 'submit' } }));
     addForm.addEventListener('submit', async event => {
       event.preventDefault();
       try {
         await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', { method: 'POST', data: {
-          name: memberName.value, modifier: Number(modifier.value), token_asset_id: artwork.value || null
+          name: memberName.value, modifier: Number(modifier.value), attack_bonus: Number(attackBonus.value), token_asset_id: artwork.value || null
         } });
         await refresh(true);
       } catch (error) { console.error('Encounter participant failed', error); }
@@ -75,7 +76,21 @@ export function combatEditor(root, state, refresh) {
   root.append(node('div', { cls: 'toolbar' }, [node('strong', { text: `Turn Order · Round ${settings.round_number}` }),
     node('div', { cls: 'controls' }, [button('Next Turn →', async () => { await api('/combat/next', { method: 'POST' }); await refresh(); }, 'primary'),
       button('Reset Round', async () => { await api('/combat/reset', { method: 'POST' }); await refresh(); })])]));
-  const list = node('ul', { cls: 'combat-list' });
+  const active = state.combatants.find(c => c.id === settings.active_turn);
+  if (active) {
+    const attackControls = node('div', { cls: 'attack-controls' });
+    const override = node('input', { attrs: { type: 'number', min: -30, max: 99, value: active.attack_bonus ?? 0, 'aria-label': 'To-hit modifier' } });
+    attackControls.append(node('strong', { text: active.name + ' · Attack' }),
+      node('label', { text: 'To-hit bonus' }), override,
+      button('Roll d20 + bonus → Show Players', async () => {
+        const result = await api('/combat/attack', { method: 'POST', data: {
+          combatant_id: active.id, bonus_override: Number(override.value)
+        } });
+        await refresh(true);
+      }, 'primary'));
+    root.append(attackControls);
+  }
+    const list = node('ul', { cls: 'combat-list' });
   for (const item of state.combatants) {
     const row = node('li', { cls: `combat-row${item.id === settings.active_turn ? ' active-turn' : ''}` }, [
       node('strong', { text: String(item.initiative), cls: 'init' }),

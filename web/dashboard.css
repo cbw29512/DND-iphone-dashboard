@@ -44,3 +44,8 @@ dialog{max-width:400px;width:calc(100% - 24px);color:#ede9e1;background:#1d1e2a;
 .encounter-member-form{display:grid;grid-template-columns:minmax(100px,2fr) 64px minmax(100px,1fr) auto;gap:6px}
 .encounter-member-form input,.encounter-member-form select{min-width:0}
 @media(max-width:850px){.encounter-member-form{grid-template-columns:minmax(0,1fr) 76px}.encounter-member-form select{grid-column:1/-1}.encounter-member-form button{grid-column:1/-1}}
+
+.encounter-member-form{grid-template-columns:minmax(100px,2fr) 64px 64px minmax(100px,1fr) auto}
+.attack-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px;margin:14px 0;border:1px solid #786449;border-radius:10px}
+.attack-controls input{width:75px;min-width:75px}
+@media(max-width:850px){.encounter-member-form{grid-template-columns:minmax(0,1fr) 76px 76px}.encounter-member-form select,.encounter-member-form button{grid-column:1/-1}}
