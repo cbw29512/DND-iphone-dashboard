@@ -1,61 +1,56 @@
-# D&D iPhone Dashboard
+# Iron Lantern — D&D iPhone Dashboard
 
-A modular, DM-controlled wireless tabletop display: Windows dashboard + iPhone 16 Pro player screen.
+**Windows DM dashboard → wireless iPhone player display.** Separate Flex Cards for artwork, maps, initiative, narration and dice. The DM chooses a card and presses **Share to Screen**; the phone follows changes automatically.
 
-## Definition of Done — MVP
+## Definition of Done (local-network MVP)
 
-- Open a DM dashboard on Windows and a player-safe display on the iPhone.
-- Upload and order at least 10 images (JPEG, PNG, WebP) with useful error feedback.
-- Every Flex Card supports **Preview**, **Share to Screen**, and **Stop Sharing**.
-- A shared image fills the iPhone display without revealing other cards or DM-only data.
-- Previous/Next switches images from Windows without touching the phone.
-- A basic initiative tracker supports combatants, rolls, sorting and Next Turn.
-- Both devices reflect current shared state after reconnecting.
-- Sessions and uploaded media persist across application restarts.
-- Real-device tests verify iPhone Safari/Home Screen behavior, responsive layouts and accessibility.
+- [x] Separate Windows DM and phone display interfaces with player-safe rendering.
+- [x] Multiple image uploads, gallery selection and previous/next.
+- [x] Individually share artwork, map, initiative, scene or dice cards.
+- [x] Real cross-device synchronization via server-sent events and resync polling.
+- [x] Saved SQLite session and optimized local media files.
+- [x] One-time six-digit iPhone pairing; revocable player access and private DM login.
+- [x] Basic initiative tracker, turn advancement, private combatant fields and d20/dice rolls.
+- [ ] **Verified on physical Windows and iPhone 16 Pro** (cannot claim remotely).
+- [ ] Production cloud deployment, HTTPS and durable managed media hosting.
 
-## Data schema (initial contract)
+## Getting started on Windows
 
-- `Session { id, name, created_at, updated_at, active_share_id?, revision }`
-- `MediaAsset { id, session_id, name, mime_type, storage_key, sort_order, created_at }`
-- `FlexCard { id, session_id, kind, title, settings, private_state, public_state, updated_at }`
-- `DisplayShare { id, session_id, card_id, enabled, revision, updated_at }`
-- `Encounter { id, session_id, name, round, active_turn_id? }`
-- `Combatant { id, encounter_id, name, initiative, tie_break, sort_order, hp_current?, hp_max?, conditions[], visible_to_players }`
+1. Install Python 3.11+; clone the repository.
+2. In PowerShell: `py -m venv .venv` then `.venv\\Scripts\\Activate.ps1`.
+3. Install requirements: `pip install -r requirements.txt`.
+4. Run `python run.py`. The **local DM passphrase** is printed in the terminal on startup and stored in `data/admin.json` (ignored by Git).
+5. On laptop, browse to `http://localhost:8000`, sign in and upload artwork.
+6. Find the laptop's Wi-Fi IPv4 address with `ipconfig`. On iPhone connected to **the same Wi-Fi**, visit `http://YOUR-LAPTOP-IP:8000/display` in Safari.
+7. On Windows, click **Pair iPhone → Generate new code**. Enter it on iPhone. Click a card's **Share to Screen**.
+8. Keep Python server running. Allow inbound TCP 8000 through Windows Firewall on a trusted **private** network if necessary.
 
-Identifiers are opaque UUIDs. Server-authoritative revisions increment on accepted state changes. `private_state` is **never** serialized to the player display.
+**Never port-forward this development server to the public internet.** The local HTTP connection is not encrypted; public production requires HTTPS, an externally reachable backend, managed persistent storage and a deployment/security review. GitHub is source control, **not** a backend host; Netlify is intended for the future production frontend.
 
-## State transitions
+## Shared data schema and state
 
-1. DM edits a card or uploads media; backend validates and persists changes.
-2. DM previews the player-safe presentation locally without broadcasting.
-3. DM shares a card; backend atomically updates the session's active share and revision.
-4. Paired player display receives the updated public view (or fetches current state after reconnect).
-5. DM stops sharing; player screen returns to a neutral splash screen.
-6. Initiative and artwork updates propagate only if their card is currently shared.
+- `settings`: active card, selected asset, round/turn, scene/dice text, monotonic revision.
+- `media`: opaque asset ID, category, filename, MIME, order; bytes stored under `data/media/`.
+- `combatants`: initiative, order, HP and notes, visibility; **private fields never enter display response**.
+- `access`: hashed auth cookie token and expiration; `pairing`: hashed single-use code and expiration.
 
-## Proposed architecture
+DM action → validate role/input → transaction persists changes → increment revision → broadcast update → phone fetches filtered `/api/display/state`. After reconnect, the phone refetches; on disconnect, it falls back to polling. Every new card must supply a **DM editor** and a **strictly player-safe projection**, never generic serialization of raw card state.
 
-- Frontend: responsive TypeScript web UI, separate DM and player routes.
-- Backend: authenticated session API, persistent media store and real-time subscriptions (provider to be chosen before integration).
-- GitHub: source, pull requests and test workflow.
-- Netlify: production frontend later. GitHub Pages or local dev for early UI previews.
-- No automatic production deployments until real-device sharing is validated.
+## Code map
 
-## Security rules
+- `server/`: FastAPI, SQLite persistence, access control, image validation and SSE.
+- `web/`: semantic HTML, CSS design system, modular vanilla JS and card renderers.
+- `tests/`: API, authentication, privacy, upload and turn-order regression tests.
 
-- DM routes require authentication.
-- Player view is paired to a session with revocable scoped access.
-- Unknown/untrusted files rejected using MIME and content validation; enforce size limits.
-- Images are rendered as media, not executed code.
-- Do not expose DM notes, secrets, hidden HP or server credentials in player payloads.
+## Security and operational notes
 
-## Planned milestones
+- A pairing code works once, expires after 10 minutes, and can be revoked with all player tokens.
+- Admin sessions expire after 7 days; display sessions after 30 days.
+- Mutating calls require an application-specific header; no cross-origin requests are enabled.
+- DM notes and HP stay off the player endpoint. Player images are limited to the currently shared asset.
+- Images are inspected with Pillow, capped at 12 MB and 30 MP; static assets convert to WebP (up to 1920px); verified GIF retains animation.
+- Protect `data/`; it contains images, credentials and sessions. **Do not commit it to Git.**
 
-1. Foundation: contracts, UI shell, card registry, mock previews and tests.
-2. Live share: authenticated pairing, persistence and multi-device sync.
-3. Media gallery: drag/drop upload, image list, Previous/Next.
-4. Initiative card: turn management, privacy-safe player rendering.
-5. Animated artwork, battle maps and extensible cards.
+## Development
 
-The MVP is **not complete** until real Windows-to-iPhone sharing passes.
+Run `pytest -q` after `pip install -r requirements-dev.txt`. Run `node --check web/dashboard.js` (and other JS modules) for syntax validation. Use branches and PRs; do not auto-deploy to Netlify without real-device verification.
