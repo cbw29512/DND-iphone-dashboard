@@ -174,8 +174,8 @@ def add_member(request: Request, encounter_id: str, body: EncounterMember):
             raise HTTPException(400, "Token artwork not found")
         pos = db.execute("SELECT COUNT(*) FROM encounter_members WHERE encounter_id=?", (encounter_id,)).fetchone()[0]
         db.execute(
-            "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group,position) VALUES (?,?,?,?,?,?,?,?,?,?)",
-            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, body.attack_bonus, body.armor_class, body.initiative_group, pos)
+            "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group,source_monster_id,position) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, body.attack_bonus, body.armor_class, body.initiative_group, body.source_monster_id, pos)
         )
         revision(db)
     publish()
@@ -199,7 +199,7 @@ def start_encounter(request: Request, encounter_id: str):
         if not db.execute("SELECT id FROM encounters WHERE id=?", (encounter_id,)).fetchone():
             raise HTTPException(404, "Encounter not found")
         members = db.execute(
-            "SELECT name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group FROM encounter_members WHERE encounter_id=? ORDER BY position,rowid",
+            "SELECT name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group,source_monster_id FROM encounter_members WHERE encounter_id=? ORDER BY position,rowid",
             (encounter_id,)
         ).fetchall()
         if not members:
@@ -220,8 +220,8 @@ def start_encounter(request: Request, encounter_id: str):
             total = natural + member["modifier"]
             identity = str(uuid.uuid4())
             db.execute(
-                "INSERT INTO combatants(id,name,initiative,position,visible,token_asset_id,attack_bonus,armor_class,initiative_group) VALUES (?,?,?,?,?,?,?,?,?)",
-                (identity, member["name"], total, index, member["visible"], member["token_asset_id"], member["attack_bonus"], member["armor_class"], member["initiative_group"])
+                "INSERT INTO combatants(id,name,initiative,position,visible,token_asset_id,attack_bonus,armor_class,initiative_group,source_monster_id) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (identity, member["name"], total, index, member["visible"], member["token_asset_id"], member["attack_bonus"], member["armor_class"], member["initiative_group"], member["source_monster_id"])
             )
             scores.append({"name": member["name"], "roll": natural, "modifier": member["modifier"], "total": total, "position": index, "group": group})
         scores.sort(key=lambda x: (-x["total"], x["position"]))
@@ -239,13 +239,13 @@ def monster_attack(request: Request, body: AttackRoll):
         current = db.execute("SELECT active_turn FROM settings WHERE id=1").fetchone()["active_turn"]
         if body.combatant_id != current:
             raise HTTPException(409, "Only the active combatant may attack")
-        actor = db.execute("SELECT name,attack_bonus,visible FROM combatants WHERE id=?", (current,)).fetchone()
+        actor = db.execute("SELECT name,attack_bonus,visible,source_monster_id FROM combatants WHERE id=?", (current,)).fetchone()
         if actor is None or not actor["visible"]:
             raise HTTPException(409, "Cannot display this combatant")
         profile = None
         if body.profile_id:
             profile = db.execute("SELECT * FROM monster_attack_profiles WHERE id=? AND source_complete=1", (body.profile_id,)).fetchone()
-            if profile is None or profile["monster_id"] != actor["name"].casefold().replace(" ", "-"):
+            if profile is None or profile["monster_id"] != actor["source_monster_id"]:
                 raise HTTPException(422, "Attack profile does not match the active monster")
         if profile is None:
             raise HTTPException(409, "Choose a verified monster attack profile before rolling hit and damage")
@@ -291,8 +291,8 @@ def create_sample_goblin_fight(request: Request):
         db.execute("INSERT INTO encounters(id,name) VALUES (?,?)", (encounter_id, title))
         for pos, (name, modifier, bonus, ac, group) in enumerate(template):
             db.execute(
-                "INSERT INTO encounter_members(id,encounter_id,name,modifier,attack_bonus,armor_class,visible,position,initiative_group) VALUES (?,?,?,?,?,?,?,?,?)",
-                (str(uuid.uuid4()), encounter_id, name, modifier, bonus, ac, 1, pos, group)
+                "INSERT INTO encounter_members(id,encounter_id,name,modifier,attack_bonus,armor_class,visible,position,initiative_group,source_monster_id) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (str(uuid.uuid4()), encounter_id, name, modifier, bonus, ac, 1, pos, group, "goblin" if group == "goblins" else None)
             )
         revision(db)
     publish()
