@@ -9,7 +9,9 @@ def full_state():
         settings = dict(db.execute("SELECT * FROM settings WHERE id=1").fetchone())
         media = [dict(x) for x in db.execute("SELECT id,category,name,position FROM media ORDER BY category,position,created_at")]
         combatants = [dict(x) for x in db.execute("SELECT * FROM combatants ORDER BY initiative DESC,position ASC")]
-    return {"settings": settings, "media": media, "combatants": combatants}
+        encounters = [dict(x) for x in db.execute("SELECT id,name FROM encounters ORDER BY rowid")]
+        members = [dict(x) for x in db.execute("SELECT id,encounter_id,name,modifier,visible,token_asset_id FROM encounter_members ORDER BY position,rowid")]
+    return {"settings": settings, "media": media, "combatants": combatants, "encounters": encounters, "encounter_members": members}
 
 
 def public_state(card_override=None, asset_override=None):
