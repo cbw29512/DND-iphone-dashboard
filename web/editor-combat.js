@@ -39,6 +39,34 @@ export function combatEditor(root, state, refresh) {
     node('option', { text: 'Name only (no artwork)', attrs: { value: '' } }),
     ...state.media.filter(m => m.category === 'gallery').map(m => node('option', { text: m.name, attrs: { value: m.id } }))
   ];
+  // Quick launch is always visible; preparation tools stay collapsed until requested.
+  const saved = state.encounters || [];
+  const launcher = node('div', { cls: 'encounter-launcher' });
+  launcher.append(node('h3', { text: 'Game Time · Saved Battles' }));
+  for (let slot = 0; slot < 3; slot++) {
+    const encounter = saved[slot];
+    const slotCard = node('div', { cls: 'encounter-launch-slot' });
+    const members = encounter ? (state.encounter_members || []).filter(m => m.encounter_id === encounter.id) : [];
+    const monsters = members.filter(m => m.source_monster_id || m.name.toLowerCase().includes('shaman')).length;
+    slotCard.append(node('strong', { text: 'Battle ' + (slot + 1) }),
+      node('small', { text: encounter ? encounter.name + ' · ' + members.length + ' cards (' + monsters + ' monsters)' : 'Not prepared' }));
+    if (encounter && members.length) slotCard.append(button('Load & Battle', async () => {
+      if (!confirm('Roll initiative and load Battle ' + (slot + 1) + '? This replaces the active combat turn order.')) return;
+      await api('/encounters/' + encodeURIComponent(encounter.id) + '/start', { method: 'POST' });
+      await refresh(true);
+    }, 'primary'));
+    else if (encounter) slotCard.append(node('span', { text: 'Add players and monsters in Setup', cls: 'section-caption' }));
+    else slotCard.append(button('Create Battle ' + (slot + 1), async () => {
+      await api('/encounters', { method: 'POST', data: { name: 'Combat ' + (slot + 1) } });
+      await refresh(true);
+    }, 'outline'));
+    launcher.append(slotCard);
+  }
+  root.append(launcher);
+  const setup = node('details', { cls: 'encounter-setup' });
+  setup.append(node('summary', { text: 'Prepare / Edit Battles' }));
+  const setupBody = node('div', { cls: 'encounter-setup-body' });
+  setupBody.append(encounterSection);
   for (const encounter of state.encounters || []) {
     const block = node('div', { cls: 'encounter-block' });
     block.append(node('strong', { text: encounter.name }));
@@ -125,7 +153,8 @@ export function combatEditor(root, state, refresh) {
     }, 'primary'));
     encounterSection.append(block);
   }
-  root.append(encounterSection, node('div', { cls: 'editor-divider' }));
+  setup.append(setupBody);
+  root.append(setup, node('div', { cls: 'editor-divider' }));
   const form = node('form', { cls: 'combat-form' });
   const name = node('input', { attrs: { placeholder: 'Combatant name', required: '', maxlength: 80, 'aria-label': 'Combatant name' } });
   const init = node('input', { attrs: { type: 'number', value: 10, min: -20, max: 99, required: '', 'aria-label': 'Initiative score' } });
