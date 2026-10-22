@@ -244,9 +244,9 @@ def monster_attack(request: Request, body: AttackRoll):
         raw = [1 + secrets.randbelow(20) for _ in range(2 if body.mode != "normal" else 1)]
         natural = max(raw) if body.mode == "advantage" else min(raw) if body.mode == "disadvantage" else raw[0]
         total = natural + bonus
-        damage_rolls = [1 + secrets.randbelow(profile["damage_sides"]) for _ in range(profile["damage_count"])]
+        damage_rolls = [1 + secrets.randbelow(profile["damage_sides"]) for _ in range(profile["damage_count"] * (2 if natural == 20 else 1))]
         damage = sum(damage_rolls) + profile["damage_bonus"]
-        damage_formula = f'{profile["damage_count"]}d{profile["damage_sides"]} {profile["damage_bonus"]:+d}'
+        damage_formula = f'{len(damage_rolls)}d{profile["damage_sides"]} {profile["damage_bonus"]:+d}'
         db.execute(
             "UPDATE settings SET active_card='initiative',attack_natural=?,attack_bonus=?,attack_total=?,attack_actor=?,attack_damage=?,attack_damage_type=?,attack_damage_formula=?,attack_name=? WHERE id=1",
             (natural, bonus, total, current, damage, profile["damage_type"], damage_formula, profile["attack_name"])
