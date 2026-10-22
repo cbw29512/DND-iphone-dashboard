@@ -84,3 +84,14 @@ dialog{max-width:400px;width:calc(100% - 24px);color:#ede9e1;background:#1d1e2a;
 .combat-edit-form label{font-size:10px;color:#cbb993}
 .combat-edit-form input,.combat-edit-form select{width:100%;min-width:0}
 @media(max-width:550px){.monster-picker{grid-template-columns:minmax(0,1fr) 60px}.monster-picker button{grid-column:1/-1}}
+
+.encounter-launcher{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 16px}
+.encounter-launcher h3{grid-column:1/-1;margin:0 0 3px;font-size:16px}
+.encounter-launch-slot{display:flex;flex-direction:column;gap:8px;min-width:0;padding:13px;border:1px solid #735e41;border-radius:11px;background:#292637}
+.encounter-launch-slot strong{font-size:14px;color:#ecd1a0}
+.encounter-launch-slot small{font-size:11px;color:#bebdca;line-height:1.5;overflow-wrap:anywhere}
+.encounter-launch-slot button{margin-top:auto}
+.encounter-setup{border:1px solid #45414c;border-radius:10px;margin:12px 0}
+.encounter-setup summary{padding:13px 15px;cursor:pointer;font-weight:750;color:#e5c28a}
+.encounter-setup-body{padding:12px}
+@media(max-width:860px){.encounter-launcher{grid-template-columns:1fr}}
