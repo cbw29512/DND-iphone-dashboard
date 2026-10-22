@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS settings (
  id INTEGER PRIMARY KEY CHECK(id = 1), active_card TEXT, active_asset TEXT,
  revision INTEGER NOT NULL DEFAULT 0, scene_text TEXT NOT NULL DEFAULT '',
  dice_text TEXT NOT NULL DEFAULT '', round_number INTEGER NOT NULL DEFAULT 1,
- active_turn TEXT
+ active_turn TEXT,
+ attack_natural INTEGER, attack_bonus INTEGER, attack_total INTEGER, attack_actor TEXT
 );
 INSERT OR IGNORE INTO settings (id) VALUES (1);
 CREATE TABLE IF NOT EXISTS media (
@@ -22,13 +23,14 @@ CREATE TABLE IF NOT EXISTS combatants (
  id TEXT PRIMARY KEY, name TEXT NOT NULL, initiative INTEGER NOT NULL,
  position INTEGER NOT NULL, hp_current INTEGER, hp_max INTEGER,
  private_note TEXT NOT NULL DEFAULT '', visible INTEGER NOT NULL DEFAULT 1,
- token_asset_id TEXT
+ token_asset_id TEXT,
+ attack_bonus INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS encounters (id TEXT PRIMARY KEY, name TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS encounter_members (
  id TEXT PRIMARY KEY, encounter_id TEXT NOT NULL REFERENCES encounters(id) ON DELETE CASCADE,
  name TEXT NOT NULL, modifier INTEGER NOT NULL DEFAULT 0, visible INTEGER NOT NULL DEFAULT 1,
- token_asset_id TEXT, position INTEGER NOT NULL DEFAULT 0
+ token_asset_id TEXT, attack_bonus INTEGER NOT NULL DEFAULT 0, position INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS access (
  token_hash TEXT PRIMARY KEY, role TEXT NOT NULL, expires INTEGER NOT NULL
@@ -61,6 +63,16 @@ def initialize():
         db.executescript(SCHEMA)
         if 'token_asset_id' not in {row[1] for row in db.execute('PRAGMA table_info(combatants)')}:
             db.execute('ALTER TABLE combatants ADD COLUMN token_asset_id TEXT')
+        for table, column, ddl in [
+            ("combatants", "attack_bonus", "INTEGER NOT NULL DEFAULT 0"),
+            ("encounter_members", "attack_bonus", "INTEGER NOT NULL DEFAULT 0"),
+            ("settings", "attack_natural", "INTEGER"),
+            ("settings", "attack_bonus", "INTEGER"),
+            ("settings", "attack_total", "INTEGER"),
+            ("settings", "attack_actor", "TEXT"),
+        ]:
+            if column not in {row[1] for row in db.execute(f"PRAGMA table_info({table})")}:
+                db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
         db.execute("PRAGMA journal_mode=WAL")
 
 
