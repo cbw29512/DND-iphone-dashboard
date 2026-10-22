@@ -40,3 +40,25 @@ def test_edit_prepared_and_live_player_cards(dm, headers):
         json={"name": "Jeff", "initiative": jeff["initiative"], "armor_class": 20}, headers=headers)
     assert response.status_code == 200
     assert next(c for c in dm.get("/api/dm/state").json()["combatants"] if c["id"] == jeff["id"])["armor_class"] == 20
+
+
+def test_shared_initiative_advantage(dm, headers, monkeypatch):
+    """Identical goblins use one advantaged d20 result; others roll individually."""
+    from server import routes_cards
+    draws = iter([3, 17, 4, 8, 1, 13])
+    monkeypatch.setattr(routes_cards.secrets, "randbelow", lambda n: next(draws) - 1)
+    encounter = dm.post("/api/encounters", json={"name": "ADV check"}, headers=headers).json()["id"]
+    for name, group, adv in [("Goblin A","goblin",True),("Goblin B","goblin",True),("Wizard",None,False),("Fighter",None,False)]:
+        assert dm.post(f"/api/encounters/{encounter}/members", json={"name":name,"modifier":2,"initiative_group":group}, headers=headers).status_code == 200
+    members = dm.get("/api/dm/state").json()["encounter_members"]
+    for m in members:
+        if m["encounter_id"] == encounter and m["name"].startswith("Goblin"):
+            assert dm.put(f"/api/encounters/{encounter}/members/{m['id']}", json={
+                "name":m["name"],"modifier":2,"initiative_advantage":True
+            }, headers=headers).status_code == 200
+    response = dm.post(f"/api/encounters/{encounter}/start", headers=headers)
+    assert response.status_code == 200, response.text
+    rolls = {r["name"]:r for r in response.json()["rolls"]}
+    assert rolls["Goblin A"]["roll"] == rolls["Goblin B"]["roll"] == 17
+    assert rolls["Wizard"]["roll"] == 4
+    assert rolls["Fighter"]["roll"] == 8
