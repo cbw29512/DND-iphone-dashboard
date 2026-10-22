@@ -49,3 +49,20 @@ dialog{max-width:400px;width:calc(100% - 24px);color:#ede9e1;background:#1d1e2a;
 .attack-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px;margin:14px 0;border:1px solid #786449;border-radius:10px}
 .attack-controls input{width:75px;min-width:75px}
 @media(max-width:850px){.encounter-member-form{grid-template-columns:minmax(0,1fr) 76px 76px}.encounter-member-form select,.encounter-member-form button{grid-column:1/-1}}
+
+/* Combat overview: each creature is a distinct visual card, including shared-init monsters. */
+.combat-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;align-items:stretch;margin:16px 0 24px}
+.combatant-card{min-width:0;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(155deg,#252535,#11131b);border:1px solid #555064;border-radius:14px}
+.combatant-card.is-active{border:2px solid #f0c474;box-shadow:0 0 0 2px #e7b65a25}
+.combatant-card-portrait{height:164px;display:grid;place-items:center;background:radial-gradient(circle,#3c3546,#191c26);overflow:hidden}
+.combatant-card-portrait img{width:100%;height:100%;object-fit:contain}
+.combatant-card-monogram{font-size:64px;font-weight:900;letter-spacing:.06em;color:#e9c88c}
+.combatant-card-content{display:flex;flex-direction:column;gap:10px;padding:13px;flex:1}
+.combatant-card-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.combatant-card-heading strong{font-size:16px;color:#f0dfbf;overflow-wrap:anywhere}
+.combatant-card-badge{font-size:9px;letter-spacing:.05em;color:#e9bc73;white-space:nowrap}
+.combatant-card-stats{display:flex;gap:6px;flex-wrap:wrap}
+.combatant-card-stats span{border:1px solid #74644e;border-radius:7px;padding:5px 8px;font-size:12px;font-weight:700;color:#ebd6ac}
+.combatant-card-note{font-size:11px;color:#bbb9c2;margin:0}
+.combatant-card-actions{padding:9px 12px;border-top:1px solid #3e3b47;display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:11px}
+@media(max-width:580px){.combat-card-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr))}.combatant-card-portrait{height:125px}}
