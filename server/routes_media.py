@@ -75,8 +75,17 @@ def media(request: Request, asset_id: str):
     role = require(request)
     with connect() as db:
         asset = db.execute("SELECT * FROM media WHERE id=?", (asset_id,)).fetchone()
-        setting = db.execute("SELECT active_asset,active_card FROM settings WHERE id=1").fetchone()
-    if not asset or (role == "player" and (setting["active_asset"] != asset_id or setting["active_card"] != asset["category"])):
+        setting = db.execute("SELECT active_asset,active_card,active_turn FROM settings WHERE id=1").fetchone()
+        visible_token = None
+        if setting["active_card"] == "initiative" and setting["active_turn"]:
+            visible_token = db.execute(
+                "SELECT token_asset_id FROM combatants WHERE id=? AND visible=1",
+                (setting["active_turn"],)
+            ).fetchone()
+    if not asset or (role == "player" and not (
+        (setting["active_asset"] == asset_id and setting["active_card"] == asset["category"])
+        or (asset["category"] == "gallery" and visible_token and visible_token["token_asset_id"] == asset_id)
+    )):
         raise HTTPException(404, "Media not found")
     path = DATA / "media" / asset["stored_name"]
     if not path.is_file():
