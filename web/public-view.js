@@ -67,6 +67,10 @@ export function renderPublic(target, state, compact = false) {
         node('div', { cls: 'initiative-damage-number', text: String(content.attack.damage) }),
         node('div', { cls: 'initiative-roll-breakdown', text: content.attack.damage_formula || '' }),
       ] : []),
+      ...(content.attack?.condition ? [
+        node('div', { cls: 'initiative-effect', text: String(content.attack.condition).toUpperCase() }),
+        ...(content.attack.save_dc ? [node('div', { cls: 'initiative-effect-save', text: 'SAVE DC ' + content.attack.save_dc + ' · ' + String(content.attack.save_ability || '').toUpperCase() + ' · ON FAILED SAVE' })] : []),
+      ] : []),
       ...(content.attack?.natural === 1 ? [node('div', { cls: 'initiative-attack-critical nat1', text: '💀 NATURAL 1! 💀' })] : []),
       ...(content.attack?.natural === 20 ? [node('div', { cls: 'initiative-attack-critical nat20', text: '🎉 NATURAL 20! 🎉' })] : []),
       node('div', { cls: 'initiative-combatant-name', text: current?.name || 'No combatant' }),
