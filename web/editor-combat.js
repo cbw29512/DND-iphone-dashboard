@@ -16,6 +16,22 @@ export function combatEditor(root, state, refresh) {
     await api('/encounters/sample-goblin-fight', { method: 'POST' });
     await refresh(true);
   }, 'outline'));
+  const editInputs = (card, current, save) => {
+    const form = node('form', { cls: 'combat-edit-form' });
+    const name = node('input', { attrs: { value: current.name, required: '', maxlength: 80, 'aria-label': 'Card name' } });
+    const dex = node('input', { attrs: { type: 'number', value: current.modifier ?? current.initiative ?? 0, min: '-20', max: current.modifier === undefined ? '99' : '30', required: '', 'aria-label': current.modifier === undefined ? 'Initiative score' : 'Dexterity initiative modifier' } });
+    const ac = node('input', { attrs: { type: 'number', value: current.armor_class ?? '', min: '1', max: '99', placeholder: 'AC', 'aria-label': 'Armor class' } });
+    const token = node('select', { attrs: { 'aria-label': 'Card artwork' } }, tokenOptions());
+    token.value = current.token_asset_id || '';
+    form.append(node('label', { text: 'Name' }), name, node('label', { text: current.modifier === undefined ? 'Initiative score' : 'DEX / Initiative modifier' }), dex,
+      node('label', { text: 'AC' }), ac, node('label', { text: 'Avatar' }), token);
+    form.append(node('button', { text: 'Save Changes', cls: 'primary', attrs: { type: 'submit' } }));
+    form.addEventListener('submit', async e => { e.preventDefault(); await save({
+      name: name.value.trim(), armor_class: ac.value ? Number(ac.value) : null,
+      token_asset_id: token.value || null, [current.modifier === undefined ? 'initiative' : 'modifier']: Number(dex.value)
+    }); await refresh(true); });
+    card.append(form);
+  };
   const tokenOptions = () => [
     node('option', { text: 'Name only (no artwork)', attrs: { value: '' } }),
     ...state.media.filter(m => m.category === 'gallery').map(m => node('option', { text: m.name, attrs: { value: m.id } }))
@@ -48,7 +64,13 @@ export function combatEditor(root, state, refresh) {
               .map(p => p.attack_name + ' +' + p.attack_bonus + ' (' + p.damage_count + 'd' + p.damage_sides + (p.damage_bonus >= 0 ? '+' : '') + p.damage_bonus + ' ' + p.damage_type + ')').join(' · ') || 'No verified attacks or spells loaded'
           : 'Player controls their own actions' })
       ]);
-      preview.append(portrait, details, node('div', { cls: 'combatant-card-actions' }, [
+      preview.append(portrait, details);
+      const edit = button('Edit Card', () => {
+        const existing = preview.querySelector('.combat-edit-form');
+        if (existing) existing.remove();
+        else editInputs(preview, member, data => api('/encounters/' + encodeURIComponent(encounter.id) + '/members/' + encodeURIComponent(member.id), { method: 'PUT', data }));
+      }, 'quiet');
+      preview.append(node('div', { cls: 'combatant-card-actions' }, [edit,
         button('Remove', async () => {
           await api('/encounters/' + encodeURIComponent(encounter.id) + '/members/' + encodeURIComponent(member.id), { method: 'DELETE' });
           await refresh(true);
@@ -74,7 +96,26 @@ export function combatEditor(root, state, refresh) {
         await refresh(true);
       } catch (error) { console.error('Encounter participant failed', error); }
     });
-    block.append(addForm, button('⚄ Roll Initiative & Start Combat', async () => {
+    const monsterPicker = node('div', { cls: 'monster-picker' });
+    monsterPicker.append(node('strong', { text: 'Add Monster Card' }));
+    const monsterKind = node('select', { attrs: { 'aria-label': 'Monster library choice' } }, [
+      node('option', { text: 'Goblin · 2014 SRD · Scimitar / Shortbow', attrs: { value: 'goblin' } }),
+      node('option', { text: 'Goblin Shaman · placeholder (no verified spell card)', attrs: { value: 'shaman' } })
+    ]);
+    const monsterCount = node('input', { attrs: { type: 'number', min: 1, max: 10, value: 1, 'aria-label': 'How many monsters' } });
+    monsterPicker.append(monsterKind, monsterCount, button('+ Add Monster', async () => {
+      const type = monsterKind.value;
+      const amount = Math.max(1, Math.min(10, Number(monsterCount.value) || 1));
+      const already = participants.filter(p => type === 'goblin' ? p.source_monster_id === 'goblin' : p.name.startsWith('Goblin Shaman')).length;
+      for (let n = 0; n < amount; n++) {
+        await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', { method: 'POST', data: type === 'goblin'
+          ? { name: 'Goblin ' + (already + n + 1), modifier: 2, attack_bonus: 4, armor_class: 15, source_monster_id: 'goblin', initiative_group: 'goblins' }
+          : { name: 'Goblin Shaman ' + (already + n + 1) + ' · example', modifier: 2, armor_class: 13 }
+        });
+      }
+      await refresh(true);
+    }, 'primary'));
+    block.append(addForm, monsterPicker, button('⚄ Roll Initiative & Start Combat', async () => {
       if (!confirm('Start ' + encounter.name + '? This replaces the current turn order and rolls initiative for everyone.')) return;
       await api('/encounters/' + encodeURIComponent(encounter.id) + '/start', { method: 'POST' });
       await refresh(true);
@@ -155,6 +196,11 @@ export function combatEditor(root, state, refresh) {
     }
         const actions = node('div', { cls: 'combatant-card-actions' });
     if (isActive) actions.append(button('Next Turn →', async () => { await api('/combat/next', { method: 'POST' }); await refresh(true); }, 'primary'));
+    actions.append(button('Edit Card', () => {
+      const existing = card.querySelector('.combat-edit-form');
+      if (existing) existing.remove();
+      else editInputs(card, item, data => api('/combatants/' + encodeURIComponent(item.id), { method: 'PUT', data }));
+    }, 'quiet'));
     actions.append(button('Remove', async () => { await api('/combatants/' + item.id, { method: 'DELETE' }); await refresh(true); }, 'quiet'));
     card.append(actions);
     cards.append(card);
