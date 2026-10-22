@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS media (
 CREATE TABLE IF NOT EXISTS combatants (
  id TEXT PRIMARY KEY, name TEXT NOT NULL, initiative INTEGER NOT NULL,
  position INTEGER NOT NULL, hp_current INTEGER, hp_max INTEGER,
- private_note TEXT NOT NULL DEFAULT '', visible INTEGER NOT NULL DEFAULT 1
+ private_note TEXT NOT NULL DEFAULT '', visible INTEGER NOT NULL DEFAULT 1,
+ token_asset_id TEXT
 );
 CREATE TABLE IF NOT EXISTS access (
  token_hash TEXT PRIMARY KEY, role TEXT NOT NULL, expires INTEGER NOT NULL
@@ -52,6 +53,8 @@ def initialize():
     DATA.mkdir(parents=True, exist_ok=True)
     with connect() as db:
         db.executescript(SCHEMA)
+        if 'token_asset_id' not in {row[1] for row in db.execute('PRAGMA table_info(combatants)')}:
+            db.execute('ALTER TABLE combatants ADD COLUMN token_asset_id TEXT')
         db.execute("PRAGMA journal_mode=WAL")
 
 
