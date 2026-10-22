@@ -106,14 +106,38 @@ export function combatEditor(root, state, refresh) {
     }
     root.append(attackControls);
   }
-    const list = node('ul', { cls: 'combat-list' });
+  const cards = node('div', { cls: 'combat-card-grid' });
   for (const item of state.combatants) {
-    const row = node('li', { cls: `combat-row${item.id === settings.active_turn ? ' active-turn' : ''}` }, [
-      node('strong', { text: String(item.initiative), cls: 'init' }),
-      node('div', { cls: 'name' }, [node('strong', { text: item.name }),
-        node('div', { cls: 'private', text: `${item.visible ? 'Player-visible' : 'DM only'}${item.hp_current !== null ? ` · HP ${item.hp_current}/${item.hp_max ?? '?'}` : ''}` })]),
-      button('✕', async () => { await api(`/combatants/${item.id}`, { method: 'DELETE' }); await refresh(); }, 'quiet')]);
-    list.append(row);
+    const isActive = item.id === settings.active_turn;
+    const isMonster = Boolean(item.source_monster_id) || item.name.toLowerCase().includes('goblin');
+    const card = node('article', { cls: 'combatant-card' + (isActive ? ' is-active' : '') });
+    const portrait = node('div', { cls: 'combatant-card-portrait' });
+    if (item.token_asset_id) {
+      const img = node('img', { attrs: { src: '/api/media/' + encodeURIComponent(item.token_asset_id), alt: item.name } });
+      img.onerror = () => { img.remove(); portrait.append(node('span', { text: item.name.slice(0,1).toUpperCase(), cls: 'combatant-card-monogram' })); };
+      portrait.append(img);
+    } else {
+      portrait.append(node('span', { text: item.name.split(' ').map(part => part[0]).slice(0,2).join('').toUpperCase(), cls: 'combatant-card-monogram' }));
+    }
+    card.append(portrait);
+    card.append(node('div', { cls: 'combatant-card-content' }, [
+      node('div', { cls: 'combatant-card-heading' }, [
+        node('strong', { text: item.name }),
+        node('span', { text: isActive ? 'CURRENT TURN' : (isMonster ? 'MONSTER' : 'PLAYER'), cls: 'combatant-card-badge' })
+      ]),
+      node('div', { cls: 'combatant-card-stats' }, [
+        node('span', { text: 'INIT ' + item.initiative }),
+        node('span', { text: 'AC ' + (item.armor_class ?? '—') }),
+        node('span', { text: 'HP ' + (item.hp_current ?? '—') })
+      ]),
+      ...(item.initiative_group ? [node('p', { text: 'Shared initiative: ' + item.initiative_group, cls: 'combatant-card-note' })] : []),
+      ...(isMonster ? [node('p', { text: (state.attack_profiles || []).filter(profile => profile.source_complete && profile.monster_id === item.source_monster_id).map(profile => profile.attack_name).join(' · ') || 'Attacks/spells not yet sourced', cls: 'combatant-card-note' })] : []),
+    ]));
+    const actions = node('div', { cls: 'combatant-card-actions' });
+    if (isActive) actions.append(node('strong', { text: isMonster ? 'Attack controls shown above' : 'Player rolls at table · Next Turn' }));
+    actions.append(button('Remove', async () => { await api('/combatants/' + item.id, { method: 'DELETE' }); await refresh(true); }, 'quiet'));
+    card.append(actions);
+    cards.append(card);
   }
-  root.append(list.children.length ? list : empty('No combatants added yet.'));
+  root.append(node('h3', { text: 'Combatant Cards · Round ' + settings.round_number }), cards.children.length ? cards : empty('Start a prepared combat to see its cards.'));
 }
