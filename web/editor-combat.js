@@ -79,15 +79,20 @@ export function combatEditor(root, state, refresh) {
   const active = state.combatants.find(c => c.id === settings.active_turn);
   if (active) {
     const attackControls = node('div', { cls: 'attack-controls' });
-    const override = node('input', { attrs: { type: 'number', min: -30, max: 99, value: active.attack_bonus ?? 0, 'aria-label': 'To-hit modifier' } });
-    attackControls.append(node('strong', { text: active.name + ' · Attack' }),
-      node('label', { text: 'To-hit bonus' }), override,
-      button('Roll d20 + bonus → Show Players', async () => {
-        const result = await api('/combat/attack', { method: 'POST', data: {
-          combatant_id: active.id, bonus_override: Number(override.value)
-        } });
-        await refresh(true);
-      }, 'primary'));
+    const profiles = (state.attack_profiles || []).filter(p => p.monster_id === active.name.toLowerCase().trim().replace(/\\s+/g, '-'));
+    const options = profiles.map(p => node('option', { text: p.attack_name + ' · +' + p.attack_bonus + ' · ' + p.damage_count + 'd' + p.damage_sides + ' ' + p.damage_bonus, attrs: { value: p.id } }));
+    const choice = node('select', { attrs: { 'aria-label': 'Verified monster attack' } }, options);
+    attackControls.append(node('strong', { text: active.name + ' · Attack' }));
+    if (!profiles.length) attackControls.append(node('p', { text: 'No imported RAW attack profile for this monster yet.', cls: 'section-caption' }));
+    else {
+      attackControls.append(choice);
+      for (const [mode,label] of [['normal','Attack'],['advantage','ADV'],['disadvantage','DIS']]) {
+        attackControls.append(button(label, async () => {
+          await api('/combat/attack', { method: 'POST', data: { combatant_id: active.id, profile_id: choice.value, mode } });
+          await refresh(true);
+        }, 'primary'));
+      }
+    }
     root.append(attackControls);
   }
     const list = node('ul', { cls: 'combat-list' });
