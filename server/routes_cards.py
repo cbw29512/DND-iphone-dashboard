@@ -87,8 +87,10 @@ def add_combatant(request: Request, body: Combatant):
     identity = str(uuid.uuid4())
     with connect() as db:
         order = db.execute("SELECT COUNT(*) FROM combatants").fetchone()[0]
-        db.execute("INSERT INTO combatants VALUES (?,?,?,?,?,?,?,?)", (identity, body.name.strip(), body.initiative,
-            order, body.hp_current, body.hp_max, body.private_note, int(body.visible)))
+        if body.token_asset_id and not db.execute("SELECT 1 FROM media WHERE id=? AND category='gallery'", (body.token_asset_id,)).fetchone():
+            raise HTTPException(400, "Token artwork not found in gallery")
+        db.execute("INSERT INTO combatants (id,name,initiative,position,hp_current,hp_max,private_note,visible,token_asset_id) VALUES (?,?,?,?,?,?,?,?,?)", (identity, body.name.strip(), body.initiative,
+            order, body.hp_current, body.hp_max, body.private_note, int(body.visible), body.token_asset_id))
         revision(db)
     publish()
     return {"id": identity}
