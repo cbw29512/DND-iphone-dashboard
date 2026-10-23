@@ -1,5 +1,6 @@
 import { RAW_MONSTERS, MONSTER_BY_ID, makeInstance, makePlayer, rollInitiative, rollAttack } from './cards.js';
 import { cardFace } from './card-view.js';
+import { silhouetteFor } from './silhouettes.js';
 const $ = q => document.querySelector(q);
 const node = (tag, text, cls) => { const el=document.createElement(tag); if(text!=null)el.textContent=String(text); if(cls)el.className=cls; return el; };
 const button=(label,act,cls='secondary')=>{const e=node('button',label,cls);e.type='button';e.addEventListener('click',act);return e;};
@@ -67,11 +68,34 @@ function renderPicker(){
     body.append(form);
   }
 }
+/** Player-safe projection: intentionally no monster AC, HP, source stats or DM options. */
+function renderPhone(fighter) {
+  const panel=$('#public-result');panel.replaceChildren();
+  if(!fighter){panel.append(node('span','Waiting for Battle','helper'));return;}
+  const heading=node('div',null,'phone-view-heading');
+  heading.append(node('span','IRON LANTERN · ROUND '+round,'eyebrow'),node('h3',fighter.name));
+  const portrait=node('div',null,'phone-view-portrait');
+  if(fighter.portrait) {
+    const img=node('img');img.src=fighter.portrait;img.alt='';portrait.append(img);
+  } else portrait.append(silhouetteFor(fighter.sourceId||fighter.kind));
+  panel.append(heading,portrait);
+  if(currentResult?.actorId===fighter.id){
+    const result=currentResult;
+    panel.append(node('p',result.attackName.toUpperCase(),'phone-attack-name'));
+    panel.append(node('span','TO HIT','phone-field-label'),node('strong',String(result.total),'phone-hit-number'));
+    if(result.critical||result.fumble)panel.append(node('span',result.critical?'NATURAL 20':'NATURAL 1','phone-natural'));
+    panel.append(node('span','DAMAGE · '+result.damageType.toUpperCase(),'phone-field-label'),node('strong',String(result.damage),'phone-damage-number'));
+  } else if(fighter.kind==='player') {
+    panel.append(node('p','PLAYER TURN','phone-attack-name'),node('span','INITIATIVE '+fighter.initiative,'phone-field-label'));
+  } else {
+    panel.append(node('p','MONSTER TURN','phone-attack-name'),node('span','INITIATIVE '+fighter.initiative,'phone-field-label'));
+  }
+}
 function renderCombat(){
   const holder=$('#turn-card'), actions=$('#combat-actions');holder.replaceChildren();actions.replaceChildren();
   const fighter=turnOrder[turnIndex];$('#next-turn').disabled=!fighter;
   $('#round-chip').textContent=fighter?'ROUND '+round:'NOT STARTED';
-  if(!fighter){holder.append(node('div','Click Battle to roll initiative and begin.','empty-state'));return;}
+  if(!fighter){holder.append(node('div','Click Battle to roll initiative and begin.','empty-state'));renderPhone(null);return;}
   const card=node('article',null,'active-combat-card');
   card.append(node('span',fighter.kind==='monster'?'MONSTER TURN':'PLAYER TURN','eyebrow'));
   card.append(cardFace(fighter,{mode:'combat',initiative:fighter.initiative}));
@@ -113,6 +137,7 @@ function renderCombat(){
       actions.append(result);
     }
   }
+  renderPhone(fighter);
 }
 $('#tab-player').addEventListener('click',()=>{pickerType='player';renderPicker();});
 $('#tab-monster').addEventListener('click',()=>{pickerType='monster';renderPicker();});
