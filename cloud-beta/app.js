@@ -1,4 +1,5 @@
 import { RAW_MONSTERS, MONSTER_BY_ID, makeInstance, makePlayer, rollInitiative, rollAttack } from './cards.js';
+import { cardFace } from './card-view.js';
 const $ = q => document.querySelector(q);
 const node = (tag, text, cls) => { const el=document.createElement(tag); if(text!=null)el.textContent=String(text); if(cls)el.className=cls; return el; };
 const button=(label,act,cls='secondary')=>{const e=node('button',label,cls);e.type='button';e.addEventListener('click',act);return e;};
@@ -18,12 +19,8 @@ function render(){
   for(let i=0;i<slotCount;i++){
     const card=battle.cards[i],slot=button('',()=>openPicker(i),card?'slot filled':'slot empty');
     slot.setAttribute('aria-label',card?'Edit '+card.name:'Add a card in slot '+(i+1));
-    if(card){
-      const art=node('div','', 'slot-art');
-      if(card.portrait){const img=node('img');img.alt='';img.src=card.portrait;art.append(img);}
-      else art.textContent=card.kind==='monster'?'⚔':'♟';
-      slot.append(art,node('strong',card.name),node('small','AC '+(card.ac??'—')+' · DEX '+(card.dexModifier>=0?'+':'')+card.dexModifier));
-    } else slot.append(node('span','+','plus'),node('small','Empty Slot'));
+    if(card) slot.append(cardFace(card,{mode:'slot'}));
+    else slot.append(node('span','+','plus'),node('small','Empty Slot'));
     grid.append(slot);
   }
   $('#start-battle').disabled=!battle.cards.length;
@@ -47,7 +44,7 @@ function renderPicker(){
         if(targetSlot<cards.length)cards[targetSlot]=instance;else cards.push(instance);
         $('#card-picker').close();announce(monster.name+' added. Save the battle name when ready.');render();
       },'monster-choice');
-      tile.append(node('strong',monster.name),node('span','AC '+monster.ac+' · HP '+monster.hp+' · '+monster.source),node('small','Select card'));
+      tile.append(cardFace(makeInstance(monster),{mode:'library'}));
       options.append(tile);
     }
     body.append(options);
@@ -77,8 +74,7 @@ function renderCombat(){
   if(!fighter){holder.append(node('div','Click Battle to roll initiative and begin.','empty-state'));return;}
   const card=node('article',null,'active-combat-card');
   card.append(node('span',fighter.kind==='monster'?'MONSTER TURN':'PLAYER TURN','eyebrow'));
-  card.append(node('div',fighter.kind==='monster'?'⚔':'♟','turn-portrait'));
-  card.append(node('h3',fighter.name),node('p','INIT '+fighter.initiative+' · AC '+(fighter.ac??'—')+' · '+(turnIndex+1)+' / '+turnOrder.length));
+  card.append(cardFace(fighter,{mode:'combat',initiative:fighter.initiative}));
   holder.append(card);
   if(fighter.kind==='player'){
     actions.append(node('p','Player takes their own turn. Press Next Turn when finished.','helper'));
