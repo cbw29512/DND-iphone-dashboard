@@ -84,16 +84,16 @@ function renderCombat(){
     const selector=node('select');selector.setAttribute('aria-label','Prepare monster attack');
     for(const a of source?.attacks||[]){const opt=node('option',a.name+' · +'+a.bonus+' · '+a.dice.join('d')+'+'+a.modifier);opt.value=a.id;selector.append(opt);}
     if(attack)selector.value=attack.id;
-    selector.addEventListener('change',()=>{fighter.preparedAttackId=selector.value;currentResult=null;renderCombat();});
+    selector.addEventListener('change',()=>{fighter.preparedAttackId=selector.value;renderCombat();});
     actions.append(node('label','Selected attack'),selector);
-    const targets=turnOrder.filter(c=>c.kind==='player'&&Number.isFinite(c.ac));
+    const targets=turnOrder.filter(c=>c.kind==='player');
     const targetSelect=node('select');targetSelect.setAttribute('aria-label','Attack target');
     for(const t of targets){const opt=node('option',t.name+' · AC '+t.ac);opt.value=t.id;targetSelect.append(opt);}
     if(!targets.length||!attack)actions.append(node('p','A verified monster attack and a player target are required.','helper'));
     else{
       actions.append(node('label','Target player'),targetSelect);
       const modes=node('div',null,'roll-buttons');
-      for(const [mode,label] of [['normal','HIT'],['advantage','ADV'],['disadvantage','DIS']]){
+      for(const [mode,label] of [['normal','ROLL'],['advantage','ADV'],['disadvantage','DIS']]){
         modes.append(button(label,()=>{
           const chosen=source.attacks.find(a=>a.id===selector.value);
           const target=targets.find(t=>t.id===targetSelect.value);
@@ -107,8 +107,9 @@ function renderCombat(){
     if(currentResult?.actorId===fighter.id){
       const r=currentResult;
       const result=node('div',null,'roll-result'+(r.critical?' critical':''));
-      result.append(node('strong',r.hit?'HIT':'MISS'),node('p',r.attackName+' vs '+r.target+' · d20 '+r.dice.join('/')+' + bonus = '+r.total));
-      if(r.hit)result.append(node('b',r.damage+' '+r.damageType+' damage'));
+      result.append(node('strong','TO HIT '+r.total),node('p',r.attackName+' vs '+r.target+' · d20 '+r.dice.join('/')+' + bonus = '+r.total));
+      result.append(node('b',r.damage+' '+r.damageType+' damage'));
+      if(r.critical||r.fumble)result.append(node('small',r.critical?'NATURAL 20':'NATURAL 1'));
       actions.append(result);
     }
   }
