@@ -3,10 +3,15 @@ import { api, liveUpdates } from './api.js';
 import { $, notify } from './dom.js';
 import { renderPublic } from './public-view.js';
 let stopStream;
+let latestRevision = -1;
+let requestSequence = 0;
 
 async function refresh() {
+  const requestId = ++requestSequence;
   try {
     const state = await api('/display/state');
+    if (requestId < requestSequence || (typeof state.revision === 'number' && state.revision < latestRevision)) return;
+    if (typeof state.revision === 'number') latestRevision = state.revision;
     $('#pair-screen').hidden = true;
     renderPublic($('#player-root'), state);
     $('#display-status').textContent = '● Connected';
