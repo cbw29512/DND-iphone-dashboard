@@ -1,5 +1,6 @@
 /** One visual card language for library, encounter slots, and live combat. */
 import { MONSTER_BY_ID } from './cards.js';
+import { silhouetteFor } from './silhouettes.js';
 const elem=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=String(text);return e;};
 const pair=(key,value)=>{const e=elem('div','character-stat');e.append(elem('span','stat-label',key),elem('strong','stat-value',value));return e;};
 export function cardFace(instance,{mode='slot',initiative=null}={}){
@@ -8,7 +9,7 @@ export function cardFace(instance,{mode='slot',initiative=null}={}){
   const art=elem('div','character-portrait');
   if(instance.portrait){
     const img=elem('img');img.src=instance.portrait;img.alt='';img.loading='lazy';art.append(img);
-  } else art.append(elem('span','portrait-placeholder',instance.kind==='monster'?'⚔':'♟'));
+  } else art.append(silhouetteFor(instance.sourceId || instance.kind));
   wrap.append(art);
   const content=elem('div','character-details');
   content.append(elem('span','character-type',instance.kind==='monster'?'MONSTER · '+(source?.ruleset||'UNVERIFIED'):'PLAYER'));
