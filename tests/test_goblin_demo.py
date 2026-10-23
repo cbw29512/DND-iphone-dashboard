@@ -77,3 +77,25 @@ def test_add_goblin_card_without_sample_import(dm, headers):
     rolls = dm.post(f"/api/encounters/{encounter}/start", headers=headers).json()["rolls"]
     assert len(rolls) == 2
     assert rolls[0]["roll"] == rolls[1]["roll"]
+
+
+def test_save_named_battle_and_start_from_selected_cards(dm, headers):
+    created = dm.post("/api/encounters", json={"name": "Combat 1"}, headers=headers)
+    assert created.status_code == 200
+    battle_id = created.json()["id"]
+    for payload in [
+        {"name":"Fighter","modifier":2,"armor_class":18,"initiative_advantage":True},
+        {"name":"Goblin 1","modifier":2,"armor_class":15,"source_monster_id":"goblin","initiative_group":"goblins"},
+        {"name":"Goblin 2","modifier":2,"armor_class":15,"source_monster_id":"goblin","initiative_group":"goblins"}
+    ]:
+        added = dm.post(f"/api/encounters/{battle_id}/members", json=payload, headers=headers)
+        assert added.status_code == 200, added.text
+    saved = dm.put(f"/api/encounters/{battle_id}", json={"name":"Goblin Ambush"}, headers=headers)
+    assert saved.status_code == 200, saved.text
+    state = dm.get("/api/dm/state").json()
+    assert next(e for e in state["encounters"] if e["id"] == battle_id)["name"] == "Goblin Ambush"
+    assert next(m for m in state["encounter_members"] if m["name"] == "Fighter")["initiative_advantage"] == 1
+    started = dm.post(f"/api/encounters/{battle_id}/start", headers=headers)
+    assert started.status_code == 200, started.text
+    assert len(started.json()["rolls"]) == 3
+    assert started.json()["rolls"][0]["total"] >= started.json()["rolls"][-1]["total"]
