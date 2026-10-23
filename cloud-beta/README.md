@@ -33,3 +33,10 @@ For Netlify, set **Base directory** to `cloud-beta`, publish directory to `.`, a
 
 ## Security note
 Netlify static assets alone **cannot** enforce DM login or private battles. A custom domain is a DNS/routing name; it does not provide authentication or realtime service.
+
+## Reused art and RAW admission gate (October 2026)
+- Silhouette SVGs in `silhouettes.js` are adapted from `cbw29512/D20-ironpit/frontend/figure-portraits.js` (Goblin and humanoid).
+- Visual silhouette data **does not certify game mechanics**. Rules data comes from the named 2014 source definition, never from art IDs or monster names.
+- Starter Goblin 2014 SRD stats: AC 15, HP 7, DEX +2, Scimitar +4 (1d6+2 slashing), Shortbow +4 (1d6+2 piercing). Only these two attack actions are currently bound.
+- Future monsters need source edition, verified immutable card values, ability coverage against Iron Pit, implementation/test evidence, and public/private field audit before admission.
+- Goblin Shaman remains an example placeholder in the **older local beta** and is intentionally absent from the cloud-preview RAW catalog.
