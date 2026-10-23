@@ -50,3 +50,17 @@ dialog{width:min(680px,95vw);max-height:90vh;overflow-y:auto;background:#212232;
 .portrait-silhouette{display:block;width:72%;height:88%;color:#d9bc89;filter:drop-shadow(0 7px 12px #05060baa)}
 .portrait-silhouette svg{width:100%;height:100%;fill:currentColor;stroke:currentColor;stroke-width:1;stroke-linejoin:round}
 .card-slot .portrait-silhouette{width:60%;height:85%}
+
+/* Player-safe phone output. Never render internal monster AC/HP here. */
+.public-preview{margin-top:22px;padding-top:16px;border-top:1px solid #6a5846}
+.public-result{margin:12px auto 4px;max-width:310px;min-height:390px;padding:15px 15px 20px;border:2px solid #a47e4d;border-radius:24px;background:linear-gradient(170deg,#2d2738,#0e1119 65%);display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;box-shadow:0 12px 25px #0505087d}
+.phone-view-heading h3{font:700 25px Georgia,serif;margin:8px 0 2px}
+.phone-view-heading .eyebrow{font-size:9px}
+.phone-view-portrait{height:178px;width:100%;display:grid;place-items:center;overflow:hidden}
+.phone-view-portrait img{max-height:100%;max-width:100%;object-fit:contain}
+.phone-view-portrait .portrait-silhouette{height:95%;width:75%}
+.phone-attack-name{font-size:12px;font-weight:800;letter-spacing:.13em;color:#f1d1a0;margin:3px 0}
+.phone-field-label{font-size:11px;color:#c3b6a4;letter-spacing:.16em;font-weight:800}
+.phone-hit-number{font-size:65px;line-height:1;font-variant-numeric:tabular-nums;color:#fff3d8}
+.phone-damage-number{font-size:44px;line-height:1.12;font-variant-numeric:tabular-nums;color:#efbd73}
+.phone-natural{font-size:11px;color:#ecc277;letter-spacing:.09em;font-weight:800}
