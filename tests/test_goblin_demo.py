@@ -62,3 +62,18 @@ def test_shared_initiative_advantage(dm, headers, monkeypatch):
     assert rolls["Goblin A"]["roll"] == rolls["Goblin B"]["roll"] == 17
     assert rolls["Wizard"]["roll"] == 4
     assert rolls["Fighter"]["roll"] == 8
+
+
+def test_add_goblin_card_without_sample_import(dm, headers):
+    encounter = dm.post("/api/encounters", json={"name": "Dragged cards"}, headers=headers).json()["id"]
+    for number in (1, 2):
+        response = dm.post(f"/api/encounters/{encounter}/members", json={
+            "name": f"Goblin {number}", "modifier": 2, "armor_class": 15,
+            "initiative_group": "goblins", "source_monster_id": "goblin"
+        }, headers=headers)
+        assert response.status_code == 200, response.text
+    state = dm.get("/api/dm/state").json()
+    assert len([p for p in state["attack_profiles"] if p["monster_id"] == "goblin" and p["source_complete"]]) == 2
+    rolls = dm.post(f"/api/encounters/{encounter}/start", headers=headers).json()["rolls"]
+    assert len(rolls) == 2
+    assert rolls[0]["roll"] == rolls[1]["roll"]
