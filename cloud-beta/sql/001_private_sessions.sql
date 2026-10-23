@@ -52,7 +52,8 @@ create policy "only dm publishes public frames" on public.il_display_frames for 
  select 1 from public.il_sessions s where s.id=session_id and s.owner_id=(select auth.uid())));
 create policy "only dm updates public frames" on public.il_display_frames for update to authenticated
  using (owner_id = (select auth.uid()))
- with check (owner_id = (select auth.uid()));
+ with check (owner_id = (select auth.uid()) and exists (
+ select 1 from public.il_sessions s where s.id=session_id and s.owner_id=(select auth.uid())));
 create policy "dm or authorized phone reads public frames" on public.il_display_frames for select to authenticated
  using (owner_id = (select auth.uid()) or exists (
  select 1 from public.il_display_access a
