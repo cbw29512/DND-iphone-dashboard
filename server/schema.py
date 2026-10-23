@@ -53,6 +53,7 @@ class EncounterNew(BaseModel):
     name: str = Field(min_length=1, max_length=80)
 
 class EncounterMember(BaseModel):
+    initiative_advantage: bool = False
     armor_class: int | None = Field(default=None, ge=1, le=99)
     initiative_group: str | None = Field(default=None, max_length=80)
     source_monster_id: str | None = Field(default=None, max_length=120)
