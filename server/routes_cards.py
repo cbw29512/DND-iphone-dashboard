@@ -175,7 +175,7 @@ def add_member(request: Request, encounter_id: str, body: EncounterMember):
         pos = db.execute("SELECT COUNT(*) FROM encounter_members WHERE encounter_id=?", (encounter_id,)).fetchone()[0]
         db.execute(
             "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group,source_monster_id,initiative_advantage,position) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, body.attack_bonus, body.armor_class, body.initiative_group, body.source_monster_id, 0, pos)
+            (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, body.attack_bonus, body.armor_class, body.initiative_group, body.source_monster_id, int(body.initiative_advantage), pos)
         )
         if body.source_monster_id == "goblin":
             db.executemany(
@@ -349,3 +349,16 @@ def edit_combatant(request: Request, combatant_id: str, body: CombatantEdit):
         revision(db)
     publish()
     return {"ok": True}
+
+
+@router.put("/encounters/{encounter_id}")
+def save_encounter(request: Request, encounter_id: str, body: EncounterNew):
+    """Persist the user-facing saved battle name without changing its cards."""
+    require_write(request)
+    with connect() as db:
+        result = db.execute("UPDATE encounters SET name=? WHERE id=?", (body.name.strip(), encounter_id))
+        if not result.rowcount:
+            raise HTTPException(404, "Battle not found")
+        revision(db)
+    publish()
+    return {"ok": True, "id": encounter_id}
