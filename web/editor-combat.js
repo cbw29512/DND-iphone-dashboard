@@ -1,21 +1,15 @@
-/** Initiative order is authoritative on the backend; hidden HP never sent to players. */
+/** One-screen encounter slot builder and combat turn panel. */
 import { api } from './api.js';
 import { button, empty, node } from './dom.js';
 
+let selectedEncounterId = null;
+
 export function combatEditor(root, state, refresh) {
-  root.replaceChildren(node('p', { text: 'Prepare your players on top and monsters below. Press Battle to roll initiative and begin.', cls: 'section-caption' }));
-  const encounterSection = node('section', { cls: 'encounter-prep' });
-  encounterSection.append(node('h3', { text: 'Prepared combats' }));
-  const newEncounterName = node('input', { attrs: { placeholder: 'Combat 1 · Goblin Ambush', maxlength: 80, 'aria-label': 'New encounter name' } });
-  encounterSection.append(newEncounterName, button('+ Save Combat', async () => {
-    if (!newEncounterName.value.trim()) return;
-    await api('/encounters', { method: 'POST', data: { name: newEncounterName.value.trim() } });
-    await refresh(true);
-  }, 'primary'));
-  encounterSection.append(button('Load Goblin Test Fight', async () => {
-    await api('/encounters/sample-goblin-fight', { method: 'POST' });
-    await refresh(true);
-  }, 'outline'));
+  root.replaceChildren();
+  const tokenOptions = () => [
+    node('option', { text: 'No artwork', attrs: { value: '' } }),
+    ...state.media.filter(m => m.category === 'gallery').map(m => node('option', { text: m.name, attrs: { value: m.id } }))
+  ];
   const editInputs = (card, current, save) => {
     const form = node('form', { cls: 'combat-edit-form' });
     const name = node('input', { attrs: { value: current.name, required: '', maxlength: 80, 'aria-label': 'Card name' } });
@@ -39,188 +33,109 @@ export function combatEditor(root, state, refresh) {
     node('option', { text: 'Name only (no artwork)', attrs: { value: '' } }),
     ...state.media.filter(m => m.category === 'gallery').map(m => node('option', { text: m.name, attrs: { value: m.id } }))
   ];
-  // Drag a library card onto a battle slot to add it to that encounter.
-  const library = node('section', { cls: 'drag-card-library' });
-  library.append(node('h3', { text: 'CARD LIBRARY · Drag into a Battle Slot' }));
-  const makeDraggable = (label, payload, subtitle) => {
-    const tile = node('div', { cls: 'draggable-library-card', attrs: { draggable: 'true', tabindex: '0', role: 'button', 'aria-label': 'Select ' + label } });
-    tile.append(node('strong', { text: label }), node('small', { text: subtitle }));
-    tile.addEventListener('dragstart', e => { e.dataTransfer.setData('application/x-iron-lantern-card', JSON.stringify(payload)); e.dataTransfer.effectAllowed = 'copy'; });
-    tile.addEventListener('click', () => { selectedCard = payload; library.querySelectorAll('.draggable-library-card').forEach(c => c.classList.remove('picked')); tile.classList.add('picked'); });
-    tile.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tile.click(); } });
-    return tile;
-  };
-  let selectedCard = null;
-  const playerLibrary = node('div', { cls: 'library-card-row' });
-  const priorPlayers = (state.combatants || []).filter(c => !c.source_monster_id && !c.name.toLowerCase().includes('shaman'));
-  for (const c of priorPlayers) playerLibrary.append(makeDraggable(c.name, {
-    name: c.name, modifier: 0, armor_class: c.armor_class, token_asset_id: c.token_asset_id
-  }, 'Player avatar · AC ' + (c.armor_class ?? 'set after adding')));
-  library.append(node('h4', { text: 'PLAYERS' }), playerLibrary);
-  const monstersLibrary = node('div', { cls: 'library-card-row' });
-  monstersLibrary.append(makeDraggable('Goblin', {
-    name: 'Goblin', modifier: 2, armor_class: 15, attack_bonus: 4, source_monster_id: 'goblin', initiative_group: 'goblins'
-  }, '2014 SRD · Scimitar / Shortbow'));
-  monstersLibrary.append(makeDraggable('Goblin Shaman · example', {
-    name: 'Goblin Shaman · example', modifier: 2, armor_class: 13
-  }, 'Placeholder: no verified spells yet'));
-  library.append(node('h4', { text: 'MONSTERS' }), monstersLibrary);
-  root.append(library);
-  const placeCard = async (encounter, payload) => {
-    const members = (state.encounter_members || []).filter(m => m.encounter_id === encounter.id);
-    const copies = members.filter(m => payload.source_monster_id ? m.source_monster_id === payload.source_monster_id : m.name.startsWith(payload.name)).length;
-    await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', {
-      method: 'POST', data: { ...payload, name: payload.source_monster_id ? payload.name + ' ' + (copies + 1) : payload.name }
-    });
+
+  const encounters = state.encounters || [];
+  if (!encounters.some(e => e.id === selectedEncounterId)) selectedEncounterId = encounters[0]?.id || null;
+  const encounter = encounters.find(e => e.id === selectedEncounterId);
+  const members = encounter ? (state.encounter_members || []).filter(m => m.encounter_id === encounter.id) : [];
+  const builder = node('section', { cls: 'simple-battle-builder' });
+  builder.append(node('h3', { text: 'Build Your Battle' }));
+  const top = node('div', { cls: 'simple-battle-bar' });
+  const selection = node('select', { attrs: { 'aria-label': 'Saved battle' } },
+    encounters.map((e,i) => node('option', { text: 'Battle ' + (i+1) + ': ' + e.name, attrs: { value: e.id } })));
+  selection.value = encounter?.id || '';
+  selection.addEventListener('change', () => { selectedEncounterId = selection.value; refresh(true); });
+  const create = button('+ New Battle', async () => {
+    const next = encounters.length + 1;
+    const response = await api('/encounters', { method: 'POST', data: { name: 'Combat ' + next } });
+    selectedEncounterId = response.id;
     await refresh(true);
-  };
-  // Quick launch is always visible; preparation tools stay collapsed until requested.
-  const saved = state.encounters || [];
-  const launcher = node('div', { cls: 'encounter-launcher' });
-  launcher.append(node('h3', { text: 'Game Time · Saved Battles' }));
-  for (let slot = 0; slot < 3; slot++) {
-    const encounter = saved[slot];
-    const slotCard = node('div', { cls: 'encounter-launch-slot' });
-    const members = encounter ? (state.encounter_members || []).filter(m => m.encounter_id === encounter.id) : [];
-    const monsters = members.filter(m => m.source_monster_id || m.name.toLowerCase().includes('shaman')).length;
-    slotCard.append(node('strong', { text: 'Battle ' + (slot + 1) }),
-      node('small', { text: encounter ? encounter.name + ' · ' + members.length + ' cards (' + monsters + ' monsters)' : 'Not prepared' }));
-    if (encounter) {
-      const drop = node('div', { cls: 'battle-drop-slot', attrs: { tabindex: '0', role: 'button', 'aria-label': 'Drop or add selected card to Battle ' + (slot + 1) } });
-      drop.append(node('span', { text: '＋ Drop a player or monster card here' }));
-      drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
-      drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
-      drop.addEventListener('drop', async e => {
-        e.preventDefault(); drop.classList.remove('drag-over');
-        try { const payload = JSON.parse(e.dataTransfer.getData('application/x-iron-lantern-card')); if (payload?.name) await placeCard(encounter, payload); }
-        catch (error) { console.error('Could not add card', error); }
-      });
-      drop.addEventListener('click', async () => { if (selectedCard) await placeCard(encounter, selectedCard); });
-      drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drop.click(); } });
-      slotCard.append(drop);
-    }
-    if (encounter && members.length) slotCard.append(button('Load & Battle', async () => {
-      if (!confirm('Roll initiative and load Battle ' + (slot + 1) + '? This replaces the active combat turn order.')) return;
-      await api('/encounters/' + encodeURIComponent(encounter.id) + '/start', { method: 'POST' });
+  }, 'outline');
+  top.append(selection, create);
+  builder.append(top);
+  if (encounter) {
+    const title = node('input', { attrs: { value: encounter.name, maxlength: 80, required: '', 'aria-label': 'Battle name' } });
+    const status = node('span', { cls: 'battle-save-status', text: 'Cards persist when added' });
+    const save = button('Save Battle', async () => {
+      await api('/encounters/' + encodeURIComponent(encounter.id), { method: 'PUT', data: { name: title.value.trim() } });
+      status.textContent = 'Saved';
       await refresh(true);
-    }, 'primary'));
-    else if (encounter) slotCard.append(node('span', { text: 'Add players and monsters in Setup', cls: 'section-caption' }));
-    else slotCard.append(button('Create Battle ' + (slot + 1), async () => {
-      await api('/encounters', { method: 'POST', data: { name: 'Combat ' + (slot + 1) } });
-      await refresh(true);
-    }, 'outline'));
-    launcher.append(slotCard);
-  }
-  root.append(launcher);
-  const setup = node('details', { cls: 'encounter-setup', attrs: { open: '' } });
-  setup.append(node('summary', { text: 'Prepare / Edit Battles' }));
-  const setupBody = node('div', { cls: 'encounter-setup-body' });
-  setupBody.append(encounterSection);
-  for (const encounter of state.encounters || []) {
-    const block = node('div', { cls: 'encounter-block' });
-    block.append(node('strong', { text: encounter.name }));
-    const participants = (state.encounter_members || []).filter(m => m.encounter_id === encounter.id);
-    const playersRow = node('div', { cls: 'combat-card-grid prep-card-grid' });
-    const monstersRow = node('div', { cls: 'combat-card-grid prep-card-grid' });
-    for (const member of participants) {
-      const monster = Boolean(member.source_monster_id) || member.name.toLowerCase().includes('shaman');
-      const preview = node('article', { cls: 'combatant-card prep-combatant-card' });
-      const portrait = node('div', { cls: 'combatant-card-portrait' });
-      if (member.token_asset_id) portrait.append(node('img', { attrs: {
-        src: '/api/media/' + encodeURIComponent(member.token_asset_id), alt: member.name
-      } }));
-      else portrait.append(node('span', { text: member.name.slice(0,2).toUpperCase(), cls: 'combatant-card-monogram' }));
-      const details = node('div', { cls: 'combatant-card-content' }, [
-        node('div', { cls: 'combatant-card-heading' }, [
-          node('strong', { text: member.name }),
-          node('span', { text: monster ? 'MONSTER' : 'PLAYER', cls: 'combatant-card-badge' })
-        ]),
-        node('div', { cls: 'combatant-card-stats' }, [
-          node('span', { text: (member.initiative_advantage ? 'ADV · ' : '') + 'DEX / INIT ' + (member.modifier >= 0 ? '+' : '') + member.modifier }),
-          node('span', { text: 'AC ' + (member.armor_class ?? '—') })
-        ]),
-        ...(member.initiative_group ? [node('p', { cls: 'combatant-card-note', text: 'Shared initiative: ' + member.initiative_group })] : []),
-        node('p', { cls: 'combatant-card-note', text: monster
-          ? (state.attack_profiles || []).filter(p => p.source_complete && p.monster_id === member.source_monster_id)
-              .map(p => p.attack_name + ' +' + p.attack_bonus + ' (' + p.damage_count + 'd' + p.damage_sides + (p.damage_bonus >= 0 ? '+' : '') + p.damage_bonus + ' ' + p.damage_type + ')').join(' · ') || 'No verified attacks or spells loaded'
-          : 'Player controls their own actions' })
-      ]);
-      preview.append(portrait, details);
-      const edit = button('Edit Card', () => {
-        const existing = preview.querySelector('.combat-edit-form');
-        if (existing) existing.remove();
-        else editInputs(preview, member, data => api('/encounters/' + encodeURIComponent(encounter.id) + '/members/' + encodeURIComponent(member.id), { method: 'PUT', data }));
-      }, 'quiet');
-      preview.append(node('div', { cls: 'combatant-card-actions' }, [edit,
-        button('Remove', async () => {
-          await api('/encounters/' + encodeURIComponent(encounter.id) + '/members/' + encodeURIComponent(member.id), { method: 'DELETE' });
-          await refresh(true);
-        }, 'quiet')
+    }, 'primary');
+    builder.append(node('div', { cls: 'simple-battle-bar' }, [title, save, status]));
+    const slots = node('div', { cls: 'simple-slot-grid' });
+    const total = Math.max(6, Math.ceil((members.length + 1) / 3) * 3);
+    const openPicker = (index, existing) => {
+      const previous = builder.querySelector('.simple-card-picker');
+      if (previous) previous.remove();
+      const picker = node('div', { cls: 'simple-card-picker' });
+      picker.append(node('div', { cls: 'simple-picker-heading' }, [
+        node('strong', { text: 'Slot ' + (index+1) + ' — Choose Card' }),
+        button('Close', () => picker.remove(), 'quiet')
       ]));
-      (monster ? monstersRow : playersRow).append(preview);
-    }
-    block.append(node('h4', { text: 'PLAYERS · Top Row', cls: 'battle-row-title' }), playersRow);
-    const playerAdder = node('form', { cls: 'battle-add-player' });
-    const playerName = node('input', { attrs: { placeholder: 'Player name', maxlength: 80, required: '' } });
-    const playerAC = node('input', { attrs: { type: 'number', min: 1, max: 99, placeholder: 'AC', required: '' } });
-    const playerDex = node('input', { attrs: { type: 'number', min: -20, max: 30, value: 0, 'aria-label': 'DEX modifier' } });
-    playerAdder.append(playerName, playerAC, playerDex, node('button', { text: '+ Add Player Card', attrs: { type: 'submit' }, cls: 'primary' }));
-    playerAdder.addEventListener('submit', async e => { e.preventDefault(); await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', { method: 'POST', data: { name: playerName.value.trim(), modifier: Number(playerDex.value), armor_class: Number(playerAC.value) } }); await refresh(true); });
-    block.append(playerAdder, node('h4', { text: 'MONSTERS · Bottom Row', cls: 'battle-row-title' }), monstersRow);
-    const addForm = node('form', { cls: 'encounter-member-form' });
-    const memberName = node('input', { attrs: { placeholder: 'Character or monster', maxlength: 80, required: '', 'aria-label': 'Participant' } });
-    const modifier = node('input', { attrs: { type: 'number', value: '0', min: '-20', max: '30', required: '', 'aria-label': 'Initiative modifier' } });
-    const armorClass = node('input', { attrs: { type: 'number', min: '1', max: '99', placeholder: 'AC', 'aria-label': 'Armor Class (optional)' } });
-    const attackBonus = node('input', { attrs: { type: 'number', value: '0', min: '-30', max: '99', required: '', 'aria-label': 'Attack to-hit bonus' } });
-    const artwork = node('select', { attrs: { 'aria-label': 'VTT artwork' } }, tokenOptions());
-    const initiativeGroup = node('input', { attrs: { placeholder: 'Group (e.g. goblins)', maxlength: 80, 'aria-label': 'Shared initiative group' } });
-    addForm.append(memberName, modifier, attackBonus, armorClass, artwork, initiativeGroup, node('button', { text: '+ Add', cls: 'outline', attrs: { type: 'submit' } }));
-    addForm.addEventListener('submit', async event => {
-      event.preventDefault();
-      try {
-        await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', { method: 'POST', data: {
-          name: memberName.value, modifier: Number(modifier.value), attack_bonus: Number(attackBonus.value), armor_class: armorClass.value ? Number(armorClass.value) : null, token_asset_id: artwork.value || null, initiative_group: initiativeGroup.value.trim() || null, source_monster_id: memberName.value.toLowerCase().trim() === 'goblin' ? 'goblin' : null
-        } });
-        await refresh(true);
-      } catch (error) { console.error('Encounter participant failed', error); }
-    });
-    const monsterPicker = node('div', { cls: 'monster-library' });
-    monsterPicker.append(node('p', { cls: 'section-caption', text: 'Choose a monster type and use + / − to set the quantity. Each creature gets its own HP and turn, but identical types share initiative.' }));
-    for (const type of [
-      { id: 'goblin', name: 'Goblin', subtitle: '2014 SRD · AC 15 · HP 7 · DEX +2', modifier: 2, ac: 15, attack_bonus: 4, group: 'goblins', source_monster_id: 'goblin' },
-      { id: 'shaman', name: 'Goblin Shaman', subtitle: 'Example only · spells not verified', modifier: 2, ac: 13, attack_bonus: 0, group: null, source_monster_id: null }
-    ]) {
-      const entry = node('div', { cls: 'monster-library-item' });
-      const countNow = participants.filter(p => type.id === 'goblin' ? p.source_monster_id === 'goblin' : p.name.startsWith('Goblin Shaman')).length;
-      const quantity = node('strong', { text: String(countNow), cls: 'monster-count' });
-      const addOne = async () => {
-        await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', { method: 'POST', data: {
-          name: type.name + ' ' + (countNow + 1),
-          modifier: type.modifier, armor_class: type.ac, attack_bonus: type.attack_bonus,
-          source_monster_id: type.source_monster_id, initiative_group: type.group
-        } });
+      const playerName = node('input', { attrs: { value: existing && !existing.source_monster_id && !existing.name.includes('Shaman') ? existing.name : '', placeholder: 'Player name', maxlength: 80, 'aria-label': 'Player name' } });
+      const playerAC = node('input', { attrs: { type: 'number', min: 1, max: 99, value: existing?.armor_class ?? 15, 'aria-label': 'Player AC' } });
+      const playerDex = node('input', { attrs: { type: 'number', min: -20, max: 30, value: existing?.modifier ?? 0, 'aria-label': 'Player Dexterity modifier' } });
+      const art = node('select', { attrs: { 'aria-label': 'Avatar' } }, tokenOptions());
+      art.value = existing?.token_asset_id || '';
+      const advLabel = node('label', { text: 'ADV on initiative' });
+      const adv = node('input', { attrs: { type: 'checkbox', 'aria-label': 'Advantage on initiative' } });
+      adv.checked = Boolean(existing?.initiative_advantage);
+      advLabel.prepend(adv);
+      const replaceWith = async data => {
+        if (existing) await api('/encounters/' + encodeURIComponent(encounter.id) + '/members/' + encodeURIComponent(existing.id), { method: 'DELETE' });
+        await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', { method: 'POST', data });
         await refresh(true);
       };
-      const removeOne = async () => {
-        const matching = participants.filter(p => type.id === 'goblin' ? p.source_monster_id === 'goblin' : p.name.startsWith('Goblin Shaman'));
-        if (!matching.length) return;
-        await api('/encounters/' + encodeURIComponent(encounter.id) + '/members/' + encodeURIComponent(matching[matching.length - 1].id), { method: 'DELETE' });
-        await refresh(true);
+      const addPlayer = async () => {
+        if (!playerName.value.trim()) { playerName.focus(); return; }
+        await replaceWith({ name: playerName.value.trim(), modifier: Number(playerDex.value), armor_class: Number(playerAC.value),
+          token_asset_id: art.value || null, initiative_advantage: adv.checked });
       };
-      entry.append(node('div', { cls: 'monster-library-copy' }, [
-        node('strong', { text: type.name }), node('small', { text: type.subtitle })
-      ]), button('−', removeOne, 'quiet'), quantity, button('+', addOne, 'primary'));
-      monsterPicker.append(entry);
+      const playerBox = node('div', { cls: 'simple-picker-section' }, [
+        node('strong', { text: 'PLAYER' }), playerName, playerAC, playerDex, art, advLabel,
+        button('Use Player Card', addPlayer, 'primary')
+      ]);
+      picker.append(playerBox);
+      const monsterBox = node('div', { cls: 'simple-picker-section' });
+      monsterBox.append(node('strong', { text: 'MONSTER' }));
+      for (const type of [
+        { name: 'Goblin', monster: 'goblin', group: 'goblins', ac:15, mod:2, attack:4, detail:'2014 SRD · Scimitar · Shortbow' },
+        { name: 'Goblin Shaman · example', monster:null, group:null, ac:13, mod:2, attack:0, detail:'Example only · spells not implemented' }
+      ]) {
+        const name = type.monster ? 'Goblin ' + (members.filter(m => m.source_monster_id === 'goblin').length + 1) : type.name;
+        monsterBox.append(button(type.name + ' — ' + type.detail, () => replaceWith({
+          name, modifier:type.mod, armor_class:type.ac, attack_bonus:type.attack, source_monster_id:type.monster,
+          initiative_group:type.group
+        }), 'outline'));
+      }
+      picker.append(monsterBox);
+      if (existing) picker.append(button('Clear Slot', async () => {
+        await api('/encounters/' + encodeURIComponent(encounter.id) + '/members/' + encodeURIComponent(existing.id), { method:'DELETE' });
+        await refresh(true);
+      }, 'quiet'));
+      builder.append(picker);
+    };
+    for (let i=0;i<total;i++) {
+      const m=members[i];
+      const slot=node('button', { cls: 'simple-battle-slot' + (m ? ' filled' : ''), attrs: { type:'button', 'aria-label':m ? 'Edit ' + m.name : 'Add card to slot ' + (i+1) } });
+      if (m) {
+        const portrait=node('div', { cls:'simple-slot-portrait' });
+        if (m.token_asset_id) portrait.append(node('img', { attrs:{ src:'/api/media/'+encodeURIComponent(m.token_asset_id), alt:'' } }));
+        else portrait.append(node('span', { text:m.name.slice(0,2).toUpperCase() }));
+        slot.append(portrait,node('strong',{text:m.name}),node('small',{text:'AC '+(m.armor_class??'—')+' · DEX '+(m.modifier>=0?'+':'')+m.modifier}));
+      } else slot.append(node('span',{text:'＋',cls:'simple-empty-plus'}),node('small',{text:'Empty Slot'}));
+      slot.addEventListener('click',()=>openPicker(i,m));
+      slots.append(slot);
     }
-    block.append(monsterPicker, button('⚄ BATTLE · Roll Initiative', async () => {
-      if (!confirm('Start ' + encounter.name + '? This replaces the current turn order and rolls initiative for everyone.')) return;
-      await api('/encounters/' + encodeURIComponent(encounter.id) + '/start', { method: 'POST' });
+    builder.append(slots);
+    builder.append(button('⚔ BATTLE — Roll Initiative',async()=>{
+      if (!members.length) return;
+      await api('/encounters/'+encodeURIComponent(encounter.id)+'/start',{method:'POST'});
       await refresh(true);
-    }, 'primary'));
-    encounterSection.append(block);
-  }
-  setup.append(setupBody);
-  root.append(setup, node('div', { cls: 'editor-divider' }));
+    },'primary'));
+  } else builder.append(node('p',{text:'Create Battle 1, then click an empty slot to add cards.'}));
+  root.append(builder);
+  root.append(node('div',{cls:'editor-divider'}));
   const settings = state.settings;
   root.append(node('div', { cls: 'toolbar' }, [node('strong', { text: `Turn Order · Round ${settings.round_number}` }),
     node('div', { cls: 'controls' }, [button('Next Turn →', async () => { await api('/combat/next', { method: 'POST' }); await refresh(); }, 'primary'),
