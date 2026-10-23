@@ -41,7 +41,7 @@ export function renderPublic(target, state, compact = false) {
   } else if (state.card === 'initiative') {
     panel.classList.add('initiative-card', 'initiative-split');
     const combatants = content.combatants ?? [];
-    const current = combatants.find(x => x.id === content.active_turn) ?? combatants[0];
+    const current = combatants.find(x => x.id === content.active_turn) ?? null;
     const top = node('div', { cls: 'initiative-token-zone' });
     const header = node('div', { cls: 'initiative-header' }, [
       node('strong', { text: 'ROUND ' + (content.round ?? 1) }),
