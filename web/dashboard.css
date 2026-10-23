@@ -114,3 +114,15 @@ dialog{max-width:400px;width:calc(100% - 24px);color:#ede9e1;background:#1d1e2a;
 .monster-library-copy small{color:#c2b5a7;font-size:11px;line-height:1.5}
 .monster-library-item button{min-width:35px;min-height:36px}
 .monster-count{min-width:25px;text-align:center;font-size:19px;color:#f0d3a1}
+
+/* Library cards are the encounter-building controls, not form fields. */
+.drag-card-library{padding:14px;border:1px solid #5b4c3b;border-radius:13px;background:#181923}
+.drag-card-library h3{margin:0 0 12px;color:#f2d19a;font-size:15px}
+.drag-card-library h4{margin:13px 0 7px;color:#d4c1a4;font-size:11px;letter-spacing:.11em}
+.library-card-row{display:flex;gap:9px;overflow-x:auto;padding-bottom:6px}
+.draggable-library-card{flex:0 0 148px;min-height:125px;display:flex;flex-direction:column;justify-content:flex-end;gap:5px;border:1px solid #756243;border-radius:12px;padding:12px;cursor:grab;background:linear-gradient(135deg,#343141,#171922);color:#f4d9a7}
+.draggable-library-card strong{font-size:14px}
+.draggable-library-card small{font-size:11px;color:#b9b4bf;line-height:1.4}
+.draggable-library-card:focus-visible,.draggable-library-card.picked{outline:2px solid #f0c575;outline-offset:2px}
+.battle-drop-slot{border:2px dashed #8a775e;border-radius:10px;padding:14px 6px;margin-top:5px;min-height:65px;display:grid;place-items:center;text-align:center;color:#ecd4a4;font-size:11px;cursor:copy}
+.battle-drop-slot.drag-over,.battle-drop-slot:hover{border-color:#f4c878;background:#8b6d3d33}
