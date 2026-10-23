@@ -1,7 +1,7 @@
 import { RAW_MONSTERS, MONSTER_BY_ID, makeInstance, makePlayer, rollInitiative, rollAttack } from './cards.js';
 import { cardFace } from './card-view.js';
 import { silhouetteFor } from './silhouettes.js';
-import {configured,currentUser,signIn,signOut,createSession,savePrivateState,publishDisplayFrame} from './cloud-api.js';
+import {configured,currentUser,signIn,signOut,createSession,savePrivateState,publishDisplayFrame,readMySessions} from './cloud-api.js';
 import {projectPublicFrame} from './public-frame.js';
 const $ = q => document.querySelector(q);
 const node = (tag, text, cls) => { const el=document.createElement(tag); if(text!=null)el.textContent=String(text); if(cls)el.className=cls; return el; };
@@ -10,7 +10,7 @@ let battles=[{id:'demo-1',name:'Goblin Ambush',cards:[]}], selectedId='demo-1', 
 let targetSlot=0, pickerType='player';
 let cloudSessionId=null,cloudRevision=0;
 const cloudStatus=message=>{$('#cloud-message').textContent=message;};
-const updateAuth=()=>{const on=!!currentUser();$('#cloud-login-form').hidden=on;$('#cloud-logout').hidden=!on;$('#cloud-create').disabled=!on;$('#cloud-save').disabled=!on;$('#cloud-status').textContent=!configured()?'Cloud not configured':on?'Signed in · '+currentUser().email:'Not signed in · local preview only';};
+const updateAuth=()=>{const on=!!currentUser();$('#cloud-login-form').hidden=on;$('#cloud-logout').hidden=!on;$('#cloud-create').disabled=!on;$('#cloud-load').disabled=!on;$('#cloud-save').disabled=!on;$('#cloud-status').textContent=!configured()?'Cloud not configured':on?'Signed in · '+currentUser().email:'Not signed in · local preview only';};
 const publicFrame=()=>projectPublicFrame(currentBattle()?.name,round,turnOrder[turnIndex],currentResult);
 async function pushFrame(){if(!cloudSessionId||!currentUser())return;cloudRevision=Math.max(Date.now(),cloudRevision+1);await publishDisplayFrame(cloudSessionId,publicFrame(),cloudRevision);cloudStatus('Phone frame updated · revision '+cloudRevision);}
 
@@ -54,6 +54,21 @@ function renderPicker(){
         $('#card-picker').close();announce(monster.name+' added. Save the battle name when ready.');$('#cloud-login-form').addEventListener('submit',async e=>{e.preventDefault();try{await signIn($('#cloud-email').value,$('#cloud-password').value);$('#cloud-password').value='';updateAuth();cloudStatus('DM authenticated. Create a private cloud battle to enable phone updates.');}catch(error){cloudStatus('Sign-in failed: '+error.message);}});
 $('#cloud-logout').addEventListener('click',()=>{signOut();cloudSessionId=null;updateAuth();cloudStatus('Signed out');});
 $('#cloud-create').addEventListener('click',async()=>{try{const session=await createSession(currentBattle().name);cloudSessionId=session.id;cloudRevision=0;await savePrivateState(cloudSessionId,{cards:currentBattle().cards},currentBattle().name);await pushFrame();cloudStatus('Private battle created · '+session.id+' · authorize display account before viewing on phone');}catch(e){cloudStatus('Cloud creation failed: '+e.message);}});
+$('#cloud-load').addEventListener('click',async()=>{
+ try{
+  const sessions=await readMySessions();
+  if(!sessions.length){cloudStatus('No private cloud battles saved yet');return;}
+  // Select most recently modified battle. The UI offers explicit selection later.
+  const session=sessions[0],cards=session.private_state?.cards||[];
+  const id='cloud-'+session.id;
+  const found=battles.find(b=>b.id===id);
+  if(found){found.name=session.name;found.cards=cards;}
+  else battles.push({id,name:session.name,cards});
+  selectedId=id;cloudSessionId=session.id;cloudRevision=Date.now();
+  turnOrder=[];turnIndex=0;round=1;currentResult=null;
+  render();cloudStatus('Loaded '+session.name+' · Start Battle to update phone');
+ }catch(e){cloudStatus('Cloud load failed: '+e.message);}
+});
 $('#cloud-save').addEventListener('click',async()=>{if(!cloudSessionId){cloudStatus('Create a private cloud battle first');return;}try{await savePrivateState(cloudSessionId,{cards:currentBattle().cards},currentBattle().name);await pushFrame();cloudStatus('Private battle saved');}catch(e){cloudStatus('Cloud save failed: '+e.message);}});
 updateAuth();
 render();
