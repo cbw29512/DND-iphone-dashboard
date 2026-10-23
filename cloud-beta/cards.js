@@ -47,12 +47,16 @@ export function rollInitiative(instances, rng=Math.random) {
   });
   return entries.sort((a,b)=>b.initiative-a.initiative || a.originalIndex-b.originalIndex);
 }
-export function rollAttack(attacker, attack, target, mode='normal',rng=Math.random) {
+/** RAW attack total and independently rolled damage; target resolves changing AC.
+ * Natural 1/20 flags retained without showing HIT/MISS on the public display.
+ * Damage is a prospective roll, not applied automatically to player HP.
+ */
+export function rollAttack(attacker, attack, target=null, mode='normal',rng=Math.random) {
   const d20=rollD20(mode,rng), critical=d20.natural===20, fumble=d20.natural===1;
   const total=d20.natural+attack.bonus;
-  const hit=critical || (!fumble && total>=target.ac);
-  const dice=hit ? Array.from({length:attack.dice[0]*(critical?2:1)},()=>Math.floor(rng()*attack.dice[1])+1):[];
-  return {natural:d20.natural,dice:d20.dice,total,hit,critical,
-    damage:hit?Math.max(0,dice.reduce((a,b)=>a+b,0)+attack.modifier):0,damageDice:dice,
-    damageType:attack.damageType, attackName:attack.name, target:target.name};
+  const dice=Array.from({length:attack.dice[0]*(critical?2:1)},()=>Math.floor(rng()*attack.dice[1])+1);
+  const damage=Math.max(0,dice.reduce((a,b)=>a+b,0)+attack.modifier);
+  return {natural:d20.natural,dice:d20.dice,total,critical,fumble,
+    damage,damageDice:dice,damageType:attack.damageType,attackName:attack.name,
+    target:target?.name || null};
 }
