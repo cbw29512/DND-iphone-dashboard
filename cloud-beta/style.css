@@ -45,3 +45,8 @@ dialog{width:min(680px,95vw);max-height:90vh;overflow-y:auto;background:#212232;
 .card-combat .character-name{font-size:32px}
 .card-combat .character-details{padding:18px}
 @media(max-width:500px){.card-slot .character-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.slot.filled{min-height:220px}.card-combat .character-portrait{height:170px}}
+
+/* Source-matched silhouette art; crisp at phone and battle-card sizes. */
+.portrait-silhouette{display:block;width:72%;height:88%;color:#d9bc89;filter:drop-shadow(0 7px 12px #05060baa)}
+.portrait-silhouette svg{width:100%;height:100%;fill:currentColor;stroke:currentColor;stroke-width:1;stroke-linejoin:round}
+.card-slot .portrait-silhouette{width:60%;height:85%}
