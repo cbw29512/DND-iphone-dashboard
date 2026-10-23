@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#141520">
+<meta name="description" content="Iron Lantern private tabletop combat companion.">
+<title>Iron Lantern | Battle Builder</title>
+<link rel="stylesheet" href="./style.css">
+<script type="module" src="./app.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="brand"><span class="sigil">✧</span><div><strong>IRON LANTERN</strong><small>DM COMMAND TABLE</small></div></div><span class="stage">CLOUD BETA · LOCAL PREVIEW</span></header>
+<main>
+<section class="intro"><p class="eyebrow">DUNGEONS & DRAGONS · 2014 RULES FIRST</p><h1>Build a battle. Play your cards.</h1><p>Choose your party and monsters, then run the encounter one card at a time.</p></section>
+<div class="workspace">
+<section class="panel builder" aria-labelledby="builder-title">
+<div class="panel-heading"><div><p class="eyebrow">ENCOUNTER BUILDER</p><h2 id="builder-title">Battle cards</h2></div><button id="new-battle" class="secondary">+ New battle</button></div>
+<div class="savebar"><label for="battle-name">Battle name</label><input id="battle-name" maxlength="80" value="Goblin Ambush"><button id="save-battle">Save</button></div>
+<div id="saved-battles" class="saved-battles" aria-label="Saved battle names"></div>
+<p class="helper">Click an empty slot to choose a player or monster. Click a filled slot to replace or remove its card.</p>
+<div id="battle-grid" class="battle-grid" aria-label="Battle card slots"></div>
+<div class="builder-footer"><div id="builder-status" role="status" aria-live="polite"></div><button id="start-battle" class="action">⚔ BATTLE</button></div>
+</section>
+<section class="panel combat" aria-labelledby="combat-title">
+<div class="panel-heading"><div><p class="eyebrow">BATTLE DISPLAY</p><h2 id="combat-title">Turn card</h2></div><span id="round-chip" class="round-chip">NOT STARTED</span></div>
+<div id="turn-card" class="turn-card"><div class="empty-state">Your current combatant will appear here after Battle.</div></div>
+<div id="combat-actions" class="combat-actions"></div><section class="public-preview" aria-label="Player-safe phone preview"><p class="eyebrow">PHONE VIEW · PLAYER SAFE PREVIEW</p><div id="public-result" class="public-result" aria-live="polite">Waiting for Battle</div><p class="helper">This is a preview on the DM page, not a connected iPhone. Monster AC and HP are never included here.</p></section>
+<div class="bottom-actions"><button id="next-turn" class="action" disabled>Next Turn →</button></div>
+</section>
+</div>
+<footer>Prototype interface only. This static preview does not authenticate users, synchronize phones, or store private data in a cloud database. Do not enter personal information.</footer>
+</main>
+<dialog id="card-picker" aria-labelledby="picker-title">
+<form method="dialog" class="dialog-head"><h2 id="picker-title">Choose a card</h2><button aria-label="Close" class="secondary">✕</button></form>
+<div class="type-tabs" role="tablist"><button id="tab-player" type="button" class="selected">Player</button><button id="tab-monster" type="button">Monster</button></div>
+<div id="picker-content"></div>
+<div class="picker-footer"><button id="remove-card" class="danger" type="button">Remove from slot</button></div>
+</dialog>
+</body></html>

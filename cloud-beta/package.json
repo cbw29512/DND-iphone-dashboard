@@ -1,0 +1,8 @@
+{
+  "name": "iron-lantern-cloud-preview",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test cards.test.js"
+  }
+}
