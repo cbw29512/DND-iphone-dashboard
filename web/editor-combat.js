@@ -39,6 +39,41 @@ export function combatEditor(root, state, refresh) {
     node('option', { text: 'Name only (no artwork)', attrs: { value: '' } }),
     ...state.media.filter(m => m.category === 'gallery').map(m => node('option', { text: m.name, attrs: { value: m.id } }))
   ];
+  // Drag a library card onto a battle slot to add it to that encounter.
+  const library = node('section', { cls: 'drag-card-library' });
+  library.append(node('h3', { text: 'CARD LIBRARY · Drag into a Battle Slot' }));
+  const makeDraggable = (label, payload, subtitle) => {
+    const tile = node('div', { cls: 'draggable-library-card', attrs: { draggable: 'true', tabindex: '0', role: 'button', 'aria-label': 'Select ' + label } });
+    tile.append(node('strong', { text: label }), node('small', { text: subtitle }));
+    tile.addEventListener('dragstart', e => { e.dataTransfer.setData('application/x-iron-lantern-card', JSON.stringify(payload)); e.dataTransfer.effectAllowed = 'copy'; });
+    tile.addEventListener('click', () => { selectedCard = payload; library.querySelectorAll('.draggable-library-card').forEach(c => c.classList.remove('picked')); tile.classList.add('picked'); });
+    tile.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tile.click(); } });
+    return tile;
+  };
+  let selectedCard = null;
+  const playerLibrary = node('div', { cls: 'library-card-row' });
+  const priorPlayers = (state.combatants || []).filter(c => !c.source_monster_id && !c.name.toLowerCase().includes('shaman'));
+  for (const c of priorPlayers) playerLibrary.append(makeDraggable(c.name, {
+    name: c.name, modifier: 0, armor_class: c.armor_class, token_asset_id: c.token_asset_id
+  }, 'Player avatar · AC ' + (c.armor_class ?? 'set after adding')));
+  library.append(node('h4', { text: 'PLAYERS' }), playerLibrary);
+  const monstersLibrary = node('div', { cls: 'library-card-row' });
+  monstersLibrary.append(makeDraggable('Goblin', {
+    name: 'Goblin', modifier: 2, armor_class: 15, attack_bonus: 4, source_monster_id: 'goblin', initiative_group: 'goblins'
+  }, '2014 SRD · Scimitar / Shortbow'));
+  monstersLibrary.append(makeDraggable('Goblin Shaman · example', {
+    name: 'Goblin Shaman · example', modifier: 2, armor_class: 13
+  }, 'Placeholder: no verified spells yet'));
+  library.append(node('h4', { text: 'MONSTERS' }), monstersLibrary);
+  root.append(library);
+  const placeCard = async (encounter, payload) => {
+    const members = (state.encounter_members || []).filter(m => m.encounter_id === encounter.id);
+    const copies = members.filter(m => payload.source_monster_id ? m.source_monster_id === payload.source_monster_id : m.name.startsWith(payload.name)).length;
+    await api('/encounters/' + encodeURIComponent(encounter.id) + '/members', {
+      method: 'POST', data: { ...payload, name: payload.source_monster_id ? payload.name + ' ' + (copies + 1) : payload.name }
+    });
+    await refresh(true);
+  };
   // Quick launch is always visible; preparation tools stay collapsed until requested.
   const saved = state.encounters || [];
   const launcher = node('div', { cls: 'encounter-launcher' });
@@ -50,6 +85,20 @@ export function combatEditor(root, state, refresh) {
     const monsters = members.filter(m => m.source_monster_id || m.name.toLowerCase().includes('shaman')).length;
     slotCard.append(node('strong', { text: 'Battle ' + (slot + 1) }),
       node('small', { text: encounter ? encounter.name + ' · ' + members.length + ' cards (' + monsters + ' monsters)' : 'Not prepared' }));
+    if (encounter) {
+      const drop = node('div', { cls: 'battle-drop-slot', attrs: { tabindex: '0', role: 'button', 'aria-label': 'Drop or add selected card to Battle ' + (slot + 1) } });
+      drop.append(node('span', { text: '＋ Drop a player or monster card here' }));
+      drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
+      drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+      drop.addEventListener('drop', async e => {
+        e.preventDefault(); drop.classList.remove('drag-over');
+        try { const payload = JSON.parse(e.dataTransfer.getData('application/x-iron-lantern-card')); if (payload?.name) await placeCard(encounter, payload); }
+        catch (error) { console.error('Could not add card', error); }
+      });
+      drop.addEventListener('click', async () => { if (selectedCard) await placeCard(encounter, selectedCard); });
+      drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drop.click(); } });
+      slotCard.append(drop);
+    }
     if (encounter && members.length) slotCard.append(button('Load & Battle', async () => {
       if (!confirm('Roll initiative and load Battle ' + (slot + 1) + '? This replaces the active combat turn order.')) return;
       await api('/encounters/' + encodeURIComponent(encounter.id) + '/start', { method: 'POST' });
