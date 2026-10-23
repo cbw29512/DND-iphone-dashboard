@@ -175,4 +175,24 @@ $('#next-turn').addEventListener('click',()=>{
   turnIndex++;if(turnIndex>=turnOrder.length){turnIndex=0;round++;}
   currentResult=null;renderCombat();pushFrame().catch(e=>cloudStatus('Sync failed: '+e.message));
 });
+$('#cloud-login-form').addEventListener('submit',async e=>{
+ e.preventDefault();try{await signIn($('#cloud-email').value,$('#cloud-password').value);
+ $('#cloud-password').value='';updateAuth();cloudStatus('Authenticated. Create a private cloud battle to enable phone updates.');
+ }catch(error){cloudStatus('Sign-in failed: '+error.message);}
+});
+$('#cloud-logout').addEventListener('click',()=>{signOut();cloudSessionId=null;updateAuth();cloudStatus('Signed out');});
+$('#cloud-create').addEventListener('click',async()=>{
+ try{const session=await createSession(currentBattle().name);
+ cloudSessionId=session.id;cloudRevision=0;
+ await savePrivateState(cloudSessionId,{cards:currentBattle().cards},currentBattle().name);
+ await pushFrame();cloudStatus('Private battle created; authorize your display account for this session.');
+ }catch(e){cloudStatus('Cloud creation failed: '+e.message);}
+});
+$('#cloud-save').addEventListener('click',async()=>{
+ if(!cloudSessionId){cloudStatus('Create a private cloud battle first');return;}
+ try{await savePrivateState(cloudSessionId,{cards:currentBattle().cards},currentBattle().name);
+ await pushFrame();cloudStatus('Private battle saved');
+ }catch(e){cloudStatus('Cloud save failed: '+e.message);}
+});
+updateAuth();
 render();
