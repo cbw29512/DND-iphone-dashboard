@@ -1,11 +1,19 @@
 import { RAW_MONSTERS, MONSTER_BY_ID, makeInstance, makePlayer, rollInitiative, rollAttack } from './cards.js';
 import { cardFace } from './card-view.js';
 import { silhouetteFor } from './silhouettes.js';
+import {configured,currentUser,signIn,signOut,createSession,savePrivateState,publishDisplayFrame,readMySessions} from './cloud-api.js';
 const $ = q => document.querySelector(q);
 const node = (tag, text, cls) => { const el=document.createElement(tag); if(text!=null)el.textContent=String(text); if(cls)el.className=cls; return el; };
 const button=(label,act,cls='secondary')=>{const e=node('button',label,cls);e.type='button';e.addEventListener('click',act);return e;};
 let battles=[{id:'demo-1',name:'Goblin Ambush',cards:[]}], selectedId='demo-1', turnOrder=[], turnIndex=0, round=1, currentResult=null;
 let targetSlot=0, pickerType='player';
+let cloudSessionId=null,cloudRevision=0;
+const cloudStatus=message=>{$('#cloud-message').textContent=message;};
+const updateAuth=()=>{const on=!!currentUser();$('#cloud-login-form').hidden=on;$('#cloud-logout').hidden=!on;$('#cloud-create').disabled=!on;$('#cloud-save').disabled=!on;$('#cloud-status').textContent=!configured()?'Cloud not configured':on?'Signed in · '+currentUser().email:'Not signed in · local preview only';};
+const publicFrame=()=>{const actor=turnOrder[turnIndex];const result=currentResult?.actorId===actor?.id?currentResult:null;
+ return {battleName:currentBattle()?.name||'Battle',round,name:actor?.name||null,kind:actor?.kind||null,sourceId:actor?.sourceId||null,initiative:actor?.initiative??null,action:result?{type:'attack',name:result.attackName,total:result.total,damage:result.damage,damageType:result.damageType,critical:result.critical,fumble:result.fumble}:null};};
+async function pushFrame(){if(!cloudSessionId||!currentUser())return;cloudRevision=Math.max(Date.now(),cloudRevision+1);await publishDisplayFrame(cloudSessionId,publicFrame(),cloudRevision);cloudStatus('Phone frame updated · revision '+cloudRevision);}
+
 const currentBattle=()=>battles.find(b=>b.id===selectedId);
 const announce=message=>{$('#builder-status').textContent=message;};
 function render(){
@@ -43,7 +51,12 @@ function renderPicker(){
       const tile=button('',()=>{
         const cards=currentBattle().cards;const instance=makeInstance(monster);
         if(targetSlot<cards.length)cards[targetSlot]=instance;else cards.push(instance);
-        $('#card-picker').close();announce(monster.name+' added. Save the battle name when ready.');render();
+        $('#card-picker').close();announce(monster.name+' added. Save the battle name when ready.');$('#cloud-login-form').addEventListener('submit',async e=>{e.preventDefault();try{await signIn($('#cloud-email').value,$('#cloud-password').value);$('#cloud-password').value='';updateAuth();cloudStatus('DM authenticated. Create a private cloud battle to enable phone updates.');}catch(error){cloudStatus('Sign-in failed: '+error.message);}});
+$('#cloud-logout').addEventListener('click',()=>{signOut();cloudSessionId=null;updateAuth();cloudStatus('Signed out');});
+$('#cloud-create').addEventListener('click',async()=>{try{const session=await createSession(currentBattle().name);cloudSessionId=session.id;cloudRevision=0;await savePrivateState(cloudSessionId,{cards:currentBattle().cards},currentBattle().name);await pushFrame();cloudStatus('Private battle created · '+session.id+' · authorize display account before viewing on phone');}catch(e){cloudStatus('Cloud creation failed: '+e.message);}});
+$('#cloud-save').addEventListener('click',async()=>{if(!cloudSessionId){cloudStatus('Create a private cloud battle first');return;}try{await savePrivateState(cloudSessionId,{cards:currentBattle().cards},currentBattle().name);await pushFrame();cloudStatus('Private battle saved');}catch(e){cloudStatus('Cloud save failed: '+e.message);}});
+updateAuth();
+render();
       },'monster-choice');
       tile.append(cardFace(makeInstance(monster),{mode:'library'}));
       options.append(tile);
@@ -123,7 +136,7 @@ function renderCombat(){
           const target=targets.find(t=>t.id===targetSelect.value);
           if(!chosen||!target)return;
           currentResult={actorId:fighter.id,...rollAttack(fighter,chosen,target,mode)};
-          renderCombat();
+          renderCombat();pushFrame().catch(e=>cloudStatus('Sync failed: '+e.message));
         },'action'));
       }
       actions.append(modes);
@@ -155,11 +168,11 @@ $('#save-battle').addEventListener('click',()=>{
 });
 $('#start-battle').addEventListener('click',()=>{
   turnOrder=rollInitiative(currentBattle().cards);
-  turnIndex=0;round=1;currentResult=null;announce('Initiative rolled.');render();
+  turnIndex=0;round=1;currentResult=null;announce('Initiative rolled.');render();pushFrame().catch(e=>cloudStatus('Sync failed: '+e.message));
 });
 $('#next-turn').addEventListener('click',()=>{
   if(!turnOrder.length)return;
   turnIndex++;if(turnIndex>=turnOrder.length){turnIndex=0;round++;}
-  currentResult=null;renderCombat();
+  currentResult=null;renderCombat();pushFrame().catch(e=>cloudStatus('Sync failed: '+e.message));
 });
 render();
