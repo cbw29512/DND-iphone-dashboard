@@ -6,10 +6,6 @@ let selectedEncounterId = null;
 
 export function combatEditor(root, state, refresh) {
   root.replaceChildren();
-  const tokenOptions = () => [
-    node('option', { text: 'No artwork', attrs: { value: '' } }),
-    ...state.media.filter(m => m.category === 'gallery').map(m => node('option', { text: m.name, attrs: { value: m.id } }))
-  ];
   const editInputs = (card, current, save) => {
     const form = node('form', { cls: 'combat-edit-form' });
     const name = node('input', { attrs: { value: current.name, required: '', maxlength: 80, 'aria-label': 'Card name' } });
