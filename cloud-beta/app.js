@@ -1,7 +1,8 @@
 import { RAW_MONSTERS, MONSTER_BY_ID, makeInstance, makePlayer, rollInitiative, rollAttack } from './cards.js';
 import { cardFace } from './card-view.js';
 import { silhouetteFor } from './silhouettes.js';
-import {configured,currentUser,signIn,signOut,createSession,savePrivateState,publishDisplayFrame,readMySessions} from './cloud-api.js';
+import {configured,currentUser,signIn,signOut,createSession,savePrivateState,publishDisplayFrame} from './cloud-api.js';
+import {projectPublicFrame} from './public-frame.js';
 const $ = q => document.querySelector(q);
 const node = (tag, text, cls) => { const el=document.createElement(tag); if(text!=null)el.textContent=String(text); if(cls)el.className=cls; return el; };
 const button=(label,act,cls='secondary')=>{const e=node('button',label,cls);e.type='button';e.addEventListener('click',act);return e;};
@@ -10,8 +11,7 @@ let targetSlot=0, pickerType='player';
 let cloudSessionId=null,cloudRevision=0;
 const cloudStatus=message=>{$('#cloud-message').textContent=message;};
 const updateAuth=()=>{const on=!!currentUser();$('#cloud-login-form').hidden=on;$('#cloud-logout').hidden=!on;$('#cloud-create').disabled=!on;$('#cloud-save').disabled=!on;$('#cloud-status').textContent=!configured()?'Cloud not configured':on?'Signed in · '+currentUser().email:'Not signed in · local preview only';};
-const publicFrame=()=>{const actor=turnOrder[turnIndex];const result=currentResult?.actorId===actor?.id?currentResult:null;
- return {battleName:currentBattle()?.name||'Battle',round,name:actor?.name||null,kind:actor?.kind||null,sourceId:actor?.sourceId||null,initiative:actor?.initiative??null,action:result?{type:'attack',name:result.attackName,total:result.total,damage:result.damage,damageType:result.damageType,critical:result.critical,fumble:result.fumble}:null};};
+const publicFrame=()=>projectPublicFrame(currentBattle()?.name,round,turnOrder[turnIndex],currentResult);
 async function pushFrame(){if(!cloudSessionId||!currentUser())return;cloudRevision=Math.max(Date.now(),cloudRevision+1);await publishDisplayFrame(cloudSessionId,publicFrame(),cloudRevision);cloudStatus('Phone frame updated · revision '+cloudRevision);}
 
 const currentBattle=()=>battles.find(b=>b.id===selectedId);
