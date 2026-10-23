@@ -7,3 +7,41 @@ main{max-width:1260px;margin:auto;padding:27px 20px 38px}.intro h1{font-family:G
 .panel{border:1px solid #514738;border-radius:18px;padding:20px;background:linear-gradient(155deg,#222331,#191b27);min-width:0}.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.panel-heading h2{margin:2px 0;font-size:23px;font-family:Georgia,serif}.savebar{display:flex;gap:8px;align-items:flex-end;margin:18px 0 8px}.savebar label{flex:1}.saved-battles{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}.saved-battles button{font-size:11px;padding:8px 10px}.selected{background:#695332!important;border-color:var(--gold)!important}.helper{color:var(--muted);font-size:12px;line-height:1.55}.battle-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:18px 0}.slot{min-height:155px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:9px;min-width:0}.slot.empty{border:2px dashed #7a6950;background:#171a25}.slot.filled{background:linear-gradient(#383140,#212330)}.slot strong{font-size:12px;text-align:center}.slot small{font-size:10px;color:var(--muted);text-align:center}.slot-art{height:76px;display:grid;place-items:center;font-size:42px;color:var(--gold)}.slot-art img{max-height:76px;max-width:100%;object-fit:contain}.plus{font-size:32px;color:var(--gold)}.builder-footer{display:flex;align-items:center;justify-content:space-between;gap:12px}.action{background:linear-gradient(135deg,#c19048,#986836);color:#141016;border-color:#e1b66f}.builder-footer .action{padding:14px 30px}.round-chip{border:1px solid #947247;border-radius:50px;padding:7px 11px;font-size:11px;color:var(--gold)}.turn-card{min-height:300px;margin:16px 0}.active-combat-card{border:1px solid #685843;border-radius:15px;background:#181923;padding:20px;text-align:center}.turn-portrait{font-size:82px;color:var(--gold);margin:15px}.active-combat-card h3{font:30px Georgia,serif;margin:6px}.active-combat-card p{color:var(--muted)}.empty-state{min-height:300px;display:grid;place-items:center;text-align:center;color:var(--muted);padding:24px;border:1px dashed #615644;border-radius:12px}.combat-actions{display:flex;flex-direction:column;gap:12px}.roll-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.roll-result{text-align:center;border:1px solid #88704d;padding:15px;border-radius:10px}.roll-result strong{font-size:24px}.roll-result b{color:var(--gold)}.critical{border-color:#70b67e}.bottom-actions{display:flex;justify-content:flex-end;margin-top:14px}.bottom-actions button{width:100%}footer{color:#8e8b8a;font-size:11px;margin-top:25px;line-height:1.6}
 dialog{width:min(680px,95vw);max-height:90vh;overflow-y:auto;background:#212232;color:var(--text);border:1px solid var(--gold);border-radius:16px;padding:20px}dialog::backdrop{background:#050509d9}.dialog-head{display:flex;justify-content:space-between;align-items:center}.dialog-head h2{font:26px Georgia,serif}.type-tabs{display:flex;gap:8px;margin-bottom:16px}.type-tabs button{flex:1}.player-form{display:grid;gap:12px}.player-form .action{margin-top:5px}.monster-options{display:grid;gap:8px}.monster-choice{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:5px}.monster-choice span,.monster-choice small{color:var(--muted);font-size:12px}.picker-footer{display:flex;justify-content:flex-end;margin-top:20px}.danger{border-color:#a45757;background:#4b3037}
 @media(max-width:900px){.workspace{grid-template-columns:1fr}.stage{font-size:9px}}@media(max-width:450px){.battle-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.savebar{flex-wrap:wrap}.savebar label{flex-basis:100%}.topbar{padding:12px}}
+
+/* Shared character-card system: identical information hierarchy at every size. */
+.character-face{display:flex;flex-direction:column;overflow:hidden;border-radius:12px;background:linear-gradient(150deg,#3c3343,#1b1d29 72%);border:1px solid #8c7453;color:#f7eddb;min-width:0;width:100%}
+.character-portrait{height:140px;display:grid;place-items:center;background:radial-gradient(circle at center,#64506b55,#171925 70%);border-bottom:1px solid #756044}
+.character-portrait img{display:block;max-width:100%;width:100%;height:100%;object-fit:contain}
+.portrait-placeholder{font-size:58px;line-height:1;color:#e6b978}
+.character-details{padding:13px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.character-type{font-size:10px;letter-spacing:.13em;font-weight:800;color:#dcb57b}
+.character-name{font:700 22px Georgia,serif;overflow-wrap:anywhere}
+.character-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.character-stat{background:#141720b8;border:1px solid #5e5145;border-radius:7px;display:flex;flex-direction:column;align-items:center;padding:7px 3px;gap:3px}
+.stat-label{color:#b7a98f;font-size:10px;letter-spacing:.09em}
+.stat-value{font-size:15px}
+.character-attacks{border-top:1px solid #6f5947;padding-top:10px;display:flex;flex-direction:column;gap:4px}
+.attack-entry{font-size:12px;line-height:1.4;margin:0}
+.card-source{color:#b6a997;font-size:10px}
+.player-turn-note{font-size:12px;color:#bdb4a6;line-height:1.5;margin:0}
+.card-slot .character-portrait{height:78px}
+.card-slot .portrait-placeholder{font-size:35px}
+.card-slot .character-details{padding:8px;gap:4px}
+.card-slot .character-name{font-size:14px}
+.card-slot .character-type{font-size:8px}
+.card-slot .character-stat-grid{gap:3px}
+.card-slot .character-stat{padding:5px 1px}
+.card-slot .stat-label{font-size:8px}
+.card-slot .stat-value{font-size:11px}
+.slot.filled{padding:0;overflow:hidden;min-height:205px}
+.slot.filled>.character-face{border:0;border-radius:10px;height:100%}
+.monster-choice{padding:0;overflow:hidden;text-align:left}
+.monster-choice>.character-face{border:0;border-radius:10px}
+.card-library .character-portrait{height:150px}
+.active-combat-card{padding:12px}
+.active-combat-card>.character-face{margin-top:10px}
+.card-combat{max-width:420px;margin:0 auto}
+.card-combat .character-portrait{height:210px}
+.card-combat .character-name{font-size:32px}
+.card-combat .character-details{padding:18px}
+@media(max-width:500px){.card-slot .character-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.slot.filled{min-height:220px}.card-combat .character-portrait{height:170px}}
