@@ -177,6 +177,17 @@ def add_member(request: Request, encounter_id: str, body: EncounterMember):
             "INSERT INTO encounter_members(id,encounter_id,name,modifier,visible,token_asset_id,attack_bonus,armor_class,initiative_group,source_monster_id,initiative_advantage,position) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             (identity, encounter_id, body.name.strip(), body.modifier, int(body.visible), body.token_asset_id, body.attack_bonus, body.armor_class, body.initiative_group, body.source_monster_id, 0, pos)
         )
+        if body.source_monster_id == "goblin":
+            db.executemany(
+                """INSERT INTO monster_attack_profiles
+                   (id,monster_id,attack_name,attack_bonus,damage_count,damage_sides,
+                    damage_bonus,damage_type,source_ruleset,source_complete)
+                   VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING""",
+                [
+                    ("2014:goblin:scimitar", "goblin", "Scimitar", 4, 1, 6, 2, "slashing", "2014", 1),
+                    ("2014:goblin:shortbow", "goblin", "Shortbow", 4, 1, 6, 2, "piercing", "2014", 1),
+                ],
+            )
         revision(db)
     publish()
     return {"id": identity}
