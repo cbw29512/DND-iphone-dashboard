@@ -3,6 +3,7 @@ import { cardFace } from './card-view.js';
 import { silhouetteFor } from './silhouettes.js';
 import {configured,currentUser,signIn,signOut,createSession,savePrivateState,publishDisplayFrame,readMySessions} from './cloud-api.js';
 import {projectPublicFrame} from './public-frame.js';
+import {applyMonsterHp} from './combat-state.js';
 import {makeLocalDmPush} from './local-push-client.js';
 const $ = q => document.querySelector(q);
 const node = (tag, text, cls) => { const el=document.createElement(tag); if(text!=null)el.textContent=String(text); if(cls)el.className=cls; return el; };
@@ -121,6 +122,21 @@ function renderCombat(){
     if(attack)selector.value=attack.id;
     selector.addEventListener('change',()=>{fighter.preparedAttackId=selector.value;renderCombat();});
     actions.append(node('label','Selected attack'),selector);
+    // DM-only HP management. Players never receive this field in a public frame.
+    const hpControls=node('div',null,'monster-hp-controls');
+    const hpInput=node('input');hpInput.type='number';hpInput.min='1';hpInput.max='999';hpInput.value='1';hpInput.setAttribute('aria-label','Damage or healing amount');
+    const adjust=(direction)=>{
+      const amount=Number(hpInput.value);
+      if(!Number.isInteger(amount)||amount<1||amount>999)return;
+      applyMonsterHp(fighter,direction*amount);
+      const original=currentBattle().cards.find(c=>c.id===fighter.id);
+      if(original)original.hpCurrent=fighter.hpCurrent;
+      renderCombat(); // Do not publish a new public display frame for DM-only HP changes.
+    };
+    hpControls.append(node('span','MONSTER HP · '+fighter.hpCurrent+' / '+fighter.hpMax,'helper'));
+    hpControls.append(hpInput,button('Damage',()=>adjust(-1),'secondary'),button('Heal',()=>adjust(1),'secondary'));
+    actions.append(hpControls);
+
     const targets=turnOrder.filter(c=>c.kind==='player');
     const targetSelect=node('select');targetSelect.setAttribute('aria-label','Attack target');
     for(const t of targets){const opt=node('option',t.name+' · AC '+t.ac);opt.value=t.id;targetSelect.append(opt);}
