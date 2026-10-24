@@ -3,16 +3,19 @@ import { cardFace } from './card-view.js';
 import { silhouetteFor } from './silhouettes.js';
 import {configured,currentUser,signIn,signOut,createSession,savePrivateState,publishDisplayFrame,readMySessions} from './cloud-api.js';
 import {projectPublicFrame} from './public-frame.js';
+import {makeLocalDmPush} from './local-push-client.js';
 const $ = q => document.querySelector(q);
 const node = (tag, text, cls) => { const el=document.createElement(tag); if(text!=null)el.textContent=String(text); if(cls)el.className=cls; return el; };
 const button=(label,act,cls='secondary')=>{const e=node('button',label,cls);e.type='button';e.addEventListener('click',act);return e;};
 let battles=[{id:'demo-1',name:'Goblin Ambush',cards:[]}], selectedId='demo-1', turnOrder=[], turnIndex=0, round=1, currentResult=null;
 let targetSlot=0, pickerType='player';
 let cloudSessionId=null,cloudRevision=0;
+let localPush=null;
 const cloudStatus=message=>{$('#cloud-message').textContent=message;};
 const updateAuth=()=>{const on=!!currentUser();$('#cloud-login-form').hidden=on;$('#cloud-logout').hidden=!on;$('#cloud-create').disabled=!on;$('#cloud-load').disabled=!on;$('#cloud-save').disabled=!on;$('#cloud-status').textContent=!configured()?'Cloud not configured':on?'Signed in · '+currentUser().email:'Not signed in · local preview only';};
 const publicFrame=()=>projectPublicFrame(currentBattle()?.name,round,turnOrder[turnIndex],currentResult);
-async function pushFrame(){if(!cloudSessionId||!currentUser())return;cloudRevision=Math.max(Date.now(),cloudRevision+1);await publishDisplayFrame(cloudSessionId,publicFrame(),cloudRevision);cloudStatus('Phone frame updated · revision '+cloudRevision);}
+async function pushFrame(){if(localPush)await localPush(publicFrame());
+ if(!cloudSessionId||!currentUser())return;cloudRevision=Math.max(Date.now(),cloudRevision+1);await publishDisplayFrame(cloudSessionId,publicFrame(),cloudRevision);cloudStatus('Phone frame updated · revision '+cloudRevision);}
 
 const currentBattle=()=>battles.find(b=>b.id===selectedId);
 const announce=message=>{$('#builder-status').textContent=message;};
@@ -169,6 +172,12 @@ $('#next-turn').addEventListener('click',()=>{
   if(!turnOrder.length)return;
   turnIndex++;if(turnIndex>=turnOrder.length){turnIndex=0;round++;}
   currentResult=null;renderCombat();pushFrame().catch(e=>cloudStatus('Sync failed: '+e.message));
+});
+$('#local-connect').addEventListener('click',()=>{
+ const key=$('#local-dm-key').value;
+ if(key.length<24){$('#local-status').textContent='Enter your local DM key (24+ characters).';return;}
+ localPush=makeLocalDmPush(key);$('#local-dm-key').value='';
+ $('#local-status').textContent='Local push enabled. Actions now publish on click.';
 });
 $('#cloud-login-form').addEventListener('submit',async e=>{
  e.preventDefault();try{await signIn($('#cloud-email').value,$('#cloud-password').value);
