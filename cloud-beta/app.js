@@ -51,27 +51,7 @@ function renderPicker(){
       const tile=button('',()=>{
         const cards=currentBattle().cards;const instance=makeInstance(monster);
         if(targetSlot<cards.length)cards[targetSlot]=instance;else cards.push(instance);
-        $('#card-picker').close();announce(monster.name+' added. Save the battle name when ready.');$('#cloud-login-form').addEventListener('submit',async e=>{e.preventDefault();try{await signIn($('#cloud-email').value,$('#cloud-password').value);$('#cloud-password').value='';updateAuth();cloudStatus('DM authenticated. Create a private cloud battle to enable phone updates.');}catch(error){cloudStatus('Sign-in failed: '+error.message);}});
-$('#cloud-logout').addEventListener('click',()=>{signOut();cloudSessionId=null;updateAuth();cloudStatus('Signed out');});
-$('#cloud-create').addEventListener('click',async()=>{try{const session=await createSession(currentBattle().name);cloudSessionId=session.id;cloudRevision=0;await savePrivateState(cloudSessionId,{cards:currentBattle().cards},currentBattle().name);await pushFrame();cloudStatus('Private battle created · '+session.id+' · authorize display account before viewing on phone');}catch(e){cloudStatus('Cloud creation failed: '+e.message);}});
-$('#cloud-load').addEventListener('click',async()=>{
- try{
-  const sessions=await readMySessions();
-  if(!sessions.length){cloudStatus('No private cloud battles saved yet');return;}
-  // Select most recently modified battle. The UI offers explicit selection later.
-  const session=sessions[0],cards=session.private_state?.cards||[];
-  const id='cloud-'+session.id;
-  const found=battles.find(b=>b.id===id);
-  if(found){found.name=session.name;found.cards=cards;}
-  else battles.push({id,name:session.name,cards});
-  selectedId=id;cloudSessionId=session.id;cloudRevision=Date.now();
-  turnOrder=[];turnIndex=0;round=1;currentResult=null;
-  render();cloudStatus('Loaded '+session.name+' · Start Battle to update phone');
- }catch(e){cloudStatus('Cloud load failed: '+e.message);}
-});
-$('#cloud-save').addEventListener('click',async()=>{if(!cloudSessionId){cloudStatus('Create a private cloud battle first');return;}try{await savePrivateState(cloudSessionId,{cards:currentBattle().cards},currentBattle().name);await pushFrame();cloudStatus('Private battle saved');}catch(e){cloudStatus('Cloud save failed: '+e.message);}});
-updateAuth();
-render();
+        $('#card-picker').close();announce(monster.name+' added. Save the battle name when ready.');render();
       },'monster-choice');
       tile.append(cardFace(makeInstance(monster),{mode:'library'}));
       options.append(tile);
