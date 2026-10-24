@@ -24,7 +24,7 @@ function render(){
   const battle=currentBattle(); $('#battle-name').value=battle.name;
   const saved=$('#saved-battles');saved.replaceChildren();
   for(const b of battles){
-    const c=button(b.name,()=>{selectedId=b.id;turnOrder=[];render();},b.id===selectedId?'selected':'secondary');
+    const c=button(b.name,()=>{selectedId=b.id;turnOrder=[];currentResult=null;cloudSessionId=null;render();},b.id===selectedId?'selected':'secondary');
     saved.append(c);
   }
   const grid=$('#battle-grid');grid.replaceChildren();
@@ -174,7 +174,7 @@ $('#remove-card').addEventListener('click',()=>{
 });
 $('#new-battle').addEventListener('click',()=>{
   const id='battle-'+Date.now()+'-'+Math.random().toString(36).slice(2);
-  battles.push({id,name:'Combat '+(battles.length+1),cards:[]});selectedId=id;turnOrder=[];announce('New empty battle created');render();
+  battles.push({id,name:'Combat '+(battles.length+1),cards:[]});selectedId=id;cloudSessionId=null;turnOrder=[];currentResult=null;announce('New empty battle created');render();
 });
 $('#save-battle').addEventListener('click',()=>{
   const name=$('#battle-name').value.trim();if(!name)return;
@@ -207,6 +207,21 @@ $('#cloud-create').addEventListener('click',async()=>{
  await savePrivateState(cloudSessionId,{cards:currentBattle().cards},currentBattle().name);
  await pushFrame();cloudStatus('Private battle created; authorize your display account for this session.');
  }catch(e){cloudStatus('Cloud creation failed: '+e.message);}
+});
+$('#cloud-load').addEventListener('click',async()=>{
+ try {
+  const sessions=await readMySessions();
+  if(!sessions.length){cloudStatus('No cloud battles found');return;}
+  const session=sessions[0];
+  const id='cloud-'+session.id;
+  const saved=battles.find(b=>b.id===id);
+  const cards=Array.isArray(session.private_state?.cards)?session.private_state.cards:[];
+  if(saved){saved.name=session.name;saved.cards=cards;}
+  else battles.push({id,name:session.name,cards});
+  selectedId=id;cloudSessionId=session.id;cloudRevision=0;
+  turnOrder=[];turnIndex=0;round=1;currentResult=null;
+  render();cloudStatus('Restored '+session.name+'; press Battle to start a new turn order.');
+ }catch(e){cloudStatus('Cloud load failed: '+e.message);}
 });
 $('#cloud-save').addEventListener('click',async()=>{
  if(!cloudSessionId){cloudStatus('Create a private cloud battle first');return;}
