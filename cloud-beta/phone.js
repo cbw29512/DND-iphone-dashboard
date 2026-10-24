@@ -1,7 +1,8 @@
 import {configured,currentUser,signIn,signOut,readPublicFrames} from './cloud-api.js';
 import {silhouetteFor} from './silhouettes.js';
+import {openLocalPhoneStream} from './local-push-client.js';
 const $=q=>document.querySelector(q);
-let selected=null,revision=-1,refreshing=false,interval=null;
+let selected=null,revision=-1,refreshing=false,interval=null,closeLocal=null;
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=String(text);return e;};
 function showLoggedIn(yes){$('#phone-login').hidden=yes;$('#phone-screen').hidden=!yes;$('#phone-status').textContent=yes?'Connecting…':'Not connected';}
 function render(state){
@@ -42,12 +43,19 @@ async function refresh(){
  }catch(e){$('#phone-status').textContent='Reconnecting…';$('#phone-error').textContent=e.message;}
  finally{refreshing=false;}
 }
-function start(){showLoggedIn(true);clearInterval(interval);refresh();interval=setInterval(refresh,2500);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});}
+function start(){showLoggedIn(true);refresh();document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});}
+$('#local-phone-connect').addEventListener('click',()=>{
+ const key=$('#local-phone-key').value;
+ if(key.length<24){$('#phone-error').textContent='Enter your 24+ character display key.';return;}
+ if(closeLocal)closeLocal();
+ closeLocal=openLocalPhoneStream(key,{onFrame:frame=>render(frame),onStatus:status=>$('#phone-status').textContent=status});
+ $('#local-phone-key').value='';$('#local-phone-join').hidden=true;showLoggedIn(true);
+});
 $('#phone-auth-form').addEventListener('submit',async e=>{
  e.preventDefault();$('#phone-error').textContent='';
  try{await signIn($('#phone-email').value,$('#phone-password').value);$('#phone-password').value='';start();}
  catch(err){$('#phone-error').textContent='Sign in failed: '+err.message;}
 });
-$('#phone-logout').addEventListener('click',()=>{clearInterval(interval);signOut();showLoggedIn(false);});
+$('#phone-logout').addEventListener('click',()=>{if(closeLocal){closeLocal();closeLocal=null;$('#local-phone-join').hidden=false;}signOut();showLoggedIn(false);});
 if(!configured())$('#phone-error').textContent='Cloud backend is not configured yet.';
 if(currentUser())start();
