@@ -34,7 +34,7 @@ test('natural twenty rolls double damage dice',()=>{
  assert.equal(result.damage,14);
 });
 
-test('attack total and damage do not depend on the player's AC',()=>{
+test("attack total and damage do not depend on the player's AC",()=>{
  const monster=makeInstance(RAW_MONSTERS[0]), attack=RAW_MONSTERS[0].attacks[0];
  const low=rollAttack(monster,attack,makePlayer('A',10,0),'normal',()=>0.5);
  const high=rollAttack(monster,attack,makePlayer('B',30,0),'normal',()=>0.5);

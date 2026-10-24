@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101119"><title>Iron Lantern — Paired Display</title>
+<link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./phone.css"><script type="module" src="./phone.js"></script></head>
+<body class="phone-body"><main class="phone-shell">
+<header class="phone-head"><span class="sigil">✧</span><strong>IRON LANTERN</strong><span id="phone-status" role="status">Not connected</span></header>
+<section id="local-phone-join"><h2>Local push test</h2><p>Enter the display key configured on the laptop test server.</p><input id="local-phone-key" type="password" autocomplete="off" placeholder="Local phone display key" aria-label="Local display key"><button id="local-phone-connect" type="button" class="secondary">Connect local display</button></section><section id="phone-login"><h1>Private Display</h1><p>Sign in with the dedicated, DM-authorized display account. It can only read the public combat screen.</p>
+<form id="phone-auth-form"><label>Email<input type="email" id="phone-email" required autocomplete="username"></label>
+<label>Password<input id="phone-password" type="password" required autocomplete="current-password"></label><button type="submit" class="action">Connect Display</button></form>
+<p id="phone-error" role="alert"></p></section>
+<section id="phone-screen" hidden><div id="phone-battle-picker"></div><div id="phone-card" class="public-result"></div>
+<button id="phone-logout" class="secondary">Disconnect</button></section></main></body></html>

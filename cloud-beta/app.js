@@ -1,18 +1,30 @@
 import { RAW_MONSTERS, MONSTER_BY_ID, makeInstance, makePlayer, rollInitiative, rollAttack } from './cards.js';
 import { cardFace } from './card-view.js';
 import { silhouetteFor } from './silhouettes.js';
+import {configured,currentUser,signIn,signOut,createSession,savePrivateState,publishDisplayFrame,readMySessions} from './cloud-api.js';
+import {projectPublicFrame} from './public-frame.js';
+import {applyMonsterHp} from './combat-state.js';
+import {makeLocalDmPush} from './local-push-client.js';
 const $ = q => document.querySelector(q);
 const node = (tag, text, cls) => { const el=document.createElement(tag); if(text!=null)el.textContent=String(text); if(cls)el.className=cls; return el; };
 const button=(label,act,cls='secondary')=>{const e=node('button',label,cls);e.type='button';e.addEventListener('click',act);return e;};
 let battles=[{id:'demo-1',name:'Goblin Ambush',cards:[]}], selectedId='demo-1', turnOrder=[], turnIndex=0, round=1, currentResult=null;
 let targetSlot=0, pickerType='player';
+let cloudSessionId=null,cloudRevision=0;
+let localPush=null;
+const cloudStatus=message=>{$('#cloud-message').textContent=message;};
+const updateAuth=()=>{const on=!!currentUser();$('#cloud-login-form').hidden=on;$('#cloud-logout').hidden=!on;$('#cloud-create').disabled=!on;$('#cloud-load').disabled=!on;$('#cloud-save').disabled=!on;$('#cloud-status').textContent=!configured()?'Cloud not configured':on?'Signed in · '+currentUser().email:'Not signed in · local preview only';};
+const publicFrame=()=>projectPublicFrame(currentBattle()?.name,round,turnOrder[turnIndex],currentResult);
+async function pushFrame(){if(localPush)await localPush(publicFrame());
+ if(!cloudSessionId||!currentUser())return;cloudRevision=Math.max(Date.now(),cloudRevision+1);await publishDisplayFrame(cloudSessionId,publicFrame(),cloudRevision);cloudStatus('Phone frame updated · revision '+cloudRevision);}
+
 const currentBattle=()=>battles.find(b=>b.id===selectedId);
 const announce=message=>{$('#builder-status').textContent=message;};
 function render(){
   const battle=currentBattle(); $('#battle-name').value=battle.name;
   const saved=$('#saved-battles');saved.replaceChildren();
   for(const b of battles){
-    const c=button(b.name,()=>{selectedId=b.id;turnOrder=[];render();},b.id===selectedId?'selected':'secondary');
+    const c=button(b.name,()=>{selectedId=b.id;turnOrder=[];currentResult=null;cloudSessionId=null;render();},b.id===selectedId?'selected':'secondary');
     saved.append(c);
   }
   const grid=$('#battle-grid');grid.replaceChildren();
@@ -110,6 +122,21 @@ function renderCombat(){
     if(attack)selector.value=attack.id;
     selector.addEventListener('change',()=>{fighter.preparedAttackId=selector.value;renderCombat();});
     actions.append(node('label','Selected attack'),selector);
+    // DM-only HP management. Players never receive this field in a public frame.
+    const hpControls=node('div',null,'monster-hp-controls');
+    const hpInput=node('input');hpInput.type='number';hpInput.min='1';hpInput.max='999';hpInput.value='1';hpInput.setAttribute('aria-label','Damage or healing amount');
+    const adjust=(direction)=>{
+      const amount=Number(hpInput.value);
+      if(!Number.isInteger(amount)||amount<1||amount>999)return;
+      applyMonsterHp(fighter,direction*amount);
+      const original=currentBattle().cards.find(c=>c.id===fighter.id);
+      if(original)original.hpCurrent=fighter.hpCurrent;
+      renderCombat(); // Do not publish a new public display frame for DM-only HP changes.
+    };
+    hpControls.append(node('span','MONSTER HP · '+fighter.hpCurrent+' / '+fighter.hpMax,'helper'));
+    hpControls.append(hpInput,button('Damage',()=>adjust(-1),'secondary'),button('Heal',()=>adjust(1),'secondary'));
+    actions.append(hpControls);
+
     const targets=turnOrder.filter(c=>c.kind==='player');
     const targetSelect=node('select');targetSelect.setAttribute('aria-label','Attack target');
     for(const t of targets){const opt=node('option',t.name+' · AC '+t.ac);opt.value=t.id;targetSelect.append(opt);}
@@ -123,7 +150,7 @@ function renderCombat(){
           const target=targets.find(t=>t.id===targetSelect.value);
           if(!chosen||!target)return;
           currentResult={actorId:fighter.id,...rollAttack(fighter,chosen,target,mode)};
-          renderCombat();
+          renderCombat();pushFrame().catch(e=>cloudStatus('Sync failed: '+e.message));
         },'action'));
       }
       actions.append(modes);
@@ -147,7 +174,7 @@ $('#remove-card').addEventListener('click',()=>{
 });
 $('#new-battle').addEventListener('click',()=>{
   const id='battle-'+Date.now()+'-'+Math.random().toString(36).slice(2);
-  battles.push({id,name:'Combat '+(battles.length+1),cards:[]});selectedId=id;turnOrder=[];announce('New empty battle created');render();
+  battles.push({id,name:'Combat '+(battles.length+1),cards:[]});selectedId=id;cloudSessionId=null;turnOrder=[];currentResult=null;announce('New empty battle created');render();
 });
 $('#save-battle').addEventListener('click',()=>{
   const name=$('#battle-name').value.trim();if(!name)return;
@@ -155,11 +182,52 @@ $('#save-battle').addEventListener('click',()=>{
 });
 $('#start-battle').addEventListener('click',()=>{
   turnOrder=rollInitiative(currentBattle().cards);
-  turnIndex=0;round=1;currentResult=null;announce('Initiative rolled.');render();
+  turnIndex=0;round=1;currentResult=null;announce('Initiative rolled.');render();pushFrame().catch(e=>cloudStatus('Sync failed: '+e.message));
 });
 $('#next-turn').addEventListener('click',()=>{
   if(!turnOrder.length)return;
   turnIndex++;if(turnIndex>=turnOrder.length){turnIndex=0;round++;}
-  currentResult=null;renderCombat();
+  currentResult=null;renderCombat();pushFrame().catch(e=>cloudStatus('Sync failed: '+e.message));
 });
+$('#local-connect').addEventListener('click',()=>{
+ const key=$('#local-dm-key').value;
+ if(key.length<24){$('#local-status').textContent='Enter your local DM key (24+ characters).';return;}
+ localPush=makeLocalDmPush(key);$('#local-dm-key').value='';
+ $('#local-status').textContent='Local push enabled. Actions now publish on click.';
+});
+$('#cloud-login-form').addEventListener('submit',async e=>{
+ e.preventDefault();try{await signIn($('#cloud-email').value,$('#cloud-password').value);
+ $('#cloud-password').value='';updateAuth();cloudStatus('Authenticated. Create a private cloud battle to enable phone updates.');
+ }catch(error){cloudStatus('Sign-in failed: '+error.message);}
+});
+$('#cloud-logout').addEventListener('click',()=>{signOut();cloudSessionId=null;updateAuth();cloudStatus('Signed out');});
+$('#cloud-create').addEventListener('click',async()=>{
+ try{const session=await createSession(currentBattle().name);
+ cloudSessionId=session.id;cloudRevision=0;
+ await savePrivateState(cloudSessionId,{cards:currentBattle().cards},currentBattle().name);
+ await pushFrame();cloudStatus('Private battle created; authorize your display account for this session.');
+ }catch(e){cloudStatus('Cloud creation failed: '+e.message);}
+});
+$('#cloud-load').addEventListener('click',async()=>{
+ try {
+  const sessions=await readMySessions();
+  if(!sessions.length){cloudStatus('No cloud battles found');return;}
+  const session=sessions[0];
+  const id='cloud-'+session.id;
+  const saved=battles.find(b=>b.id===id);
+  const cards=Array.isArray(session.private_state?.cards)?session.private_state.cards:[];
+  if(saved){saved.name=session.name;saved.cards=cards;}
+  else battles.push({id,name:session.name,cards});
+  selectedId=id;cloudSessionId=session.id;cloudRevision=0;
+  turnOrder=[];turnIndex=0;round=1;currentResult=null;
+  render();cloudStatus('Restored '+session.name+'; press Battle to start a new turn order.');
+ }catch(e){cloudStatus('Cloud load failed: '+e.message);}
+});
+$('#cloud-save').addEventListener('click',async()=>{
+ if(!cloudSessionId){cloudStatus('Create a private cloud battle first');return;}
+ try{await savePrivateState(cloudSessionId,{cards:currentBattle().cards},currentBattle().name);
+ await pushFrame();cloudStatus('Private battle saved');
+ }catch(e){cloudStatus('Cloud save failed: '+e.message);}
+});
+updateAuth();
 render();
