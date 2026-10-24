@@ -63,3 +63,35 @@ The `feat/secure-iphone-sync` branch adds an opt-in Supabase transport with:
 
 ### Limitations
 This is a **cloud integration prototype**, not yet a live deployment. Rolls currently execute in client JavaScript; a production authoritative combat engine must move those rules to an authenticated server endpoint. Polling is deliberate for resilience; it is not yet push-based Realtime. A dedicated phone display account is a temporary access pattern, not the planned short-lived one-time pairing code.
+
+## No-Netlify-credit local action-push test
+Local Node 22+ server for a laptop and a phone on the same trusted Wi-Fi.
+This is intentionally **not a production backend** (HTTP LAN, development tokens).
+Use two **different** long random secrets (24+ characters), one for the DM and
+one for the read-only phone display. Do not reuse a password from elsewhere.
+
+In Windows PowerShell from `cloud-beta`:
+```powershell
+$env:IRON_LANTERN_DM_KEY = 'REPLACE_WITH_LONG_RANDOM_DM_SECRET'
+$env:IRON_LANTERN_PHONE_KEY = 'REPLACE_WITH_DIFFERENT_LONG_RANDOM_PHONE_SECRET'
+$env:IRON_LANTERN_HOST = '0.0.0.0'
+node .\local-push-server.mjs
+```
+Open `http://localhost:8787/` on the laptop. Click **Enable Local Push**,
+enter the DM key; then build a battle and click Battle, Roll or Next Turn.
+Open `http://YOUR-LAPTOP-LAN-IP:8787/phone.html` on your iPhone,
+enter the *phone* key into **Connect local display**.
+The DM POST creates one new revision, and an SSE event is delivered immediately.
+The phone **never polls** while idle. When EventSource reconnects, the server
+sends one copy of the latest revision. The last combat result stays on screen
+until the DM pushes a new event. Only the sanitized public frame is sent.
+
+**Security limitations:** Do not expose port 8787 to the internet, enable router
+port-forwarding, or use this across an untrusted Wi-Fi network. This local
+proof uses unencrypted HTTP and the display test key in the SSE query string.
+For production, replace the local relay with a provider-supported secure
+push channel and session-based authorization, then test phone pairing and
+revocation. Never deploy `local-push-server.mjs` as a Netlify Function.
+
+The previous Supabase prototype remains unconfigured and **is not** the
+preferred production direction. Netlify hosting is untouched by this test.
