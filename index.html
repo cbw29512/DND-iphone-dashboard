@@ -27,6 +27,14 @@ body.display .layout{display:block;margin:0;padding:0;max-width:none}body.displa
 .action.channel-spent{background:linear-gradient(145deg,#672b34,#321f29);border-color:#e28c90;box-shadow:inset 0 0 0 1px #a04c59;}
 .action.channel-spent .eyebrow{color:#ffc2c0;}
 .action.resource-empty{opacity:.68;border-style:dashed;}
+
+/* Combat actions are first. Secondary resource controls remain accessible below the action grid. */
+.combat-topline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 0 12px}
+.combat-topline span{color:var(--gold);font-size:13px;font-weight:850}
+.settings-toggle{margin:16px 0 10px;border:1px solid #536379;border-radius:12px;background:#131f2c;padding:10px}
+.settings-toggle>summary{cursor:pointer;font-size:14px;font-weight:850;color:var(--gold);padding:4px 2px}
+.settings-toggle>.controlbox{margin:10px 0 0}
+.categories{position:sticky;top:0;z-index:10;padding:7px 3px;background:#0b1018;border-radius:9px}
 </style><style>
 .internet-pair{border:1px solid #bd985c;background:#192d3e;border-radius:14px;padding:15px;margin:0 0 14px;color:#fff}
 .internet-pair>strong{display:block;font-size:18px;color:#f5c67b;margin-bottom:9px}
@@ -52,10 +60,13 @@ body.display .internet-pair{display:none}
 </section>
 <section class="panel">
   <div class="panelheader"><div><h2>Donovan · Combat Controls</h2><p>Click an action. It stays on the phone screen until another click.</p></div><span class="pill">2024 D&D</span></div>
+  <div class="combat-topline"><button class="smallbtn next" data-next="1">NEXT TURN ↻</button><span id="combatQuickStatus" aria-live="polite">HP 51 · Slots 4/3/3 · Channel 3/3</span></div>
+  <div class="categories" id="categories"></div><div class="buttonlist" id="buttons"></div>
+  <details class="settings-toggle"><summary>HP, spell slots, attack mode &amp; rest settings</summary>
   <div class="controlbox">
     <div class="status"><span>Turn and resources</span><span id="slotsText">Slots 4 / 3 / 3 · Channel 3</span></div>
     <div class="stats"><div class="stat"><small>HP</small><strong id="hpText">51</strong></div><div class="stat"><small>AC</small><strong>16</strong></div><div class="stat"><small>Spell +</small><strong>+7</strong></div><div class="stat"><small>Save DC</small><strong>15</strong></div></div>
-    <div class="controlrow" style="margin-bottom:9px"><button class="smallbtn next" data-next="1">NEXT TURN ↻</button><button class="smallbtn" data-rest="short">Short Rest</button><button class="smallbtn" data-rest="long">Long Rest</button><button class="smallbtn" data-hp="-1">HP −</button><button class="smallbtn" data-hp="1">HP +</button></div>
+    <div class="controlrow" style="margin-bottom:9px"><button class="smallbtn" data-rest="short">Short Rest</button><button class="smallbtn" data-rest="long">Long Rest</button><button class="smallbtn" data-hp="-1">HP −</button><button class="smallbtn" data-hp="1">HP +</button></div>
     <div class="track" id="turnTrack"></div>
     <div class="fieldrow choicefields">
       <div class="buttonfield"><span class="fieldtitle">SPELL ATTACK ROLLS</span><div class="controlrow" id="attackModeButtons"><button class="smallbtn mode active" data-mode="normal">Normal</button><button class="smallbtn mode" data-mode="adv">ADV</button><button class="smallbtn mode" data-mode="dis">DIS</button></div></div>
@@ -64,7 +75,7 @@ body.display .internet-pair{display:none}
     </div>
     <p class="tiny controller-note">Display only: Donovan rolls; the DM decides hits, enemy saves, damage taken, and conditions. Repeated taps reroll and replace the phone result.</p>
   </div>
-  <div class="categories" id="categories"></div><div class="buttonlist" id="buttons"></div>
+  </details>
   <details class="spelltoggle"><summary>Complete spellbook (all spells on Donovan’s PDF)</summary><p>Unprepared spells show information only. They cannot consume slots or roll damage until prepared. The two DDBD spells need full descriptions to calculate damage.</p><div class="buttonlist" id="fullSpellButtons"></div></details>
   <div class="controlbox" style="margin-top:10px"><strong style="font-size:13px">Laptop → iPhone screen</strong><p class="connection" id="connectionText">The online card rolls on this device. GitHub Pages does not relay laptop button presses to a separate iPhone; live two-device mirroring requires the local Python server.</p><div class="controlrow"><a class="smallbtn" id="displayLink" href="?view=phone" target="_blank" rel="noopener" style="text-decoration:none">Open phone display</a><label class="uploadlabel">Change portrait <input id="portraitFile" type="file" accept="image/*"></label></div></div>
 </section></main>
@@ -449,6 +460,7 @@ function renderScreen(snap){
 }
 function renderCounters(){
  try{$('hpText').textContent=state.hp;$('slotsText').textContent=`Slots ${[1,2,3].map(n=>state.slots[n]).join(' / ')} · Channel ${state.channels}/3`;
+   const topStatus=$('combatQuickStatus');if(topStatus)topStatus.textContent=`HP ${state.hp} · Slots ${[1,2,3].map(n=>state.slots[n]).join('/')} · Channel ${state.channels}/3`;
    $('turnTrack').innerHTML=['action','bonus','reaction','slotTurn'].map(n=>`<b class="${state[n]?'used':'ok'}">${n==='slotTurn'?'Slot/turn':n.toUpperCase()} ${state[n]?'USED':'READY'}</b>`).join('');
    document.querySelectorAll('.mode').forEach(el=>el.classList.toggle('active',el.dataset.mode===state.mode));
    document.querySelectorAll('.selectslot').forEach(el=>el.classList.toggle('active',el.dataset.slot===String(state.slot)));
@@ -485,13 +497,24 @@ function actionButtons(){
    choices.push(makeButton('Roll Initiative','SENTINEL SHIELD|d20 with Advantage −1','roll','initiative',true));
    for(const [mode,label] of [['normal','Mace · Normal'],['adv','Mace · ADV'],['dis','Mace · DIS']])
      choices.push(makeButton(label,'WEAPON · CLICK TO ROLL|d20 +4 · 1d6+1 · conditional radiant','mace',mode,mode==='normal'));
-   choices.push(sectionHeader('Cantrips · at will'));
-   for(const sp of SPELLS.filter(x=>x.group==='cantrip'))choices.push(spellButton(sp));
+   choices.push(sectionHeader('Damage cantrips · at will'));
+   for(const name of ['Toll the Dead','Produce Flame']){
+     const sp=SPELLS.find(x=>x.name===name);
+     if(sp)choices.push(spellButton(sp));
+   }
    choices.push(sectionHeader(`Channel Divinity · ${state.channels}/3 ready · Red = spent`));
    choices.push(channelButton('Preserve Life','LIFE DOMAIN · HEAL|30 HP pool · no spell slot','Preserve Life',true));
    choices.push(channelButton('Divine Spark Heal','CLERIC · HEAL|1d8+4 HP · no spell slot','Divine Spark Heal'));
    choices.push(channelButton('Divine Spark Damage','CLERIC · DAMAGE|CON DC 15 · 1d8+4','Divine Spark Damage'));
    choices.push(channelButton('Turn Undead + Sear','CLERIC · UNDEAD|WIS DC 15 · 4d8 radiant on failed save','Turn Undead'));
+   choices.push(sectionHeader('Frequently used combat spells'));
+   for(const name of ['Healing Word','Mass Healing Word','Cure Wounds','Spirit Guardians','Guiding Bolt','Bless']){
+     const sp=SPELLS.find(x=>x.name===name);
+     if(sp)choices.push(spellButton(sp));
+   }
+   choices.push(sectionHeader('Other cantrips · utility'));
+   for(const sp of SPELLS.filter(x=>x.group==='cantrip'&&!['Toll the Dead','Produce Flame'].includes(x.name)))
+     choices.push(spellButton(sp));
  }else if(activeGroup==='healing'){
    choices.push(sectionHeader('Healing · fastest recovery buttons'));
    choices.push(makeButton('Other creatures','TARGETS · DEFAULT|Donovan gains Blessed Healer if a spell heals allies','healTarget','others',state.healTarget!=='includeSelf'));
