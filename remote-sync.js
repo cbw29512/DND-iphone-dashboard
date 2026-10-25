@@ -44,7 +44,7 @@ function showPairing(pair){
       '<div><p>Scan this QR with iPhone Camera. The phone shows Donovan’s picture and latest result only.</p>'+
       '<a id="internetLink" target="_blank" rel="noopener">Open phone display</a>'+
       '<p id="internetStatus">Connecting to online relay…</p></div></div>';
-    document.querySelector(".panel").prepend(panel);
+    document.querySelector(".panel").append(panel); // Keep phone-pairing QR after all controller sections.
     const url=phoneLink(pair);
     const link=document.getElementById("internetLink");link.href=url;link.textContent="Phone display link";
     const old=document.getElementById("displayLink");if(old)old.href=url;
