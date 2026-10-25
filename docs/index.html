@@ -138,7 +138,9 @@ function rollDice(formula,extra=0,maximum=false){
     const count=Number(m[1])+extra,faces=Number(m[2]);
     if(count<0||count>40)throw Error('Too many dice: '+count);
     const rolls=Array.from({length:count},()=>maximum?faces:die(faces));
-    return {total:rolls.reduce((a,b)=>a+b,0),text:`${count}d${faces} [${rolls.join(', ')}]`};
+    const total=rolls.reduce((sum,value)=>sum+value,0);
+    // Show the individual die rolls as an audit trail, but ALWAYS show their combined total.
+    return {total,text:`${count}d${faces} (${rolls.join(' + ')} = ${total})`};
   }catch(err){console.error('Dice formula error',err);throw err;}
 }
 function rollD20(mode='normal'){
@@ -217,7 +219,7 @@ function saveDamage(sp,slot,continuing=false){
     if(sp.name==='Toll the Dead')return rollVariableToll();
     const countExtra=(sp.scale||0)*(slot-sp.level), r=rollDice(sp.dice,countExtra);
     const passed=sp.half?Math.floor(r.total/2):0;
-    return present(sp.name,'damage',`${r.total} ${sp.type.toUpperCase()}`,
+    return present(sp.name,'damage',`${r.total} ${sp.type.toUpperCase()} DAMAGE`,
       `${sp.save} SAVE DC ${CARD.spellDC} · ${r.text}`,
       `Failed save: ${r.total}. Successful save: ${passed}. ${sp.rule||''}${continuing?' Ongoing effect; no new slot.':''} DM resolves enemy saves.`,
       continuing?'ONGOING EFFECT':sp.group==='cantrip'?'CANTRIP · ACTION':'SPELL · ACTION');
