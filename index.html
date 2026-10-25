@@ -34,6 +34,27 @@ body.display .layout{display:block;margin:0;padding:0;max-width:none}body.displa
 .settings-toggle{margin:16px 0 10px;border:1px solid #536379;border-radius:12px;background:#131f2c;padding:10px}
 .settings-toggle>summary{cursor:pointer;font-size:14px;font-weight:850;color:var(--gold);padding:4px 2px}
 .settings-toggle>.controlbox{margin:10px 0 0}
+/* Prominent live health controls beside daily spell-slot tracking. */
+.hp-ledger{padding:12px;margin:0 0 12px;border:1px solid #577a6e;background:#172d2a;border-radius:12px}
+.hp-headline,.hp-total{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.hp-headline strong{color:#baf1d5;font-size:12px;font-weight:900;letter-spacing:.07em}
+.hp-condition{font-size:11px;color:#c0ebd3;font-weight:850}
+.hp-total{margin:6px 0 9px}
+.hp-total strong{font-variant-numeric:tabular-nums;color:#e9fff2;font-size:26px}
+.hp-total small{font-size:11px;color:#d1e2d8}
+.hp-meter{height:13px;background:#2e3941;border-radius:20px;overflow:hidden;border:1px solid #5f7c7b}
+.hp-fill{height:100%;width:100%;background:#66c99b;transition:width .2s ease,background-color .2s ease}
+.hp-ledger.bloodied .hp-fill{background:#e0ae65}
+.hp-ledger.down .hp-fill{background:#d66b66}
+.hp-ledger.bloodied .hp-condition{color:#ffda99}
+.hp-ledger.down .hp-condition{color:#ffc3c3}
+.hp-quick-actions,.hp-custom-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.hp-quick-actions .smallbtn{flex:1 1 95px}
+.hp-custom-actions label{font-size:11px;letter-spacing:.05em;font-weight:800;color:#d7e7de}
+.hp-custom-actions input{width:77px;max-width:100%;min-height:39px;border-radius:8px;border:1px solid #82a7a0;background:#101e22;color:#fff;padding:7px;font-weight:800;font-size:15px}
+.hp-damage{background:#5a2d31;border-color:#b46f76;color:#fff0e8}
+.hp-heal{background:#225340;border-color:#6cae89;color:#e6fff0}
+.hp-help{margin:9px 0 0}
 .spell-slot-ledger{margin:0 0 13px;padding:11px;background:#162536;border:1px solid #536b78;border-radius:12px}
 .spell-slot-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
 .spell-slot-heading strong{color:var(--gold);font-size:12px;letter-spacing:.075em}
@@ -80,6 +101,24 @@ body.display .internet-pair{display:none}
 <section class="panel">
   <div class="panelheader"><div><h2>Donovan · Combat Controls</h2><p>Click an action. It stays on the phone screen until another click.</p></div><span class="pill">2024 D&D</span></div>
   <div class="combat-topline"><button class="smallbtn rest-quick" type="button" data-roll="initiative" title="Roll initiative with Sentinel Shield Advantage and -1 modifier">ROLL INITIATIVE</button><button class="smallbtn next" type="button" data-next="1">NEXT TURN ↻</button><button class="smallbtn reset-all-quick" type="button" data-reset="card" title="One tap: restore full HP, spell slots, Channel Divinity, and all starting state">RESET ALL</button><button class="smallbtn" type="button" data-reset="fight" title="Start a new fight but keep spent HP, slots and daily uses">NEW FIGHT</button><button class="smallbtn rest-quick" type="button" data-rest="long" title="Restore HP, slots and long-rest abilities">LONG REST</button><span id="combatQuickStatus" aria-live="polite">HP 51 · Slots 4/3/3 · Channel 3/3</span></div>
+<section class="hp-ledger" aria-label="Donovan hit points and damage tracker">
+  <div class="hp-headline"><strong>HEALTH · HIT POINTS</strong><span id="hpCondition" class="hp-condition">FULL HEALTH</span></div>
+  <div class="hp-total"><strong id="hpReadout" aria-live="polite">51 / 51 HP</strong><small>Current / Maximum</small></div>
+  <div class="hp-meter" id="hpMeter" role="progressbar" aria-label="Current hit points" aria-valuemin="0" aria-valuemax="51" aria-valuenow="51"><div class="hp-fill" id="hpFill"></div></div>
+  <div class="hp-quick-actions">
+    <button type="button" class="smallbtn hp-damage" data-hp="-1">−1 DAMAGE</button>
+    <button type="button" class="smallbtn hp-damage" data-hp="-5">−5 DAMAGE</button>
+    <button type="button" class="smallbtn hp-heal" data-hp="1">+1 HEAL</button>
+    <button type="button" class="smallbtn hp-heal" data-hp="5">+5 HEAL</button>
+  </div>
+  <div class="hp-custom-actions">
+    <label for="hpAmount">CUSTOM HP</label>
+    <input id="hpAmount" type="number" inputmode="numeric" min="1" max="999" step="1" value="10" aria-label="Amount of damage or healing to apply"/>
+    <button type="button" class="smallbtn hp-damage" data-hp-custom="damage">TAKE DAMAGE</button>
+    <button type="button" class="smallbtn hp-heal" data-hp-custom="heal">HEAL HP</button>
+  </div>
+  <p class="tiny hp-help">Enter damage after resistance or other reductions. Healing cannot exceed 51 HP. HP changes update the iPhone display automatically.</p>
+</section>
 <div class="spell-slot-ledger" aria-label="Spell slots remaining per Long Rest">
   <div class="spell-slot-heading"><strong>SPELL SLOTS · PER LONG REST</strong><small>Each leveled spell uses 1 slot. Choose a level or leave Auto.</small></div>
   <div class="spell-slot-grid">
@@ -470,10 +509,20 @@ function rest(which){
       'Short Rest complete: one spent Channel Divinity use recovered if available. HP and spell slots unchanged. Turn reset to 1; encounter actions cleared.');
   }catch(err){console.error('Rest failed',err);throw err;}
 }
-function alterHP(delta){try{state.hp=Math.max(0,Math.min(CARD.hp,state.hp+delta));return present('HIT POINTS','heal',
-  `${state.hp} / ${CARD.hp} HP`,delta>=0?`+${delta} HP`:`${delta} HP`,
-  'Current HP updated. This adjustment is not a spell or die roll.','TRACKER');}
- catch(err){console.error('HP adjustment failed',err);throw err;}}
+function alterHP(delta){
+ try{
+  if(!Number.isFinite(delta)||!Number.isInteger(delta))return blocked('Enter a whole-number HP amount.');
+  const before=state.hp;
+  state.hp=Math.max(0,Math.min(CARD.hp,before+delta));
+  const actual=state.hp-before;
+  const kind=actual<0?'damage':'heal';
+  const change=actual<0?'DAMAGE TAKEN':actual>0?'HP RESTORED':'HP UNCHANGED';
+  return present('HIT POINTS',kind,state.hp+' / '+CARD.hp+' HP',
+   Math.abs(actual)+' HP '+change+' · '+before+' → '+state.hp,
+   'Current HP updated on Donovan’s card. Enter final damage after resistances. HP cannot exceed '+CARD.hp+
+   '. This adjustment uses no action or spell slot.','HP TRACKER');
+ }catch(err){console.error('HP adjustment failed',err);throw err;}
+}
 function fullCatalog(name){try{
   const info=FULL_CATALOG.find(s=>s.name===name);if(!info)return blocked('Spell not found on original Donovan PDF.');
   if(SPELLS.some(s=>s.name===name))return castSpell(name);
@@ -531,6 +580,17 @@ function renderScreen(snap){
 function renderCounters(){
  try{$('hpText').textContent=state.hp;$('slotsText').textContent=`Slots ${[1,2,3].map(n=>state.slots[n]).join(' / ')} · Channel ${state.channels}/3`;
    const topStatus=$('combatQuickStatus');if(topStatus)topStatus.textContent=`HP ${state.hp} · L1 ${state.slots[1]}/4 · L2 ${state.slots[2]}/3 · L3 ${state.slots[3]}/3 · Channel ${state.channels}/3`;
+   const hp=Math.max(0,Math.min(CARD.hp,Number(state.hp)||0));
+   const hpBox=document.querySelector('.hp-ledger');
+   const hpCondition=$('hpCondition');
+   $('hpReadout').textContent=hp+' / '+CARD.hp+' HP';
+   const percent=hp/CARD.hp*100;
+   $('hpFill').style.width=percent+'%';
+   const status=hp===0?'AT 0 HP':hp<=Math.floor(CARD.hp/2)?'BLOODIED':hp===CARD.hp?'FULL HEALTH':'INJURED';
+   hpCondition.textContent=status;
+   $('hpMeter').setAttribute('aria-valuenow',String(hp));
+   hpBox.classList.toggle('bloodied',hp>0&&hp<=Math.floor(CARD.hp/2));
+   hpBox.classList.toggle('down',hp===0);
    for(const level of [1,2,3]){
      const left=Number(state.slots[level])||0,max=CARD.slots[level];
      $('slotLeft'+level).textContent=left+' / '+max+' LEFT';
@@ -701,6 +761,13 @@ function perform(tap){try{
   if(tap.dataset.rest){rest(tap.dataset.rest);return;}
   if(tap.dataset.reset){if(tap.dataset.reset==='fight')resetCombat();else if(tap.dataset.reset==='card')resetCard();return;}
   if(tap.dataset.hp){alterHP(Number(tap.dataset.hp));return;}
+  if(tap.dataset.hpCustom){
+    const field=$('hpAmount'),amount=Number(field.value);
+    if(!Number.isInteger(amount)||amount<1||amount>999){field.focus();field.setCustomValidity('Enter a whole number from 1 to 999.');field.reportValidity();return;}
+    field.setCustomValidity('');
+    alterHP(tap.dataset.hpCustom==='damage'?-amount:amount);
+    return;
+  }
   if(tap.dataset.save){rollCharacterCheck('save',tap.dataset.save);return;}
   if(tap.dataset.ability){rollCharacterCheck('ability',tap.dataset.ability);return;}
   if(tap.dataset.skill){rollCharacterCheck('skill',tap.dataset.skill);return;}
@@ -715,7 +782,7 @@ function perform(tap){try{
   else if(tap.dataset.full)fullCatalog(tap.dataset.full);
  }catch(err){console.error('Unable to resolve clicked action',err);blocked('Roll or action failed. Check console diagnostics.');}}
 function initControls(){try{
-  document.addEventListener('click',e=>{const b=e.target.closest('button[data-group],button[data-mode],button[data-slot],button[data-targets],button[data-heal-target],button[data-save],button[data-ability],button[data-skill],button[data-next],button[data-rest],button[data-reset],button[data-hp],button[data-roll],button[data-mace],button[data-reaction-mace],button[data-life],button[data-action],button[data-spell],button[data-channel],button[data-special],button[data-full]');if(b)perform(b);});
+  document.addEventListener('click',e=>{const b=e.target.closest('button[data-group],button[data-mode],button[data-slot],button[data-targets],button[data-heal-target],button[data-save],button[data-ability],button[data-skill],button[data-next],button[data-rest],button[data-reset],button[data-hp],button[data-hp-custom],button[data-roll],button[data-mace],button[data-reaction-mace],button[data-life],button[data-action],button[data-spell],button[data-channel],button[data-special],button[data-full]');if(b)perform(b);});
   $('portraitFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;
     if(!file.type.startsWith('image/'))return console.error('Unsupported portrait file');
     const reader=new FileReader();reader.onerror=()=>console.error('Portrait could not be opened');
