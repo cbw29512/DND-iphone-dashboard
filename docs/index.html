@@ -55,6 +55,10 @@ body.display .layout{display:block;margin:0;padding:0;max-width:none}body.displa
 .hp-damage{background:#5a2d31;border-color:#b46f76;color:#fff0e8}
 .hp-heal{background:#225340;border-color:#6cae89;color:#e6fff0}
 .hp-help{margin:9px 0 0}
+
+.healing-target-badge{font-size:11px;font-weight:950;letter-spacing:.04em;line-height:1.3;color:#fff2d0;border:1px solid #c89d5a;background:#503a20;padding:5px 7px;border-radius:6px;align-self:flex-start}
+.healing-target-badge.multi{background:#245243;color:#d2ffe7;border-color:#6cc3a0}
+.heal-count-button{min-height:65px}
 .spell-slot-ledger{margin:0 0 13px;padding:11px;background:#162536;border:1px solid #536b78;border-radius:12px}
 .spell-slot-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
 .spell-slot-heading strong{color:var(--gold);font-size:12px;letter-spacing:.075em}
@@ -688,7 +692,17 @@ function actionButtons(){
    for(const sp of SPELLS.filter(x=>x.group==='cantrip'&&!['Toll the Dead','Produce Flame'].includes(x.name)))
      choices.push(spellButton(sp));
  }else if(activeGroup==='healing'){
-   choices.push(sectionHeader('Healing · fastest recovery buttons'));
+   choices.push(sectionHeader('Healing · one person vs group'));
+   choices.push(sectionHeader('Choose how many people receive a group heal'));
+   for(let count=1;count<=6;count++){
+     const selected=Number(state.targets)===count;
+     const btn=makeButton(count+(count===1?' person':' people'),
+       (selected?'SELECTED':'GROUP TARGET COUNT')+'|For Mass Healing Word (up to 6) or Prayer of Healing (up to 5)',
+       'targets',String(count),selected);
+     btn.classList.add('heal-count-button');
+     choices.push(btn);
+   }
+
    choices.push(makeButton('Other creatures','TARGETS · DEFAULT|Donovan gains Blessed Healer if a spell heals allies','healTarget','others',state.healTarget!=='includeSelf'));
    choices.push(makeButton('Include Donovan','TARGETS · SELF|First target is Donovan; only other targets trigger Blessed Healer','healTarget','includeSelf',state.healTarget==='includeSelf'));
    for(const name of ['Healing Word','Mass Healing Word','Cure Wounds','Prayer of Healing','Aid','Lesser Restoration','Beacon of Hope','Revivify']){
@@ -696,8 +710,8 @@ function actionButtons(){
      if(sp)choices.push(spellButton(sp));
    }
    choices.push(sectionHeader(`Channel Divinity · ${state.channels}/3 ready`));
-   choices.push(channelButton('Preserve Life','LIFE DOMAIN · GROUP HEAL|30 HP pool · up to half maximum','Preserve Life',true));
-   choices.push(channelButton('Divine Spark Heal','CLERIC · NO SLOT|1d8+4 HP · within 30 ft','Divine Spark Heal'));
+   choices.push(channelButton('Preserve Life','GROUP HEAL · MULTIPLE BLOODIED|Distribute 30 HP total · max half HP','Preserve Life',true));
+   choices.push(channelButton('Divine Spark Heal','ONE OTHER CREATURE · NO SLOT|1d8+4 HP · within 30 ft','Divine Spark Heal'));
  }else if(activeGroup==='bonus'){
    for(const sp of SPELLS.filter(x=>x.group==='bonus'))choices.push(spellButton(sp));
    choices.push(makeButton('Stonecunning','BONUS · SPECIES|Tremorsense 60 ft · 3 / long rest','action','Stonecunning'));
@@ -733,16 +747,48 @@ function actionButtons(){
  }
  return choices;
 }
+
+// Healing target information is sourced from Donovan's 2024 card.
+// Explicitly distinguish healing HP from support, cleansing or revival.
+function healingTargetMeta(sp){
+ const names={
+  'Healing Word':['HEALS 1 CREATURE','One person · 60 ft · Bonus Action'],
+  'Cure Wounds':['HEALS 1 CREATURE','One person · Touch · Magic Action'],
+  'Mass Healing Word':['HEALS UP TO 6 CREATURES','Multi-target · 60 ft · Bonus Action'],
+  'Prayer of Healing':['HEALS UP TO 5 CREATURES','Multi-target · 30 ft · 10-minute casting'],
+  'Aid':['AFFECTS 3 CREATURES','Three people · raises current and maximum HP'],
+  'Lesser Restoration':['1 CREATURE · CONDITION REMOVAL','One person · no HP restored'],
+  'Beacon of Hope':['MULTIPLE · MAXIMIZES HEALING','Buff only · does not restore HP on cast'],
+  'Revivify':['REVIVES 1 CREATURE','One person · returns with 1 HP'],
+  'Goodberry':['10 BERRIES · 1 HP EACH','One creature can eat each berry'],
+  'Bless':['AFFECTS 3 CREATURES','Combat buff · no HP restored']
+ };
+ const item=names[sp.name];if(!item)return null;
+ const cap=sp.targets||0;
+ const chosen=cap?Math.min(cap,Math.max(1,Number(state.targets)||1)):0;
+ return {badge:item[0],note:item[1]+(cap?' · '+chosen+' selected':''),multi:cap>1};
+}
+
 function spellButton(sp){
- const details=sp.kind==='heal'||sp.kind==='prayer'?`HEAL · ${sp.dice} + Life bonus`:sp.kind==='attack'?`HIT +7 · ${sp.dice} ${sp.type}`:
-  sp.kind==='save'?`${sp.save} DC 15 · ${sp.dice} ${sp.type}`:sp.kind==='save_effect'?`${sp.save} DC 15 · effect`:
-  sp.kind==='unknown'?`${sp.save} DC 15 · formula unknown`:(sp.effect||'Support effect').slice(0,60);
+ const meta=healingTargetMeta(sp);
+ const details=sp.kind==='heal'||sp.kind==='prayer'?'HEAL · '+sp.dice+' + Life bonus':sp.kind==='attack'?'HIT +7 · '+sp.dice+' '+sp.type:
+  sp.kind==='save'?sp.save+' DC 15 · '+sp.dice+' '+sp.type:sp.kind==='save_effect'?sp.save+' DC 15 · effect':
+  sp.kind==='unknown'?sp.save+' DC 15 · formula unknown':(sp.effect||'Support effect').slice(0,60);
  const free=sp.feat&&state.featFree?.[sp.name]===true;
  const actualSlot=sp.level?chooseSlot(sp.level):0;
  const left=actualSlot?state.slots[actualSlot]??0:0;
  const kind=!sp.level?'CANTRIP · AT WILL':free?'FREE CAST · 1/LONG REST':
    'SLOT L'+actualSlot+' · '+left+'/'+CARD.slots[actualSlot]+' LEFT'+(sp.domain?' · DOMAIN':'');
- return makeButton(sp.name,kind+'|'+details,'spell',sp.name,sp.name==='Healing Word'||sp.name==='Mass Healing Word',Boolean(sp.optional&&!state.prepared.includes(sp.name)));
+ const button=makeButton(sp.name,kind+'|'+(meta?meta.note+' · ':'')+details,'spell',sp.name,
+  sp.name==='Healing Word'||sp.name==='Mass Healing Word',Boolean(sp.optional&&!state.prepared.includes(sp.name)));
+ if(meta){
+  const tag=document.createElement('span');
+  tag.className='healing-target-badge'+(meta.multi?' multi':'');
+  tag.textContent=meta.badge;
+  button.insertBefore(tag,button.querySelector('small'));
+  button.setAttribute('aria-label',sp.name+'. '+meta.badge+'. '+meta.note+'. '+kind+'.');
+ }
+ return button;
 }
 function renderButtons(){try{
   $('categories').replaceChildren(...GROUPS.map(([id,title])=>{const b=document.createElement('button');b.className='category'+(activeGroup===id?' active':'');b.textContent=title;b.dataset.group=id;return b;}));
