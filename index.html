@@ -27,6 +27,17 @@ body.display .layout{display:block;margin:0;padding:0;max-width:none}body.displa
 .action.channel-spent{background:linear-gradient(145deg,#672b34,#321f29);border-color:#e28c90;box-shadow:inset 0 0 0 1px #a04c59;}
 .action.channel-spent .eyebrow{color:#ffc2c0;}
 .action.resource-empty{opacity:.68;border-style:dashed;}
+</style><style>
+.internet-pair{border:1px solid #bd985c;background:#192d3e;border-radius:14px;padding:15px;margin:0 0 14px;color:#fff}
+.internet-pair>strong{display:block;font-size:18px;color:#f5c67b;margin-bottom:9px}
+.internet-row{display:flex;align-items:center;gap:15px;flex-wrap:wrap}
+.internet-row>div:last-child{flex:1;min-width:190px}
+.internet-row p{font-size:15px;line-height:1.5;color:#e3eaf1;margin:6px 0}
+.internet-row a{font-size:16px;font-weight:800;color:#ffd99f;text-decoration:underline;overflow-wrap:anywhere}
+.internet-qr{min-width:186px;min-height:186px;background:#fff;border-radius:8px;padding:5px;display:grid;place-items:center;color:#111}
+.internet-qr img,.internet-qr canvas{max-width:100%}
+#internetStatus{font-weight:800;color:#a9e5c3}
+body.display .internet-pair{display:none}
 </style></head>
 <body><main class="layout">
 <section class="device" aria-label="Phone screen preview">
@@ -552,4 +563,4 @@ function initControls(){try{
  }catch(err){console.error('UI startup failure',err);}}
 loadLocal();initControls();
 
-</script></body></html>
+</script><script src="remote-sync.js"></script></body></html>
