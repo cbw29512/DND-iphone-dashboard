@@ -39,6 +39,8 @@ body.display .layout{display:block;margin:0;padding:0;max-width:none}body.displa
 .pairing-footer .internet-pair{max-width:780px;margin:0 auto}
 body.display .pairing-footer{display:none}
 @media(max-width:820px){.pairing-footer{padding:0 10px 25px}}
+.smallbtn.rest-quick{background:#244b3a;border-color:#6dba90;color:#e9fff2}
+.smallbtn.reset-all{border-color:#c08375;color:#ffe6df}
 </style><style>
 .internet-pair{border:1px solid #bd985c;background:#192d3e;border-radius:14px;padding:15px;margin:0 0 14px;color:#fff}
 .internet-pair>strong{display:block;font-size:18px;color:#f5c67b;margin-bottom:9px}
@@ -64,13 +66,13 @@ body.display .internet-pair{display:none}
 </section>
 <section class="panel">
   <div class="panelheader"><div><h2>Donovan · Combat Controls</h2><p>Click an action. It stays on the phone screen until another click.</p></div><span class="pill">2024 D&D</span></div>
-  <div class="combat-topline"><button class="smallbtn next" data-next="1">NEXT TURN ↻</button><span id="combatQuickStatus" aria-live="polite">HP 51 · Slots 4/3/3 · Channel 3/3</span></div>
+  <div class="combat-topline"><button class="smallbtn next" data-next="1">NEXT TURN ↻</button><button class="smallbtn" data-reset="fight" title="New encounter; keeps current HP, slots, and Channel Divinity">RESET FIGHT</button><button class="smallbtn rest-quick" data-rest="long" title="Restore HP, slots and long-rest abilities">LONG REST</button><span id="combatQuickStatus" aria-live="polite">HP 51 · Slots 4/3/3 · Channel 3/3</span></div>
   <div class="categories" id="categories"></div><div class="buttonlist" id="buttons"></div>
   <details class="settings-toggle"><summary>HP, spell slots, attack mode &amp; rest settings</summary>
   <div class="controlbox">
     <div class="status"><span>Turn and resources</span><span id="slotsText">Slots 4 / 3 / 3 · Channel 3</span></div>
     <div class="stats"><div class="stat"><small>HP</small><strong id="hpText">51</strong></div><div class="stat"><small>AC</small><strong>16</strong></div><div class="stat"><small>Spell +</small><strong>+7</strong></div><div class="stat"><small>Save DC</small><strong>15</strong></div></div>
-    <div class="controlrow" style="margin-bottom:9px"><button class="smallbtn" data-rest="short">Short Rest</button><button class="smallbtn" data-rest="long">Long Rest</button><button class="smallbtn" data-hp="-1">HP −</button><button class="smallbtn" data-hp="1">HP +</button></div>
+    <div class="controlrow" style="margin-bottom:9px"><button class="smallbtn" data-rest="short">Short Rest</button><button class="smallbtn reset-all" data-reset="card" title="Clear saved combat history and restore the starting character values">Reset Card…</button><button class="smallbtn" data-hp="-1">HP −</button><button class="smallbtn" data-hp="1">HP +</button></div>
     <div class="track" id="turnTrack"></div>
     <div class="fieldrow choicefields">
       <div class="buttonfield"><span class="fieldtitle">SPELL ATTACK ROLLS</span><div class="controlrow" id="attackModeButtons"><button class="smallbtn mode active" data-mode="normal">Normal</button><button class="smallbtn mode" data-mode="adv">ADV</button><button class="smallbtn mode" data-mode="dis">DIS</button></div></div>
@@ -391,19 +393,55 @@ function nextTurn(){try{state.round++;state.action=false;state.bonus=false;state
   return present('NEXT TURN','ready',`TURN ${state.round}`,'Action · Bonus · Reaction ready',
     'You can now select another action and one slotted spell (2024 limit). Concentration carries over.','READY');
  }catch(err){console.error('New turn error',err);throw err;}}
-function rest(which){try{
-  if(which==='long'){state.slots={...CARD.slots};state.channels=CARD.channel;state.channelLedger=[];state.hp=CARD.hp;state.stonecunning=0;state.concentration='';state.activeSlot=0;state.flameActive=false;state.featFree={Goodberry:true,'Detect Magic':true};}
-  else if(state.channels<CARD.channel){
-    state.channels++;
-    // Represent this recovery by clearing the last still-spent button marker.
-    // This is a visual allocation only; the 2024 rules have a shared use pool.
-    if(Array.isArray(state.channelLedger))state.channelLedger.pop();
-  }
-  state.round=0;nextTurn();
-  return present(which==='long'?'LONG REST':'SHORT REST','ready','RESOURCES UPDATED',
-    which==='long'?'HP · spell slots · Channel Divinity restored':'Channel Divinity +1',
-    'Resource counters updated. Short Rest does not normally restore Cleric spell slots.','REST');
- }catch(err){console.error('Rest failed',err);throw err;}}
+function clearFightState(){
+  state.round=1;
+  state.action=false;state.bonus=false;state.reaction=false;state.slotTurn=false;
+  state.concentration='';state.activeSlot=0;state.flameActive=false;
+}
+function resetCombat(){
+  try{
+    clearFightState();
+    return present('NEW FIGHT','ready','READY FOR ROUND 1',
+      'Actions and reactions ready',
+      'Encounter-only effects and concentration cleared. Current HP, spell slots, Channel Divinity and daily uses are preserved. Use Long Rest to replenish those resources.',
+      'RESET FIGHT');
+  }catch(err){console.error('Combat reset failed',err);throw err;}
+}
+function resetCard(){
+  try{
+    if(!window.confirm('Reset Donovan to a fresh level-6 card? HP, slots, Channel Divinity, daily uses, selections, and history will reset. Your portrait will be kept.'))return;
+    const portrait=state.portrait;
+    state=defaultState();
+    state.portrait=portrait; // Keep custom art and the current online pairing.
+    return present('CARD RESET','ready','FULLY RESTORED','Starting at round 1',
+      'Character resources and selections are restored to their initial values; combat history was cleared.',
+      'RESET CARD');
+  }catch(err){console.error('Full reset failed',err);throw err;}
+}
+function rest(which){
+  try{
+    if(which!=='short'&&which!=='long')return blocked('Unknown rest type.');
+    if(which==='long'){
+      state.hp=CARD.hp;state.slots={...CARD.slots};state.channels=CARD.channel;
+      state.channelLedger=[];state.stonecunning=0;
+      state.featFree={Goodberry:true,'Detect Magic':true};
+      clearFightState();
+      return present('LONG REST','ready','FULLY RESTORED',
+        'HP 51/51 · slots 4/3/3 · Channel 3/3',
+        'HP, spell slots, Channel Divinity, Stonecunning and once-per-long-rest abilities restored. Round reset to 1; actions, reactions and concentration cleared.',
+        'LONG REST');
+    }
+    if(state.channels<CARD.channel){
+      state.channels++;
+      if(Array.isArray(state.channelLedger))state.channelLedger.pop();
+    }
+    clearFightState();
+    return present('SHORT REST','ready','REST COMPLETE',
+      'Channel Divinity +1 (up to 3)',
+      'One expended Channel Divinity use recovered, if any. Spell slots and HP are unchanged; Hit Dice healing is not automated. Concentration and encounter actions cleared.',
+      'SHORT REST');
+  }catch(err){console.error('Rest failed',err);throw err;}
+}
 function alterHP(delta){try{state.hp=Math.max(0,Math.min(CARD.hp,state.hp+delta));return present('HIT POINTS','heal',
   `${state.hp} / ${CARD.hp} HP`,delta>=0?`+${delta} HP`:`${delta} HP`,
   'Current HP updated. This adjustment is not a spell or die roll.','TRACKER');}
@@ -622,6 +660,7 @@ function perform(tap){try{
   if(tap.dataset.healTarget){state.healTarget=tap.dataset.healTarget;saveLocal();renderButtons();return;}
   if(tap.dataset.next){nextTurn();return;}
   if(tap.dataset.rest){rest(tap.dataset.rest);return;}
+  if(tap.dataset.reset){if(tap.dataset.reset==='fight')resetCombat();else if(tap.dataset.reset==='card')resetCard();return;}
   if(tap.dataset.hp){alterHP(Number(tap.dataset.hp));return;}
   if(tap.dataset.save){rollCharacterCheck('save',tap.dataset.save);return;}
   if(tap.dataset.ability){rollCharacterCheck('ability',tap.dataset.ability);return;}
@@ -637,7 +676,7 @@ function perform(tap){try{
   else if(tap.dataset.full)fullCatalog(tap.dataset.full);
  }catch(err){console.error('Unable to resolve clicked action',err);blocked('Roll or action failed. Check console diagnostics.');}}
 function initControls(){try{
-  document.addEventListener('click',e=>{const b=e.target.closest('button[data-group],button[data-mode],button[data-slot],button[data-targets],button[data-heal-target],button[data-save],button[data-ability],button[data-skill],button[data-next],button[data-rest],button[data-hp],button[data-roll],button[data-mace],button[data-reaction-mace],button[data-life],button[data-action],button[data-spell],button[data-channel],button[data-special],button[data-full]');if(b)perform(b);});
+  document.addEventListener('click',e=>{const b=e.target.closest('button[data-group],button[data-mode],button[data-slot],button[data-targets],button[data-heal-target],button[data-save],button[data-ability],button[data-skill],button[data-next],button[data-rest],button[data-reset],button[data-hp],button[data-roll],button[data-mace],button[data-reaction-mace],button[data-life],button[data-action],button[data-spell],button[data-channel],button[data-special],button[data-full]');if(b)perform(b);});
   $('portraitFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;
     if(!file.type.startsWith('image/'))return console.error('Unsupported portrait file');
     const reader=new FileReader();reader.onerror=()=>console.error('Portrait could not be opened');
