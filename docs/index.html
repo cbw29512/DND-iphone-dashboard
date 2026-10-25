@@ -35,6 +35,10 @@ body.display .layout{display:block;margin:0;padding:0;max-width:none}body.displa
 .settings-toggle>summary{cursor:pointer;font-size:14px;font-weight:850;color:var(--gold);padding:4px 2px}
 .settings-toggle>.controlbox{margin:10px 0 0}
 .categories{position:sticky;top:0;z-index:10;padding:7px 3px;background:#0b1018;border-radius:9px}
+.pairing-footer{width:100%;max-width:1270px;margin:20px auto 0;padding:0 20px 25px;box-sizing:border-box}
+.pairing-footer .internet-pair{max-width:780px;margin:0 auto}
+body.display .pairing-footer{display:none}
+@media(max-width:820px){.pairing-footer{padding:0 10px 25px}}
 </style><style>
 .internet-pair{border:1px solid #bd985c;background:#192d3e;border-radius:14px;padding:15px;margin:0 0 14px;color:#fff}
 .internet-pair>strong{display:block;font-size:18px;color:#f5c67b;margin-bottom:9px}
@@ -79,6 +83,7 @@ body.display .internet-pair{display:none}
   <details class="spelltoggle"><summary>Complete spellbook (all spells on Donovan’s PDF)</summary><p>Unprepared spells show information only. They cannot consume slots or roll damage until prepared. The two DDBD spells need full descriptions to calculate damage.</p><div class="buttonlist" id="fullSpellButtons"></div></details>
   <div class="controlbox" style="margin-top:10px"><strong style="font-size:13px">Laptop → iPhone screen</strong><p class="connection" id="connectionText">The online card rolls on this device. GitHub Pages does not relay laptop button presses to a separate iPhone; live two-device mirroring requires the local Python server.</p><div class="controlrow"><a class="smallbtn" id="displayLink" href="?view=phone" target="_blank" rel="noopener" style="text-decoration:none">Open phone display</a><label class="uploadlabel">Change portrait <input id="portraitFile" type="file" accept="image/*"></label></div></div>
 </section></main>
+<footer id="pairingFooter" class="pairing-footer" aria-label="iPhone QR connection at bottom of website"></footer>
 <script>
 'use strict';
 // Immutable source-card data. Resource values and the latest action live in state, not this schema.
@@ -370,8 +375,7 @@ function rollSpecial(name){
  try{
   if(name==='Bless d4'){const d=rollDice('1d4');return present('BLESS BONUS','bonus',`+${d.total}`,d.text,
     'Add to an eligible attack roll or saving throw while under Bless. No spell slot or action spent.','ROLL ONLY');}
-  if(name==='CON Save'){const d=rollD20(state.mode);return present('CON SAVE','save',`${d.natural+3}`,
-    `${d.text} + 3`, 'Use when Donovan must roll a Constitution saving throw, including a concentration check.','ROLL ONLY');}
+  if(name==='CON Save')return rollCharacterCheck('save','Constitution');
   if(name==='Death Save'){const d=rollD20();let effect=d.natural===20?'Regain 1 HP':d.natural===1?'Two failures':d.natural>=10?'Success':'Failure';
     return present('DEATH SAVE','save',String(d.natural),d.text,effect+'. Periapt of Wound Closure automatically stabilizes Donovan at the start of his turn while dying.','ROLL ONLY');}
   if(name==='Opportunity Attack')return rollMace(state.mode,'reaction');
@@ -445,7 +449,7 @@ function initSync(){try{
 
 </script><script>
 'use strict';
-const GROUPS=[['combat','Combat'],['healing','Healing'],['bonus','Bonus'],['spell','Spells'],['reaction','Reaction'],['other','Other Combat'],['life','Life Domain']];
+const GROUPS=[['combat','Combat'],['checks','Saves & Checks'],['healing','Healing'],['bonus','Bonus'],['spell','Spells'],['reaction','Reaction'],['other','Other Combat'],['life','Life Domain']];
 let activeGroup='combat';
 const $=id=>document.getElementById(id);
 function renderScreen(snap){
@@ -489,6 +493,37 @@ function channelButton(label,description,key,featured=false){
  button.setAttribute('aria-label',`${label}; ${used} unrecovered uses; ${state.channels} Channel Divinity uses remain`);
  return button;
 }
+
+// Sheet-exact 2024 Donovan modifiers. Ring of Protection included in saves.
+// Thaumaturge grants the extra Arcana and Religion bonuses.
+const SAVE_MODIFIERS=Object.freeze({Strength:2,Dexterity:0,Constitution:3,Intelligence:2,Wisdom:8,Charisma:4});
+const ABILITY_MODIFIERS=Object.freeze({Strength:1,Dexterity:-1,Constitution:2,Intelligence:1,Wisdom:4,Charisma:0});
+const SKILL_MODIFIERS=Object.freeze({'Acrobatics':-1,'Animal Handling':4,'Arcana':8,'Athletics':1,'Deception':0,'History':1,'Insight':7,'Intimidation':0,'Investigation':1,'Medicine':4,'Nature':1,'Perception':7,'Performance':0,'Persuasion':0,'Religion':8,'Sleight of Hand':-1,'Stealth':-1,'Survival':4});
+function rollCharacterCheck(kind,name){
+ try{
+  const table=kind==='save'?SAVE_MODIFIERS:kind==='ability'?ABILITY_MODIFIERS:SKILL_MODIFIERS;
+  if(!Object.prototype.hasOwnProperty.call(table,name))return blocked('Unknown character check.');
+  const bonus=table[name],shieldAdv=kind==='skill'&&name==='Perception';
+  const mode=shieldAdv?(state.mode==='dis'?'normal':'adv'):state.mode;
+  const d=rollD20(mode),total=d.natural+bonus;
+  const heading=kind==='save'?'SAVING THROW':'ABILITY CHECK';
+  const special=shieldAdv?'Sentinel Shield provides Advantage on Perception checks; Disadvantage cancels it. ':'';
+  return present(name.toUpperCase()+' '+(kind==='save'?'SAVE':'CHECK'),kind==='save'?'save':'check',
+    total+' TOTAL',d.text+' '+numeric(bonus)+' = '+total,
+    special+heading+'. Modifier '+numeric(bonus)+' from Donovan’s character sheet. DM sets the DC and decides success. '+
+      (kind==='save'?'Dwarven Resilience grants Advantage on saves against Poisoned. ':'')+
+      'This roll does not spend an action or a resource.','ROLL ONLY');
+ }catch(error){console.error('Character roll error',error);return blocked('Could not roll the selected save or check.');}
+}
+function addCheckButtons(choices,kind,names){
+ const bonuses=kind==='save'?SAVE_MODIFIERS:kind==='ability'?ABILITY_MODIFIERS:SKILL_MODIFIERS;
+ for(const name of names){
+  const mod=bonuses[name];
+  const note=kind==='save'?'SAVE':kind==='ability'?'ABILITY CHECK':'SKILL CHECK';
+  choices.push(makeButton(name,note+' · ONE TAP|d20 '+numeric(mod)+(name==='Perception'?' · shield ADV':''),kind,name));
+ }
+}
+
 function actionButtons(){
  const choices=[];
  if(activeGroup==='combat'){
@@ -512,6 +547,10 @@ function actionButtons(){
      const sp=SPELLS.find(x=>x.name===name);
      if(sp)choices.push(spellButton(sp));
    }
+   choices.push(sectionHeader('Saving throws · one button each'));
+   addCheckButtons(choices,'save',Object.keys(SAVE_MODIFIERS));
+   choices.push(sectionHeader('Ability checks · one button each'));
+   addCheckButtons(choices,'ability',Object.keys(ABILITY_MODIFIERS));
    choices.push(sectionHeader('Other cantrips · utility'));
    for(const sp of SPELLS.filter(x=>x.group==='cantrip'&&!['Toll the Dead','Produce Flame'].includes(x.name)))
      choices.push(spellButton(sp));
@@ -545,6 +584,13 @@ function actionButtons(){
      choices.push(makeButton(name,'ROLL ONLY|Click for dice result','special',name));
  }else if(activeGroup==='spell'){
    for(const sp of SPELLS.filter(x=>x.group==='spell'))choices.push(spellButton(sp));
+ }else if(activeGroup==='checks'){
+   choices.push(sectionHeader('Saving throws · all 6'));
+   addCheckButtons(choices,'save',Object.keys(SAVE_MODIFIERS));
+   choices.push(sectionHeader('Raw ability checks · all 6'));
+   addCheckButtons(choices,'ability',Object.keys(ABILITY_MODIFIERS));
+   choices.push(sectionHeader('Skill checks · sheet modifiers'));
+   addCheckButtons(choices,'skill',Object.keys(SKILL_MODIFIERS));
  }else if(activeGroup==='life'){
    choices.push(makeButton('Disciple of Life','LIFE · LEVEL 3|Heal spells: +2 + slot level / creature','life','Disciple of Life',true));
    choices.push(makeButton('Blessed Healer','LIFE · LEVEL 6|Self-heal +2 + slot level when healing allies','life','Blessed Healer',true));
@@ -577,6 +623,9 @@ function perform(tap){try{
   if(tap.dataset.next){nextTurn();return;}
   if(tap.dataset.rest){rest(tap.dataset.rest);return;}
   if(tap.dataset.hp){alterHP(Number(tap.dataset.hp));return;}
+  if(tap.dataset.save){rollCharacterCheck('save',tap.dataset.save);return;}
+  if(tap.dataset.ability){rollCharacterCheck('ability',tap.dataset.ability);return;}
+  if(tap.dataset.skill){rollCharacterCheck('skill',tap.dataset.skill);return;}
   if(tap.dataset.roll==='initiative')initiative();
   else if(tap.dataset.mace)rollMace(tap.dataset.mace);
   else if(tap.dataset.reactionMace)rollMace(tap.dataset.reactionMace,'reaction');
@@ -588,7 +637,7 @@ function perform(tap){try{
   else if(tap.dataset.full)fullCatalog(tap.dataset.full);
  }catch(err){console.error('Unable to resolve clicked action',err);blocked('Roll or action failed. Check console diagnostics.');}}
 function initControls(){try{
-  document.addEventListener('click',e=>{const b=e.target.closest('button[data-group],button[data-mode],button[data-slot],button[data-targets],button[data-heal-target],button[data-next],button[data-rest],button[data-hp],button[data-roll],button[data-mace],button[data-reaction-mace],button[data-life],button[data-action],button[data-spell],button[data-channel],button[data-special],button[data-full]');if(b)perform(b);});
+  document.addEventListener('click',e=>{const b=e.target.closest('button[data-group],button[data-mode],button[data-slot],button[data-targets],button[data-heal-target],button[data-save],button[data-ability],button[data-skill],button[data-next],button[data-rest],button[data-hp],button[data-roll],button[data-mace],button[data-reaction-mace],button[data-life],button[data-action],button[data-spell],button[data-channel],button[data-special],button[data-full]');if(b)perform(b);});
   $('portraitFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;
     if(!file.type.startsWith('image/'))return console.error('Unsupported portrait file');
     const reader=new FileReader();reader.onerror=()=>console.error('Portrait could not be opened');
