@@ -395,6 +395,7 @@ function nextTurn(){try{state.round++;state.action=false;state.bonus=false;state
     'You can now select another action and one slotted spell (2024 limit). Concentration carries over.','READY');
  }catch(err){console.error('New turn error',err);throw err;}}
 function readyForInitiative(source,details){
+  activeGroup='combat'; // Always reveal the Initiative button after resetting.
   return present('TURN 1 · READY FOR INITIATIVE','ready','ROLL INITIATIVE',
     'Sentinel Shield · d20 with Advantage −1',
     details+' All action, bonus action, and reaction trackers are ready. Tap ROLL INITIATIVE to start the next fight.',
