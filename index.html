@@ -34,6 +34,18 @@ body.display .layout{display:block;margin:0;padding:0;max-width:none}body.displa
 .settings-toggle{margin:16px 0 10px;border:1px solid #536379;border-radius:12px;background:#131f2c;padding:10px}
 .settings-toggle>summary{cursor:pointer;font-size:14px;font-weight:850;color:var(--gold);padding:4px 2px}
 .settings-toggle>.controlbox{margin:10px 0 0}
+.spell-slot-ledger{margin:0 0 13px;padding:11px;background:#162536;border:1px solid #536b78;border-radius:12px}
+.spell-slot-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
+.spell-slot-heading strong{color:var(--gold);font-size:12px;letter-spacing:.075em}
+.spell-slot-heading small{color:#d2dbe4;font-size:11px}
+.spell-slot-grid{display:grid;grid-template-columns:72px repeat(3,minmax(0,1fr));gap:7px}
+.spell-slot-grid .smallbtn{min-width:0;height:auto;min-height:67px;padding:7px 5px}
+.spell-slot-grid .slot-token{display:flex;align-items:center;justify-content:center;gap:2px;flex-direction:column;text-align:center}
+.slot-token>span{font-size:10px;letter-spacing:.06em}
+.slot-token strong{font-size:15px;white-space:nowrap}
+.slot-token small{font-size:10px;color:#d6e0e8}
+.slot-token.empty{border-color:#a86767;background:#432831;color:#ffe3d7}
+@media(max-width:370px){.spell-slot-grid{grid-template-columns:56px repeat(3,minmax(0,1fr));gap:4px}.slot-token strong{font-size:12px}.spell-slot-grid .smallbtn{padding:5px 2px}}
 .categories{position:sticky;top:0;z-index:10;padding:7px 3px;background:#0b1018;border-radius:9px}
 .pairing-footer{width:100%;max-width:1270px;margin:20px auto 0;padding:0 20px 25px;box-sizing:border-box}
 .pairing-footer .internet-pair{max-width:780px;margin:0 auto}
@@ -68,6 +80,15 @@ body.display .internet-pair{display:none}
 <section class="panel">
   <div class="panelheader"><div><h2>Donovan · Combat Controls</h2><p>Click an action. It stays on the phone screen until another click.</p></div><span class="pill">2024 D&D</span></div>
   <div class="combat-topline"><button class="smallbtn rest-quick" type="button" data-roll="initiative" title="Roll initiative with Sentinel Shield Advantage and -1 modifier">ROLL INITIATIVE</button><button class="smallbtn next" type="button" data-next="1">NEXT TURN ↻</button><button class="smallbtn reset-all-quick" type="button" data-reset="card" title="One tap: restore full HP, spell slots, Channel Divinity, and all starting state">RESET ALL</button><button class="smallbtn" type="button" data-reset="fight" title="Start a new fight but keep spent HP, slots and daily uses">NEW FIGHT</button><button class="smallbtn rest-quick" type="button" data-rest="long" title="Restore HP, slots and long-rest abilities">LONG REST</button><span id="combatQuickStatus" aria-live="polite">HP 51 · Slots 4/3/3 · Channel 3/3</span></div>
+<div class="spell-slot-ledger" aria-label="Spell slots remaining per Long Rest">
+  <div class="spell-slot-heading"><strong>SPELL SLOTS · PER LONG REST</strong><small>Each leveled spell uses 1 slot. Choose a level or leave Auto.</small></div>
+  <div class="spell-slot-grid">
+    <button type="button" class="smallbtn selectslot slot-auto active" data-slot="auto" aria-label="Automatically select an available spell slot">AUTO</button>
+    <button type="button" class="smallbtn selectslot slot-token" data-slot="1" aria-label="Cast using a level 1 slot"><span>LEVEL 1</span><strong id="slotLeft1">4 / 4 LEFT</strong><small id="slotUsed1">0 USED</small></button>
+    <button type="button" class="smallbtn selectslot slot-token" data-slot="2" aria-label="Cast using a level 2 slot"><span>LEVEL 2</span><strong id="slotLeft2">3 / 3 LEFT</strong><small id="slotUsed2">0 USED</small></button>
+    <button type="button" class="smallbtn selectslot slot-token" data-slot="3" aria-label="Cast using a level 3 slot"><span>LEVEL 3</span><strong id="slotLeft3">3 / 3 LEFT</strong><small id="slotUsed3">0 USED</small></button>
+  </div>
+</div>
   <div class="categories" id="categories"></div><div class="buttonlist" id="buttons"></div>
   <details class="settings-toggle"><summary>HP, spell slots, attack mode &amp; rest settings</summary>
   <div class="controlbox">
@@ -191,7 +212,14 @@ let onState=()=>{};
 function saveLocal(){try{localStorage.setItem('donovan_v2',JSON.stringify(state));}catch(err){console.error('Local card state save failed',err);}}
 function loadLocal(){try{const raw=localStorage.getItem('donovan_v2');if(raw){const v=JSON.parse(raw);state={...defaultState(),...v,slots:{...CARD.slots,...v.slots},channelLedger:Array.isArray(v.channelLedger)?v.channelLedger.filter(x=>['Preserve Life','Divine Spark Heal','Divine Spark Damage','Turn Undead'].includes(x)).slice(0,3):[]};}}catch(err){console.error('Card state recovery failed',err);state=defaultState();}}
 function present(title,kind,amount,roll,details,economy){
-  try{state.result={title,kind,amount:String(amount),roll:String(roll),details:String(details),economy:economy||''};
+  try{
+    // CommitSpell records exactly one spent slot. Show that deduction on both displays.
+    const spend=state.pendingSlotSpend;
+    state.pendingSlotSpend=null;
+    const spendLine=spend?'SLOT USED: L'+spend.level+' · '+spend.before+' → '+spend.after+
+      ' remaining (of '+CARD.slots[spend.level]+'). ':'';
+    state.result={title,kind,amount:String(amount),roll:String(roll),
+      details:spendLine+String(details),economy:economy||''};
     state.history.unshift({...state.result,at:new Date().toLocaleTimeString()});state.history=state.history.slice(0,100);
     saveLocal();onState(state);return state.result;
   }catch(err){console.error('Result rendering error',err);throw err;}
@@ -210,7 +238,7 @@ function spendSpell(sp){
   if(state.slots[slot]<=0)return blocked(`No level-${slot} spell slots remain. Choose a different slot or take a Long Rest.`),null;
   return slot;
 }
-function commitSpell(slot,economy,concentration){state.slots[slot]--;state.slotTurn=true;state[economy]=true;
+function commitSpell(slot,economy,concentration){const before=state.slots[slot];state.slots[slot]=before-1;state.pendingSlotSpend={level:slot,before,after:state.slots[slot]};state.slotTurn=true;state[economy]=true;
   if(concentration){state.concentration=concentration;state.activeSlot=slot;}}
 function attack(title,formula,modifier,economy,bonus=0,rider='',isSpell=false){
   try{
@@ -502,7 +530,14 @@ function renderScreen(snap){
 }
 function renderCounters(){
  try{$('hpText').textContent=state.hp;$('slotsText').textContent=`Slots ${[1,2,3].map(n=>state.slots[n]).join(' / ')} · Channel ${state.channels}/3`;
-   const topStatus=$('combatQuickStatus');if(topStatus)topStatus.textContent=`HP ${state.hp} · Slots ${[1,2,3].map(n=>state.slots[n]).join('/')} · Channel ${state.channels}/3`;
+   const topStatus=$('combatQuickStatus');if(topStatus)topStatus.textContent=`HP ${state.hp} · L1 ${state.slots[1]}/4 · L2 ${state.slots[2]}/3 · L3 ${state.slots[3]}/3 · Channel ${state.channels}/3`;
+   for(const level of [1,2,3]){
+     const left=Number(state.slots[level])||0,max=CARD.slots[level];
+     $('slotLeft'+level).textContent=left+' / '+max+' LEFT';
+     $('slotUsed'+level).textContent=(max-left)+' USED';
+     const chip=document.querySelector('.slot-token[data-slot="'+level+'"]');
+     if(chip)chip.classList.toggle('empty',left===0);
+   }
    $('turnTrack').innerHTML=['action','bonus','reaction','slotTurn'].map(n=>`<b class="${state[n]?'used':'ok'}">${n==='slotTurn'?'Slot/turn':n.toUpperCase()} ${state[n]?'USED':'READY'}</b>`).join('');
    document.querySelectorAll('.mode').forEach(el=>el.classList.toggle('active',el.dataset.mode===state.mode));
    document.querySelectorAll('.selectslot').forEach(el=>el.classList.toggle('active',el.dataset.slot===String(state.slot)));
@@ -642,8 +677,12 @@ function spellButton(sp){
  const details=sp.kind==='heal'||sp.kind==='prayer'?`HEAL · ${sp.dice} + Life bonus`:sp.kind==='attack'?`HIT +7 · ${sp.dice} ${sp.type}`:
   sp.kind==='save'?`${sp.save} DC 15 · ${sp.dice} ${sp.type}`:sp.kind==='save_effect'?`${sp.save} DC 15 · effect`:
   sp.kind==='unknown'?`${sp.save} DC 15 · formula unknown`:(sp.effect||'Support effect').slice(0,60);
- const kind=sp.level?`LEVEL ${sp.level}${sp.domain?' · DOMAIN':''}`:'AT WILL';
- return makeButton(sp.name,`${kind}|${details}`,'spell',sp.name,sp.name==='Healing Word'||sp.name==='Mass Healing Word',Boolean(sp.optional&&!state.prepared.includes(sp.name)));
+ const free=sp.feat&&state.featFree?.[sp.name]===true;
+ const actualSlot=sp.level?chooseSlot(sp.level):0;
+ const left=actualSlot?state.slots[actualSlot]??0:0;
+ const kind=!sp.level?'CANTRIP · AT WILL':free?'FREE CAST · 1/LONG REST':
+   'SLOT L'+actualSlot+' · '+left+'/'+CARD.slots[actualSlot]+' LEFT'+(sp.domain?' · DOMAIN':'');
+ return makeButton(sp.name,kind+'|'+details,'spell',sp.name,sp.name==='Healing Word'||sp.name==='Mass Healing Word',Boolean(sp.optional&&!state.prepared.includes(sp.name)));
 }
 function renderButtons(){try{
   $('categories').replaceChildren(...GROUPS.map(([id,title])=>{const b=document.createElement('button');b.className='category'+(activeGroup===id?' active':'');b.textContent=title;b.dataset.group=id;return b;}));
