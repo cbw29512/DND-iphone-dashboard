@@ -1,3 +1,20 @@
+# Donovan the Fallen — laptop controller / iPhone display
+
+The **iPhone is a read-only display**. It shows Donovan's portrait and latest attack, cantrip, spell, healing, or Channel Divinity result. Only the laptop has the combat controls and rolls the dice.
+
+**Wi-Fi quick start (Windows):**
+1. Download this repository with **Code → Download ZIP**, then **Extract All**.
+2. Double-click **`Start_Donovan_WiFi_Windows.bat`** in the extracted top-level folder (requires Python 3).
+3. Laptop controls open at **http://localhost:8765/**. Leave the terminal running.
+4. Connect the iPhone to the same Wi-Fi. Scan the QR on the laptop page with iPhone Camera.
+5. Tap a combat button on the laptop; the iPhone shows that result until the next one.
+
+If Windows Firewall asks, allow Python on **Private networks only**. This local server is for trusted Wi-Fi only; do not expose port 8765 to the public internet. For details see [Wi-Fi documentation](wifi/README.md).
+
+The [public GitHub Pages card](https://cbw29512.github.io/DND-iphone-dashboard/) remains available for single-device use, but GitHub Pages by itself **cannot relay laptop actions to another phone**.
+
+---
+
 # Iron Lantern — D&D iPhone Dashboard
 
 **Windows DM dashboard → wireless iPhone player display.** Separate Flex Cards for artwork, maps, initiative, narration and dice. The DM chooses a card and presses **Share to Screen**; the phone follows changes automatically.
