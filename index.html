@@ -76,6 +76,16 @@ body.display .layout{display:block;margin:0;padding:0;max-width:none}body.displa
 .pairing-footer .internet-pair{max-width:780px;margin:0 auto}
 body.display .pairing-footer{display:none}
 @media(max-width:820px){.pairing-footer{padding:0 10px 25px}}
+
+.notes-panel{border:1px solid #596b83;background:#172535;border-radius:13px;padding:14px;margin:14px 0}
+.notes-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.notes-heading h3{font-family:Georgia,serif;color:#f5c67b;font-size:21px;margin:0}
+.notes-heading span{color:#a7eac7;font-size:12px;font-weight:700}
+#donovanNotes{display:block;min-height:180px;max-height:65vh;resize:vertical;width:100%;box-sizing:border-box;padding:12px;border:1px solid #6b8096;border-radius:9px;background:#0d1a28;color:#f6f5ef;font:15px/1.55 system-ui,-apple-system,sans-serif}
+#donovanNotes::placeholder{color:#acbaca;opacity:1}
+#donovanNotes:focus-visible{outline:2px solid #f5c67b;outline-offset:2px}
+.notes-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px}
+.notes-help{color:#bacbd8;font-size:12px;line-height:1.45;flex:1 1 230px}
 .smallbtn.rest-quick{background:#244b3a;border-color:#6dba90;color:#e9fff2}
 .smallbtn.reset-all{border-color:#c08375;color:#ffe6df}
 .smallbtn.reset-all-quick{border-color:#dfbd78;background:#744226;color:#fff6e5;font-weight:900}
@@ -148,6 +158,11 @@ body.display .internet-pair{display:none}
   </div>
   </details>
   <details class="spelltoggle"><summary>Complete spellbook (all spells on Donovan’s PDF)</summary><p>Unprepared spells show information only. They cannot consume slots or roll damage until prepared. The two DDBD spells need full descriptions to calculate damage.</p><div class="buttonlist" id="fullSpellButtons"></div></details>
+  <section class="notes-panel" aria-labelledby="notesHeading">
+    <div class="notes-heading"><h3 id="notesHeading">Combat Notes</h3><span id="notesStatus" role="status" aria-live="polite">Saved on this browser</span></div>
+    <textarea id="donovanNotes" rows="8" spellcheck="true" placeholder="Write your notes here: enemy AC, tactics, concentration, spells to remember, clues, loot, session details…" aria-label="Donovan combat notes"></textarea>
+    <div class="notes-actions"><span class="notes-help">Auto-saved as you type. Notes stay through New Fight, Long Rest and Reset All. Stored on this device, not shared with the phone.</span><button type="button" class="smallbtn" id="clearNotes">Clear Notes</button></div>
+  </section>
   <div class="controlbox" style="margin-top:10px"><strong style="font-size:13px">Laptop → iPhone screen</strong><p class="connection" id="connectionText">The online card rolls on this device. GitHub Pages does not relay laptop button presses to a separate iPhone; live two-device mirroring requires the local Python server.</p><div class="controlrow"><a class="smallbtn" id="displayLink" href="?view=phone" target="_blank" rel="noopener" style="text-decoration:none">Open phone display</a><label class="uploadlabel">Change portrait <input id="portraitFile" type="file" accept="image/*"></label></div></div>
 </section></main>
 <footer id="pairingFooter" class="pairing-footer" aria-label="iPhone QR connection at bottom of website"></footer>
@@ -827,6 +842,37 @@ function perform(tap){try{
   else if(tap.dataset.special)rollSpecial(tap.dataset.special);
   else if(tap.dataset.full)fullCatalog(tap.dataset.full);
  }catch(err){console.error('Unable to resolve clicked action',err);blocked('Roll or action failed. Check console diagnostics.');}}
+// Combat notes are separate from combat state so reset and rests never erase them.
+const NOTES_KEY='donovan_combat_notes_v1';
+function initNotes(){
+  const field=document.getElementById('donovanNotes');
+  const status=document.getElementById('notesStatus');
+  const clear=document.getElementById('clearNotes');
+  if(!field||!status||!clear)return;
+  try{
+    field.value=localStorage.getItem(NOTES_KEY)||'';
+    status.textContent=field.value?'Notes loaded · saved on this browser':'Saved on this browser';
+  }catch(error){
+    console.error('Notes could not be loaded',error);
+    status.textContent='Storage unavailable · notes will not persist';
+  }
+  field.addEventListener('input',()=>{
+    try{
+      localStorage.setItem(NOTES_KEY,field.value);
+      status.textContent='Saved on this browser';
+    }catch(error){
+      console.error('Notes could not be saved',error);
+      status.textContent='Save failed · copy your notes before leaving';
+    }
+  });
+  clear.addEventListener('click',()=>{
+    if(!field.value)return;
+    if(!window.confirm('Permanently clear Donovan’s saved notes on this browser?'))return;
+    field.value='';
+    field.dispatchEvent(new Event('input',{bubbles:true}));
+    field.focus();
+  });
+}
 function initControls(){try{
   document.addEventListener('click',e=>{const b=e.target.closest('button[data-group],button[data-mode],button[data-slot],button[data-targets],button[data-heal-target],button[data-save],button[data-ability],button[data-skill],button[data-next],button[data-rest],button[data-reset],button[data-hp],button[data-hp-custom],button[data-roll],button[data-mace],button[data-reaction-mace],button[data-life],button[data-action],button[data-spell],button[data-channel],button[data-special],button[data-full]');if(b)perform(b);});
   $('portraitFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;
@@ -835,6 +881,6 @@ function initControls(){try{
     reader.onload=()=>{try{state.portrait=reader.result;saveLocal();reload();publish();}catch(err){console.error('Portrait failed',err);}};reader.readAsDataURL(file);});
   onState=()=>{reload();renderButtons();publish();};renderButtons();reload();initSync();
  }catch(err){console.error('UI startup failure',err);}}
-loadLocal();initControls();
+loadLocal();initControls();initNotes();
 
 </script><script src="remote-sync.js?v=reset-20261025-1"></script></body></html>
