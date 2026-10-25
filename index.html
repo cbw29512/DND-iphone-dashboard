@@ -41,6 +41,7 @@ body.display .pairing-footer{display:none}
 @media(max-width:820px){.pairing-footer{padding:0 10px 25px}}
 .smallbtn.rest-quick{background:#244b3a;border-color:#6dba90;color:#e9fff2}
 .smallbtn.reset-all{border-color:#c08375;color:#ffe6df}
+.smallbtn.reset-all-quick{border-color:#dfbd78;background:#744226;color:#fff6e5;font-weight:900}
 </style><style>
 .internet-pair{border:1px solid #bd985c;background:#192d3e;border-radius:14px;padding:15px;margin:0 0 14px;color:#fff}
 .internet-pair>strong{display:block;font-size:18px;color:#f5c67b;margin-bottom:9px}
@@ -66,13 +67,13 @@ body.display .internet-pair{display:none}
 </section>
 <section class="panel">
   <div class="panelheader"><div><h2>Donovan · Combat Controls</h2><p>Click an action. It stays on the phone screen until another click.</p></div><span class="pill">2024 D&D</span></div>
-  <div class="combat-topline"><button class="smallbtn next" data-next="1">NEXT TURN ↻</button><button class="smallbtn" data-reset="fight" title="New encounter; keeps current HP, slots, and Channel Divinity">RESET FIGHT</button><button class="smallbtn rest-quick" data-rest="long" title="Restore HP, slots and long-rest abilities">LONG REST</button><span id="combatQuickStatus" aria-live="polite">HP 51 · Slots 4/3/3 · Channel 3/3</span></div>
+  <div class="combat-topline"><button class="smallbtn next" type="button" data-next="1">NEXT TURN ↻</button><button class="smallbtn reset-all-quick" type="button" data-reset="card" title="One tap: restore full HP, spell slots, Channel Divinity, and all starting state">RESET ALL</button><button class="smallbtn" type="button" data-reset="fight" title="Start a new fight but keep spent HP, slots and daily uses">NEW FIGHT</button><button class="smallbtn rest-quick" type="button" data-rest="long" title="Restore HP, slots and long-rest abilities">LONG REST</button><span id="combatQuickStatus" aria-live="polite">HP 51 · Slots 4/3/3 · Channel 3/3</span></div>
   <div class="categories" id="categories"></div><div class="buttonlist" id="buttons"></div>
   <details class="settings-toggle"><summary>HP, spell slots, attack mode &amp; rest settings</summary>
   <div class="controlbox">
     <div class="status"><span>Turn and resources</span><span id="slotsText">Slots 4 / 3 / 3 · Channel 3</span></div>
     <div class="stats"><div class="stat"><small>HP</small><strong id="hpText">51</strong></div><div class="stat"><small>AC</small><strong>16</strong></div><div class="stat"><small>Spell +</small><strong>+7</strong></div><div class="stat"><small>Save DC</small><strong>15</strong></div></div>
-    <div class="controlrow" style="margin-bottom:9px"><button class="smallbtn" data-rest="short">Short Rest</button><button class="smallbtn reset-all" data-reset="card" title="Clear saved combat history and restore the starting character values">Reset Card…</button><button class="smallbtn" data-hp="-1">HP −</button><button class="smallbtn" data-hp="1">HP +</button></div>
+    <div class="controlrow" style="margin-bottom:9px"><button class="smallbtn" data-rest="short">Short Rest</button><button class="smallbtn reset-all" type="button" data-reset="card" title="Restore HP, spell slots, and all card values">RESET ALL</button><button class="smallbtn" data-hp="-1">HP −</button><button class="smallbtn" data-hp="1">HP +</button></div>
     <div class="track" id="turnTrack"></div>
     <div class="fieldrow choicefields">
       <div class="buttonfield"><span class="fieldtitle">SPELL ATTACK ROLLS</span><div class="controlrow" id="attackModeButtons"><button class="smallbtn mode active" data-mode="normal">Normal</button><button class="smallbtn mode" data-mode="adv">ADV</button><button class="smallbtn mode" data-mode="dis">DIS</button></div></div>
@@ -409,13 +410,12 @@ function resetCombat(){
 }
 function resetCard(){
   try{
-    if(!window.confirm('Reset Donovan to a fresh level-6 card? HP, slots, Channel Divinity, daily uses, selections, and history will reset. Your portrait will be kept.'))return;
     const portrait=state.portrait;
     state=defaultState();
     state.portrait=portrait; // Keep custom art and the current online pairing.
-    return present('CARD RESET','ready','FULLY RESTORED','Starting at round 1',
-      'Character resources and selections are restored to their initial values; combat history was cleared.',
-      'RESET CARD');
+    return present('RESET COMPLETE','ready','51 HP · ALL RESOURCES READY','HP 51/51 · slots 4/3/3 · Channel Divinity 3/3 · round 1',
+      'Full card reset: HP, spell slots, Channel Divinity, action, bonus action, reaction, daily uses and combat history restored. Your portrait and iPhone pairing remain unchanged.',
+      'RESET ALL');
   }catch(err){console.error('Full reset failed',err);throw err;}
 }
 function rest(which){
@@ -685,4 +685,4 @@ function initControls(){try{
  }catch(err){console.error('UI startup failure',err);}}
 loadLocal();initControls();
 
-</script><script src="remote-sync.js"></script></body></html>
+</script><script src="remote-sync.js?v=reset-20261025-1"></script></body></html>
