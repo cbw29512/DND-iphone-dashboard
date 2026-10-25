@@ -110,7 +110,7 @@ const SPELLS = Object.freeze([
 const RECOMMENDED = Object.freeze(['Healing Word','Guiding Bolt','Command','Sanctuary','Shield of Faith','Prayer of Healing','Blindness/Deafness','Spirit Guardians','Beacon of Hope','Dispel Magic']);
 // UI state includes resources plus a persistent latest result. Server broadcasts only public screen state.
 const defaultState=()=>({hp:51,slots:{1:4,2:3,3:3},channels:3,channelLedger:[],round:1,action:false,bonus:false,reaction:false,slotTurn:false,
-  mode:'normal',targets:6,slot:'auto',prepared:[...RECOMMENDED],
+  mode:'normal',targets:6,healTarget:'others',slot:'auto',prepared:[...RECOMMENDED],
   concentration:'',activeSlot:0,flameActive:false,featFree:{Goodberry:true,'Detect Magic':true},portrait:'',result:{title:'READY FOR COMBAT',kind:'ready',amount:'SELECT AN ACTION',
   roll:'Initiative · Mace · Spells · Healing · Dodge',details:'Tap a button on the laptop. The latest activity remains on the phone until the next action.',economy:'STANDING BY'},history:[]});
 
@@ -230,11 +230,17 @@ function healing(sp,slot){
   const maximum=state.concentration==='Beacon of Hope',bonuses=sp.name==='Prayer of Healing'?0:CARD.wisdom;
   const per=[];for(let i=0;i<n;i++){const d=rollDice(sp.dice,extra,maximum);per.push({n:d.total+bonuses+2+slot,details:d.text});}
   const sum=per.reduce((a,b)=>a+b.n,0),self=2+slot;
-  state.hp=Math.min(CARD.hp,state.hp+self);
-  const formula=per.map((p,i)=>`#${i+1}: ${p.details}${bonuses?` + ${bonuses} WIS`:''} + ${slot+2} Life = ${p.n}`).join('  ·  ');
+  // "Include Donovan" makes target #1 Donovan; other slots are allies.
+  const includesDonovan=state.healTarget==='includeSelf';
+  const allies=n-(includesDonovan?1:0),blessed=allies>0?self:0;
+  const directSelfHealing=includesDonovan?per[0].n:0;
+  state.hp=Math.min(CARD.hp,state.hp+directSelfHealing+blessed);
+  const formula=per.map((p,i)=>`#${i+1}${includesDonovan&&i===0?' (Donovan)':''}: ${p.details}${bonuses?` + ${bonuses} WIS`:''} + ${slot+2} Life = ${p.n}`).join('  ·  ');
+  const selfNote=blessed?`Blessed Healer: Donovan +${blessed} HP (an ally was healed).`:
+    'Blessed Healer does not activate when Donovan is the only recipient.';
   return present(sp.name,'heal',n===1?`${per[0].n} HP HEALED`:`${sum} HP TOTAL`,
-    n===1?`1 target · ${per[0].n} HP`:`${n} targets · ${per.map(p=>p.n).join(' / ')} HP`,
-    `${formula}. Disciple of Life included. Blessed Healer: Donovan +${self} HP when healing another creature (capped at 51). ${sp.rule||sp.effect||''}${maximum?' Beacon of Hope maximized dice.':''}`,
+    n===1?`${includesDonovan?'Donovan':'1 ally'} · ${per[0].n} HP`:`${n} targets · ${per.map(p=>p.n).join(' / ')} HP`,
+    `${formula}. Disciple of Life included. ${selfNote} ${sp.rule||sp.effect||''}${maximum?' Beacon of Hope maximized dice for eligible recipients.':''}`,
     sp.group==='bonus'?'SPELL · BONUS ACTION':'SPELL · ACTION');
 }
 function castSpell(name){
@@ -488,6 +494,8 @@ function actionButtons(){
    choices.push(channelButton('Turn Undead + Sear','CLERIC · UNDEAD|WIS DC 15 · 4d8 radiant on failed save','Turn Undead'));
  }else if(activeGroup==='healing'){
    choices.push(sectionHeader('Healing · fastest recovery buttons'));
+   choices.push(makeButton('Other creatures','TARGETS · DEFAULT|Donovan gains Blessed Healer if a spell heals allies','healTarget','others',state.healTarget!=='includeSelf'));
+   choices.push(makeButton('Include Donovan','TARGETS · SELF|First target is Donovan; only other targets trigger Blessed Healer','healTarget','includeSelf',state.healTarget==='includeSelf'));
    for(const name of ['Healing Word','Mass Healing Word','Cure Wounds','Prayer of Healing','Aid','Lesser Restoration','Beacon of Hope','Revivify']){
      const sp=SPELLS.find(x=>x.name===name);
      if(sp)choices.push(spellButton(sp));
@@ -542,6 +550,7 @@ function perform(tap){try{
   if(tap.dataset.mode){state.mode=tap.dataset.mode;saveLocal();renderCounters();return;}
   if(tap.dataset.slot){state.slot=tap.dataset.slot;saveLocal();renderCounters();return;}
   if(tap.dataset.targets){state.targets=Number(tap.dataset.targets);saveLocal();renderCounters();return;}
+  if(tap.dataset.healTarget){state.healTarget=tap.dataset.healTarget;saveLocal();renderButtons();return;}
   if(tap.dataset.next){nextTurn();return;}
   if(tap.dataset.rest){rest(tap.dataset.rest);return;}
   if(tap.dataset.hp){alterHP(Number(tap.dataset.hp));return;}
@@ -556,7 +565,7 @@ function perform(tap){try{
   else if(tap.dataset.full)fullCatalog(tap.dataset.full);
  }catch(err){console.error('Unable to resolve clicked action',err);blocked('Roll or action failed. Check console diagnostics.');}}
 function initControls(){try{
-  document.addEventListener('click',e=>{const b=e.target.closest('button[data-group],button[data-mode],button[data-slot],button[data-targets],button[data-next],button[data-rest],button[data-hp],button[data-roll],button[data-mace],button[data-reaction-mace],button[data-life],button[data-action],button[data-spell],button[data-channel],button[data-special],button[data-full]');if(b)perform(b);});
+  document.addEventListener('click',e=>{const b=e.target.closest('button[data-group],button[data-mode],button[data-slot],button[data-targets],button[data-heal-target],button[data-next],button[data-rest],button[data-hp],button[data-roll],button[data-mace],button[data-reaction-mace],button[data-life],button[data-action],button[data-spell],button[data-channel],button[data-special],button[data-full]');if(b)perform(b);});
   $('portraitFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;
     if(!file.type.startsWith('image/'))return console.error('Unsupported portrait file');
     const reader=new FileReader();reader.onerror=()=>console.error('Portrait could not be opened');
