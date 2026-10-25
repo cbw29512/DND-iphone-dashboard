@@ -1,17 +1,21 @@
-# Donovan the Fallen — laptop controller / iPhone display
+# Donovan the Fallen — Online Combat Card
 
-The **iPhone is a read-only display**. It shows Donovan's portrait and latest attack, cantrip, spell, healing, or Channel Divinity result. Only the laptop has the combat controls and rolls the dice.
+**Primary website:** https://cbw29512.github.io/DND-iphone-dashboard/
 
-**Wi-Fi quick start (Windows):**
-1. Download this repository with **Code → Download ZIP**, then **Extract All**.
-2. Double-click **`Start_Donovan_WiFi_Windows.bat`** in the extracted top-level folder (requires Python 3).
-3. Laptop controls open at **http://localhost:8765/**. Leave the terminal running.
-4. Connect the iPhone to the same Wi-Fi. Scan the QR on the laptop page with iPhone Camera.
-5. Tap a combat button on the laptop; the iPhone shows that result until the next one.
+## Use anywhere (GitHub Pages + internet relay)
 
-If Windows Firewall asks, allow Python on **Private networks only**. This local server is for trusted Wi-Fi only; do not expose port 8765 to the public internet. For details see [Wi-Fi documentation](wifi/README.md).
+1. Open the website on your laptop. Its **Combat Controls** roll dice and track Life Cleric resources.
+2. Above the controls, scan the **iPhone display · pair from anywhere** QR code using iPhone Camera, or open the phone-display link.
+3. The iPhone runs the **read-only presentation screen**: Donovan's portrait above, latest attack/spell/heal/Channel Divinity effect below. It cannot use combat controls.
+4. Each laptop action replaces the phone's displayed result automatically. Both browsers need internet, but **not the same Wi-Fi**.
 
-The [public GitHub Pages card](https://cbw29512.github.io/DND-iphone-dashboard/) remains available for single-device use, but GitHub Pages by itself **cannot relay laptop actions to another phone**.
+**State schema:** The laptop holds the local character state (HP, slots, Channel Divinity, current roll). On every action it sends a **signed snapshot** (result, HP, turn, resources) to a unique relay topic. Phone mode accepts only messages verified with the laptop's pairing public key and applies only the latest result. The QR link contains the topic and public verification key; the laptop signing key stays in its browser storage.
+
+**Relay:** This static GitHub Pages site uses the third-party public service [ntfy.sh](https://ntfy.sh) over HTTPS/EventSource; GitHub alone cannot synchronize live devices. The unguessable relay topic is not a private account, so do not use it for private information. Anyone with the link can subscribe, but the phone rejects unsigned/forged results. The relay has message/traffic limits and service availability dependencies. No subscription or Python server is required.
+
+**Current limitation:** The built-in Donovan portrait is present on both devices. User-uploaded replacement portraits are stored in the laptop browser and **not sent over the relay** (messages must stay small). The phone needs its display page open; iOS can suspend browser networking when the screen is locked. Keep the phone screen awake during play.
+
+**Alternative:** Local-only Wi-Fi relay remains available in [wifi/README.md](wifi/README.md), but isn't required for internet mode.
 
 ---
 
