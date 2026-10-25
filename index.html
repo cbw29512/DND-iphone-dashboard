@@ -67,7 +67,7 @@ body.display .internet-pair{display:none}
 </section>
 <section class="panel">
   <div class="panelheader"><div><h2>Donovan · Combat Controls</h2><p>Click an action. It stays on the phone screen until another click.</p></div><span class="pill">2024 D&D</span></div>
-  <div class="combat-topline"><button class="smallbtn next" type="button" data-next="1">NEXT TURN ↻</button><button class="smallbtn reset-all-quick" type="button" data-reset="card" title="One tap: restore full HP, spell slots, Channel Divinity, and all starting state">RESET ALL</button><button class="smallbtn" type="button" data-reset="fight" title="Start a new fight but keep spent HP, slots and daily uses">NEW FIGHT</button><button class="smallbtn rest-quick" type="button" data-rest="long" title="Restore HP, slots and long-rest abilities">LONG REST</button><span id="combatQuickStatus" aria-live="polite">HP 51 · Slots 4/3/3 · Channel 3/3</span></div>
+  <div class="combat-topline"><button class="smallbtn rest-quick" type="button" data-roll="initiative" title="Roll initiative with Sentinel Shield Advantage and -1 modifier">ROLL INITIATIVE</button><button class="smallbtn next" type="button" data-next="1">NEXT TURN ↻</button><button class="smallbtn reset-all-quick" type="button" data-reset="card" title="One tap: restore full HP, spell slots, Channel Divinity, and all starting state">RESET ALL</button><button class="smallbtn" type="button" data-reset="fight" title="Start a new fight but keep spent HP, slots and daily uses">NEW FIGHT</button><button class="smallbtn rest-quick" type="button" data-rest="long" title="Restore HP, slots and long-rest abilities">LONG REST</button><span id="combatQuickStatus" aria-live="polite">HP 51 · Slots 4/3/3 · Channel 3/3</span></div>
   <div class="categories" id="categories"></div><div class="buttonlist" id="buttons"></div>
   <details class="settings-toggle"><summary>HP, spell slots, attack mode &amp; rest settings</summary>
   <div class="controlbox">
@@ -130,8 +130,8 @@ const RECOMMENDED = Object.freeze(['Healing Word','Guiding Bolt','Command','Sanc
 // UI state includes resources plus a persistent latest result. Server broadcasts only public screen state.
 const defaultState=()=>({hp:51,slots:{1:4,2:3,3:3},channels:3,channelLedger:[],round:1,action:false,bonus:false,reaction:false,slotTurn:false,
   mode:'normal',targets:6,healTarget:'others',slot:'auto',prepared:[...RECOMMENDED],
-  concentration:'',activeSlot:0,flameActive:false,featFree:{Goodberry:true,'Detect Magic':true},portrait:'',result:{title:'READY FOR COMBAT',kind:'ready',amount:'SELECT AN ACTION',
-  roll:'Initiative · Mace · Spells · Healing · Dodge',details:'Tap a button on the laptop. The latest activity remains on the phone until the next action.',economy:'STANDING BY'},history:[]});
+  concentration:'',activeSlot:0,flameActive:false,featFree:{Goodberry:true,'Detect Magic':true},portrait:'',result:{title:'TURN 1 · READY FOR INITIATIVE',kind:'ready',amount:'ROLL INITIATIVE',
+  roll:'Sentinel Shield · d20 with Advantage −1',details:'Tap ROLL INITIATIVE to start the fight. Actions, bonus actions, and reactions are ready.',economy:'TURN 1 · READY'},history:[]});
 
 </script><script>
 "use strict";
@@ -394,6 +394,12 @@ function nextTurn(){try{state.round++;state.action=false;state.bonus=false;state
   return present('NEXT TURN','ready',`TURN ${state.round}`,'Action · Bonus · Reaction ready',
     'You can now select another action and one slotted spell (2024 limit). Concentration carries over.','READY');
  }catch(err){console.error('New turn error',err);throw err;}}
+function readyForInitiative(source,details){
+  return present('TURN 1 · READY FOR INITIATIVE','ready','ROLL INITIATIVE',
+    'Sentinel Shield · d20 with Advantage −1',
+    details+' All action, bonus action, and reaction trackers are ready. Tap ROLL INITIATIVE to start the next fight.',
+    source);
+}
 function clearFightState(){
   state.round=1;
   state.action=false;state.bonus=false;state.reaction=false;state.slotTurn=false;
@@ -402,10 +408,8 @@ function clearFightState(){
 function resetCombat(){
   try{
     clearFightState();
-    return present('NEW FIGHT','ready','READY FOR ROUND 1',
-      'Actions and reactions ready',
-      'Encounter-only effects and concentration cleared. Current HP, spell slots, Channel Divinity and daily uses are preserved. Use Long Rest to replenish those resources.',
-      'RESET FIGHT');
+    return readyForInitiative('NEW FIGHT',
+      'Turn 1 started. Old combat results and temporary fight effects were cleared; current HP, remaining spell slots, Channel Divinity, and daily uses are preserved.');
   }catch(err){console.error('Combat reset failed',err);throw err;}
 }
 function resetCard(){
@@ -413,9 +417,8 @@ function resetCard(){
     const portrait=state.portrait;
     state=defaultState();
     state.portrait=portrait; // Keep custom art and the current online pairing.
-    return present('RESET COMPLETE','ready','51 HP · ALL RESOURCES READY','HP 51/51 · slots 4/3/3 · Channel Divinity 3/3 · round 1',
-      'Full card reset: HP, spell slots, Channel Divinity, action, bonus action, reaction, daily uses and combat history restored. Your portrait and iPhone pairing remain unchanged.',
-      'RESET ALL');
+    return readyForInitiative('RESET ALL',
+      'Full reset complete: 51 HP, all spell slots, Channel Divinity 3/3, daily uses, and round 1. Previous combat history cleared; portrait and iPhone pairing preserved.');
   }catch(err){console.error('Full reset failed',err);throw err;}
 }
 function rest(which){
@@ -426,20 +429,16 @@ function rest(which){
       state.channelLedger=[];state.stonecunning=0;
       state.featFree={Goodberry:true,'Detect Magic':true};
       clearFightState();
-      return present('LONG REST','ready','FULLY RESTORED',
-        'HP 51/51 · slots 4/3/3 · Channel 3/3',
-        'HP, spell slots, Channel Divinity, Stonecunning and once-per-long-rest abilities restored. Round reset to 1; actions, reactions and concentration cleared.',
-        'LONG REST');
+      return readyForInitiative('LONG REST',
+        'Long Rest complete: HP 51/51, spell slots 4/3/3, Channel Divinity 3/3 and daily abilities restored. Round reset to 1; old concentration and actions cleared.');
     }
     if(state.channels<CARD.channel){
       state.channels++;
       if(Array.isArray(state.channelLedger))state.channelLedger.pop();
     }
     clearFightState();
-    return present('SHORT REST','ready','REST COMPLETE',
-      'Channel Divinity +1 (up to 3)',
-      'One expended Channel Divinity use recovered, if any. Spell slots and HP are unchanged; Hit Dice healing is not automated. Concentration and encounter actions cleared.',
-      'SHORT REST');
+    return readyForInitiative('SHORT REST',
+      'Short Rest complete: one spent Channel Divinity use recovered if available. HP and spell slots unchanged. Turn reset to 1; encounter actions cleared.');
   }catch(err){console.error('Rest failed',err);throw err;}
 }
 function alterHP(delta){try{state.hp=Math.max(0,Math.min(CARD.hp,state.hp+delta));return present('HIT POINTS','heal',
