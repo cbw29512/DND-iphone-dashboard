@@ -7,7 +7,7 @@ const params=new URLSearchParams(location.search), displayOnly=params.get("view"
 const signal=message=>{const el=document.getElementById("signal");if(el)el.textContent=message;};
 const to64=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");
 const from64=str=>Uint8Array.from(atob(str.replace(/-/g,"+").replace(/_/g,"/").padEnd(Math.ceil(str.length/4)*4,"=")),c=>c.charCodeAt(0));
-let pairing=null,lastTime=0;
+let pairing=null,lastTime=0,lastIssuedTime=0;
 async function localPairing(){
   try{
     let saved;
@@ -43,11 +43,14 @@ function showPairing(pair){
       '<div class="internet-row"><div id="internetQR" class="internet-qr"></div>'+
       '<div><p>Scan this QR with iPhone Camera. The phone shows Donovan’s picture and latest result only.</p>'+
       '<a id="internetLink" target="_blank" rel="noopener">Open phone display</a>'+
-      '<p id="internetStatus">Connecting to online relay…</p></div></div>';
-    document.querySelector(".panel").append(panel); // Keep phone-pairing QR after all controller sections.
+      '<p id="internetStatus">Connecting to online relay…</p><button type="button" id="internetRefresh" class="smallbtn">Refresh iPhone screen</button></div></div>';
+    const footer=document.getElementById("pairingFooter");
+    if(!footer)throw new Error("Bottom-of-page pairing footer is missing");
+    footer.appendChild(panel);
     const url=phoneLink(pair);
     const link=document.getElementById("internetLink");link.href=url;link.textContent="Phone display link";
     const old=document.getElementById("displayLink");if(old)old.href=url;
+    document.getElementById("internetRefresh").addEventListener("click",()=>remotePublish(true));
     const status=document.getElementById("connectionText");
     if(status)status.textContent="Internet display: scan the laptop QR. No shared Wi-Fi or Python server needed.";
     const script=document.createElement("script");
@@ -58,13 +61,14 @@ function showPairing(pair){
     document.head.appendChild(script);
   }catch(error){console.error("Pairing panel error",error);}
 }
-async function remotePublish(){
+async function remotePublish(refresh=false){
   if(displayOnly)return;
   try{
     pairing=pairing||await localPairing();
     const current=snapshot();
     current.portrait=""; // Default portrait ships with the site; relay messages have a 4 KB limit.
-    const data=JSON.stringify({v:1,ts:Date.now(),snap:current});
+    const ts=Math.max(Date.now(),lastIssuedTime+1);lastIssuedTime=ts;
+    const data=JSON.stringify({v:1,ts,snap:current,refresh:refresh===true});
     const signature=to64(await crypto.subtle.sign(
       {name:"ECDSA",hash:"SHA-256"},pairing.privateKey,enc.encode(data)));
     const payload=JSON.stringify({data,signature});
@@ -74,7 +78,7 @@ async function remotePublish(){
     if(!result.ok)throw new Error("Relay returned HTTP "+result.status);
     signal("SENT ONLINE");
     const status=document.getElementById("internetStatus");
-    if(status)status.textContent="Latest result sent online. Phone can display it.";
+    if(status)status.textContent=refresh?"iPhone refresh requested. Latest result sent.":"Latest result sent online. Phone can display it.";
   }catch(error){
     console.error("Online roll publish failed",error);signal("SEND FAILED");
     const status=document.getElementById("internetStatus");
@@ -88,28 +92,59 @@ async function startPhone(){
       throw new Error("Open the QR pairing link from your laptop; no room is selected.");
     const verifyKey=await crypto.subtle.importKey("spki",from64(pub),
       {name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
-    const source=new EventSource(BASE+room+"/sse?since=latest");
-    source.onopen=()=>signal("WAITING FOR LAPTOP");
-    source.onerror=error=>{console.warn("Relay reconnecting",error);signal("RECONNECTING");};
-    source.onmessage=async event=>{
+    // Both SSE and low-rate polling are used. Safari can suspend SSE in the background.
+    async function receive(message){
       try{
-        const outer=JSON.parse(event.data);
-        if(outer.event!=="message")return;
-        const {data,signature}=JSON.parse(outer.message);
+        if(message?.event!=="message"||typeof message.message!=="string")return;
+        const {data,signature}=JSON.parse(message.message);
         if(typeof data!=="string"||typeof signature!=="string")return;
         const valid=await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},
           verifyKey,from64(signature),enc.encode(data));
-        if(!valid)return;
+        if(!valid)return; // Only messages signed by the laptop are accepted.
         const incoming=JSON.parse(data);
-        if(incoming.v!==1||!incoming.snap?.result||incoming.ts<lastTime)return;
-        lastTime=incoming.ts;renderScreen(incoming.snap);signal("LIVE FROM LAPTOP");
-      }catch(error){console.warn("Ignored malformed relay update",error);}
-    };
+        if(incoming.v!==1||!incoming.snap?.result||!Number.isSafeInteger(incoming.ts)||incoming.ts<lastTime)return;
+        lastTime=incoming.ts;
+        renderScreen(incoming.snap);
+        signal("LIVE FROM LAPTOP");
+        if(incoming.refresh===true){
+          const key="donovan_last_phone_refresh";
+          // Remember this request across reload to prevent a cached-message reload loop.
+          const prior=sessionStorage.getItem(key);
+          if(prior!==String(incoming.ts)){
+            sessionStorage.setItem(key,String(incoming.ts));
+            location.reload();
+          }
+        }
+      }catch(error){console.warn("Ignored invalid relay update",error);}
+    }
+    let pollBusy=false;
+    async function pollLatest(){
+      if(pollBusy)return;
+      pollBusy=true;
+      try{
+        const response=await fetch(BASE+room+"/json?poll=1&since=latest",{cache:"no-store"});
+        if(!response.ok)throw Error("Relay poll HTTP "+response.status);
+        const lines=(await response.text()).trim().split("\n").filter(Boolean);
+        for(const line of lines)await receive(JSON.parse(line));
+      }catch(error){console.warn("Phone catch-up unavailable; SSE remains active",error);}
+      finally{pollBusy=false;}
+    }
+    const source=new EventSource(BASE+room+"/sse?since=latest");
+    source.onopen=()=>signal("WAITING FOR LAPTOP");
+    source.onerror=error=>{console.warn("Relay reconnecting",error);signal("RECONNECTING");};
+    source.onmessage=event=>{try{receive(JSON.parse(event.data));}
+      catch(error){console.warn("Invalid relay event",error);}};
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)pollLatest();});
+    window.addEventListener("pageshow",()=>pollLatest());
+    window.addEventListener("online",()=>pollLatest());
+    setInterval(()=>{if(!document.hidden)pollLatest();},15000);
+    pollLatest();
   }catch(error){
     console.error("Phone pairing failed",error);signal("PAIRING ERROR");
     document.getElementById("resultDetails").textContent=error.message;
   }
 }
+
 async function start(){
   try{
     if(!crypto?.subtle)throw new Error("HTTPS required");
