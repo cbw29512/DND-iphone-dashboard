@@ -393,8 +393,9 @@ function renderActions(){
    heading(root,"Class features, feats, species traits");
    character.features.forEach(f=>btn(root,f.name,f.usesMax?"USES "+f.remainingUses+"/"+f.usesMax:"RULES / REVIEW",f.text.slice(0,135),()=>feature(f),f.usesMax?"featured":"uncertain"));
  }else{
-   heading(root,"All weapon attacks from PDF");
+   heading(root,"Weapons & cantrips · at will");
    character.weapons.forEach(w=>weaponCard(root,w));
+   for(const sp of orderedSpells(character.spells.filter(x=>x.level===0)))spellBtn(root,sp);
    heading(root,"Equipment");
    for(const item of character.equipment||[])btn(root,item,"INVENTORY","Imported item; consult item text for special rules.",()=>show("EQUIPMENT",item,"Inventory item from D&D Beyond PDF."));
    heading(root,"Character stats");
@@ -438,7 +439,7 @@ function renderAll(){
   const sp=result.spell,grid=document.createElement("div");grid.className="weapon-roll-summary";
   const firstLabel=sp.hit!==null?"TO HIT":sp.save?sp.save+" DC":"EFFECT";
   const firstValue=sp.hit!==null?sp.hit:sp.save?sp.dc:null;
-  for(const [label,value] of [[firstLabel,firstValue],[sp.kind==="heal"?"HEALING":"DAMAGE",sp.value],["SLOT",sp.slotText]]){
+  for(const [label,value] of [[firstLabel,firstValue],[sp.kind==="heal"?"HEALING":sp.kind==="damage"?"DAMAGE":"EFFECT",sp.value],["SLOT",sp.slotText]]){
    const cell=document.createElement("div");cell.className="weapon-roll-stat"+(value===null||value===undefined?" muted":"");
    const labelEl=document.createElement("small"),number=document.createElement("strong");
    labelEl.textContent=label;number.textContent=value===null||value===undefined?"—":String(value);
