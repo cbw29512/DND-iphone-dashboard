@@ -193,7 +193,7 @@ function parseCharacter(fields){
  const equipment=Object.keys(fields).filter(key=>/^Eq Name\d+$/i.test(key)).map(key=>raw(key).trim()).filter(Boolean);
  const initiativeAdvantage=equipment.some(item=>/Sentinel Shield/i.test(item));
  const char={id:(name+"|"+classes).toLowerCase().replace(/[^a-z0-9|]/g,"-").slice(0,120),name,classes,level,rules,life,blessedHealer,background:value("BACKGROUND"),species:value("RACE"),
-   equipment,initiativeAdvantage,ac:toNum(value("AC"),10),hpMax:toNum(value("MaxHP"),1),hp:toNum(value("CurrentHP"),toNum(value("MaxHP"),1)),initiative:toNum(value("Init"),0),
+   equipment,initiativeAdvantage,speed:CharacterFormModel.parsedSpeed(value("Speed","Walking Speed","Movement","Speed (ft)")),portrait:"",ac:toNum(value("AC"),10),hpMax:toNum(value("MaxHP"),1),hp:toNum(value("CurrentHP"),toNum(value("MaxHP"),1)),initiative:toNum(value("Init"),0),
    ability,saves,skills,weapons,features,spells:[...spellMap.values()].sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)),slots,remaining:{...slots},
    spellAttack:toNum(value("spellAtkBonus0"),0),spellDC:toNum(value("spellSaveDC0"),0),turn:1,actionUsed:false,bonusUsed:false,reactionUsed:false,slotUsed:false,notes:"",concentration:"",concentrationSlot:0,result:{name:"TURN 1",total:"ROLL INITIATIVE",detail:"Ready for one-click combat."}};
  return char;
@@ -290,12 +290,13 @@ function weaponCard(parent,w){
  const head=document.createElement("div");head.className="weapon-head";
  const icon=document.createElement("span");icon.className="weapon-icon";
  const symbol=weaponSymbol(w.name);if(symbol.startsWith("<svg"))icon.innerHTML=symbol;else icon.textContent=symbol;
- const title=document.createElement("div"),h=document.createElement("h3"),sub=document.createElement("div");
- h.className="weapon-name";h.textContent=w.name;
+ const title=document.createElement("div"),h=document.createElement("button"),sub=document.createElement("div");
+ h.type="button";h.className="weapon-name";h.textContent=w.name;
+ h.setAttribute("aria-label","Attack with "+w.name);h.addEventListener("click",()=>doAttack(w,"normal"));
  sub.className="weapon-sub";sub.textContent=signed(Number(w.bonus)||0)+" to hit · "+(w.damage||w.formula||"Check damage");
  title.append(h,sub);head.append(icon,title);article.append(head);
  const row=document.createElement("div");row.className="weapon-rolls";
- for(const [chosen,label] of [["adv","ADV"],["normal","ATTACK"],["dis","DIS"]]){
+ for(const [chosen,label] of [["adv","ADV"],["dis","DIS"]]){
   const b=document.createElement("button");b.type="button";b.textContent=label;
   b.setAttribute("aria-label",w.name+" — roll "+(chosen==="adv"?"with advantage":chosen==="dis"?"with disadvantage":"normally"));
   b.addEventListener("click",()=>doAttack(w,chosen));row.append(b);
@@ -336,7 +337,8 @@ function spellBtn(root,sp){
  card.className="spell-card"+(!sp.prepared&&sp.level>0?" uncertain":"");
  card.dataset.actionName=sp.name;card.dataset.actionKind="spell";
  const head=document.createElement("div");head.className="spell-head";
- const name=document.createElement("strong");name.textContent=sp.name;
+ const name=document.createElement("button");name.type="button";name.className="spell-primary";name.textContent=sp.name;
+ name.setAttribute("aria-label","Cast "+sp.name);name.addEventListener("click",()=>cast(sp,"normal"));
  const desc=document.createElement("small");
  desc.textContent=sp.level===0?"CANTRIP · AT WILL":
   (!sp.prepared?"NOT PREPARED · ":"")+
@@ -369,7 +371,7 @@ function spellBtn(root,sp){
   line.append(title,select);card.append(line);
  }
  const rolls=document.createElement("div");rolls.className="spell-rolls";
- for(const [chosen,label] of (attack?[["adv","ADV"],["normal","CAST"],["dis","DIS"]]:[["normal","CAST SPELL"]])){
+ for(const [chosen,label] of (attack?[["adv","ADV"],["dis","DIS"]]:[])){
   const button=document.createElement("button");button.type="button";button.textContent=label;
   button.setAttribute("aria-label",sp.name+" · "+(chosen==="adv"?"advantage":chosen==="dis"?"disadvantage":"cast"));
   button.addEventListener("click",()=>cast(sp,chosen));rolls.append(button);
@@ -380,13 +382,14 @@ function orderedSpells(spells){
  return [...spells].sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
 }
 function groupedSpells(root,spells){
- let previous=-1;
- for(const sp of orderedSpells(spells)){
-  if(previous!==sp.level){
-   previous=sp.level;
+ let previous=-1,grid=null;
+ for(const spell of orderedSpells(spells)){
+  if(previous!==spell.level){
+   previous=spell.level;
    heading(root,"LEVEL "+previous+" SPELLS · "+(character.remaining[previous]??0)+" SLOTS LEFT");
+   grid=document.createElement("div");grid.className="spell-button-grid";root.append(grid);
   }
-  spellBtn(root,sp);
+  spellBtn(grid,spell);
  }
 }
 function renderActions(){
@@ -432,8 +435,14 @@ function renderActions(){
 function renderAll(){
  if(!character)return;
  $("who").textContent=character.name;
+ const picture=CharacterFormModel.safePortrait(character.portrait);
+ const portrait=$("portraitImage"),initials=$("portraitInitials");
+ portrait.hidden=!picture;
+ if(picture)portrait.src=picture;else portrait.removeAttribute("src");
+ initials.textContent=character.name.trim().split(/\s+/).slice(0,2).map(word=>word[0]||"").join("").toUpperCase()||"PC";
+ initials.hidden=Boolean(picture);
  $("identity").textContent=character.classes+" · "+character.species+" · "+character.background+" · "+character.rules+" rules";
- const stats=$("stats");stats.replaceChildren();for(const [label,n] of [["HP",character.hp+"/"+character.hpMax],["AC",character.ac],["INIT",signed(character.initiative)],["LEVEL",character.level],["SPELL ATK",signed(character.spellAttack)],["SPELL DC",character.spellDC]]){
+ const stats=$("stats");stats.replaceChildren();for(const [label,n] of [["HP",character.hp+"/"+character.hpMax],["AC",character.ac],["SPEED",character.speed===null||character.speed===undefined?"—":character.speed+" ft"],["INIT",signed(character.initiative)],["LEVEL",character.level],["SPELL DC",character.spellDC]]){
   const d=document.createElement("div");d.className="stat";const small=document.createElement("small");small.textContent=label;const strong=document.createElement("b");strong.textContent=n;d.append(small,strong);stats.append(d);
  }
  $("hpLabel").textContent=character.hp+" / "+character.hpMax;
@@ -601,7 +610,7 @@ function demoCharacter(){
   freeCastMax:name==="Goodberry"?1:0,freeCastRemaining:name==="Goodberry"?1:0
  }));
  return {id:"demo-donovan-level6",name:"Donovan — Playable Demo",classes:"Cleric 6 · Life Domain",level:6,rules:"2024",life:true,blessedHealer:true,background:"Acolyte",species:"Dwarf",
-  ac:16,hpMax:51,hp:51,initiative:-1,initiativeAdvantage:true,equipment:["Mace of Disruption","Sentinel Shield","Ring of Protection"],
+  ac:16,speed:25,portrait:"",hpMax:51,hp:51,initiative:-1,initiativeAdvantage:true,equipment:["Mace of Disruption","Sentinel Shield","Ring of Protection"],
   ability,saves,skills,weapons:[{name:"Mace of Disruption",bonus:4,damage:"1d6+1 Bludgeoning",formula:"1d6+1",notes:"+2d6 Radiant vs Fiends or Undead"}],
   features:[{name:"Channel Divinity",text:"3 uses per Long Rest. Regain one spent use after a Short Rest; choose Divine Spark, Turn Undead, or Preserve Life.",usesMax:3,remainingUses:3,recovers:"long"},
    {name:"Stonecunning",text:"3 / Long Rest. Gain Tremorsense 60 ft while touching stone.",usesMax:3,remainingUses:3,recovers:"long"},
@@ -613,6 +622,10 @@ function demoCharacter(){
 }
 function initialize(){
  fillRoster();
+ CharacterEditor.initialize(updated=>loadCard(updated),()=>character);
+ for(const key of ABBR){$("saveSelect").add(new Option(key,key));$("abilitySelect").add(new Option(key,key));}
+ $("rollSaveBtn").addEventListener("click",()=>{if(character){const key=$("saveSelect").value;doCheck(key+" SAVE",character.saves[key]??0);}});
+ $("rollAbilityBtn").addEventListener("click",()=>{if(character){const key=$("abilitySelect").value;doCheck(key+" CHECK",character.ability[key]?.mod??0);}});
  $("importBtn").addEventListener("click",() => importPDF($("pdfFile").files[0]));
  $("demoBtn").addEventListener("click",()=>{loadCard(demoCharacter());$("message").textContent="Sample level-6 Life Cleric loaded. Try Mace, Healing Word or Guiding Bolt.";});
  $("pdfFile").addEventListener("change",()=>{$("message").textContent=$("pdfFile").files[0]?.name||"Select a PDF."});
