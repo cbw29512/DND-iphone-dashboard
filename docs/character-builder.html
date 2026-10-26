@@ -38,7 +38,7 @@ footer{font-size:12px;color:var(--mute);padding:12px 0}
 <div id="stats" class="stats"></div>
 <div class="resources"><div class="resource"><label>HIT POINTS</label><strong id="hpLabel">—</strong><div class="row"><button data-hp="-5">−5</button><button data-hp="5">+5</button><input id="hpChange" aria-label="Damage or healing amount" type="number" min="1" value="10"><button id="damageBtn">Damage</button><button id="healBtn">Heal</button></div></div>
 <div class="resource"><label>SPELL SLOTS REMAINING</label><strong id="slotsLabel">—</strong><div class="row"><span class="note">Use level:</span><select id="castLevel" aria-label="Spell slot level"><option value="auto">Auto</option></select></div></div></div>
-<div class="inset" style="margin-top:9px"><div class="row"><label>Roll type:</label><div class="counter" id="modes"><button data-mode="normal" class="active">Normal</button><button data-mode="adv">ADV</button><button data-mode="dis">DIS</button></div><label>Group heal targets:</label><select id="healTargets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div></div>
+<div class="inset" style="margin-top:9px"><div class="row"><label>Roll type:</label><div class="counter" id="modes"><button data-mode="normal" class="active">Normal</button><button data-mode="adv">ADV</button><button data-mode="dis">DIS</button></div><label>Heal targets:</label><select id="healTargets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><label for="healWho">Include self:</label><select id="healWho"><option value="others">Allies only</option><option value="self">Donovan / Self first</option></select><label for="wounded">Target wounded:</label><input id="wounded" type="checkbox" aria-label="Target is wounded for Toll the Dead"></div></div>
 </section>
 <section class="panel"><div class="tabs" id="tabs"><button data-tab="fight" class="active">Fight</button><button data-tab="spells">Spells</button><button data-tab="checks">Saves &amp; Skills</button><button data-tab="features">Features</button><button data-tab="sheet">Sheet</button></div><div id="actions" class="buttons"></div></section>
 </div>
@@ -57,7 +57,7 @@ const STORAGE="oneclick_cards_v1",ACTIVE="oneclick_active_v1";
 const ABILITIES=["Strength","Dexterity","Constitution","Intelligence","Wisdom","Charisma"];
 const ABBR=["STR","DEX","CON","INT","WIS","CHA"];
 const SKILLS=["Acrobatics","Animal Handling","Arcana","Athletics","Deception","History","Insight","Intimidation","Investigation","Medicine","Nature","Perception","Performance","Persuasion","Religion","Sleight of Hand","Stealth","Survival"];
-let character=null,tab="fight",mode="normal",selectedSlot="auto",healTargets=1;
+let character=null,tab="fight",mode="normal",selectedSlot="auto",healTargets=1,healWho="others",targetWounded=false;
 const toNum=(value,otherwise=0)=>{const match=String(value??"").match(/[+-]?\d+/);return match?Number(match[0]):otherwise;};
 const signed=n=>(n>=0?"+":"")+n;
 const die=faces=>Math.floor(Math.random()*faces)+1;
@@ -82,7 +82,7 @@ function parseCharacter(fields){
  }
  const featureText=features.map(f=>f.name+" "+f.text).join(" ");
  const rules=featureText.includes("PHB-2024")?"2024":"unspecified";
- const life=/Life Domain|Disciple of Life/i.test(featureText);
+ const life=/Disciple of Life/i.test(featureText),blessedHealer=/Blessed Healer/i.test(featureText);
  const weapons=[];
  for(let i=1;i<=6;i++){const suffix=i===1?"":" "+i;
    const wname=value(i===1?"Wpn Name":"Wpn Name"+suffix);
@@ -116,10 +116,10 @@ function parseCharacter(fields){
   const txt=raw("spellSlotHeader"+i),m=txt.match(/(\d+)\s+Slots?/i);
   if(m)slots[i]=Number(m[1]);
  }
- const char={id:(name+"|"+classes).toLowerCase().replace(/[^a-z0-9|]/g,"-").slice(0,120),name,classes,level,rules,life,background:value("BACKGROUND"),species:value("RACE"),
+ const char={id:(name+"|"+classes).toLowerCase().replace(/[^a-z0-9|]/g,"-").slice(0,120),name,classes,level,rules,life,blessedHealer,background:value("BACKGROUND"),species:value("RACE"),
    ac:toNum(value("AC"),10),hpMax:toNum(value("MaxHP"),1),hp:toNum(value("CurrentHP"),toNum(value("MaxHP"),1)),initiative:toNum(value("Init"),0),
    ability,saves,skills,weapons,features,spells:[...spellMap.values()].sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)),slots,remaining:{...slots},
-   spellAttack:toNum(value("spellAtkBonus0"),0),spellDC:toNum(value("spellSaveDC0"),0),turn:1,notes:"",result:{name:"TURN 1",total:"ROLL INITIATIVE",detail:"Ready for one-click combat."}};
+   spellAttack:toNum(value("spellAtkBonus0"),0),spellDC:toNum(value("spellSaveDC0"),0),turn:1,notes:"",concentration:"",concentrationSlot:0,result:{name:"TURN 1",total:"ROLL INITIATIVE",detail:"Ready for one-click combat."}};
  return char;
 }
 function persist(){
@@ -131,7 +131,7 @@ function fillRoster(){
  try{const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");for(const c of Object.values(roster))select.add(new Option(c.name+" · "+c.classes,c.id));}catch(_){}
  select.value=character?.id||old||"";
 }
-function loadCard(c){character=c;tab="fight";mode="normal";selectedSlot="auto";healTargets=1;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();}
+function loadCard(c){character=c;tab="fight";mode="normal";selectedSlot="auto";healTargets=1;healWho="others";targetWounded=false;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();}
 function show(name,total,detail){character.result={name,total:String(total),detail};persist();renderAll();}
 function useSlot(level){if(!level)return {level:0};let target=selectedSlot==="auto"?Object.keys(character.remaining).map(Number).sort((a,b)=>a-b).find(x=>x>=level&&character.remaining[x]>0):Number(selectedSlot);
  if(!target||target<level||!character.remaining[target]){show("NO SPELL SLOT","NOT CAST","No available level-"+(target||level)+" spell slot. Choose a slot or take a Long Rest.");return null;}
@@ -153,15 +153,17 @@ const KNOWN_2024={
 };
 function cast(sp){
  if(sp.level>0&&!sp.prepared){show("NOT PREPARED",sp.name,"The exported PDF does not mark this spell as prepared. Review spell preparation to enable it.");return;}
- // Resolve a slot once, only for a new cast. Unknown effects still expend a slot as directed.
- const spent=useSlot(sp.level);if(!spent)return;
+ // Ongoing Spirit Guardians damage is a repeat effect, not a new spell slot.
+ const ongoing=sp.name==="Spirit Guardians"&&character.concentration===sp.name;
+ const spent=ongoing?{level:character.concentrationSlot||sp.level}:useSlot(sp.level);if(!spent)return;
  const slot=spent.level,m=character.rules==="2024"?KNOWN_2024[sp.name]:null;
  let text=sp.name+": "+(sp.notes||sp.range||sp.duration||"Consult the full spell description.")+". ";
  let total="CAST";
  if(m){
    let count=Number(m.dice.match(/^\d+/)[0]);
-   const sides=Number(m.dice.match(/d(\d+)/i)[1]);
+   const sides=sp.name==="Toll the Dead"&&targetWounded?12:Number(m.dice.match(/d(\d+)/i)[1]);
    if(m.cantrip)count=character.level>=17?4:character.level>=11?3:character.level>=5?2:1;
+   if(sp.name==="Toll the Dead") { /* Base die becomes d12 for a wounded target. */ }
    else count+=Math.max(0,slot-sp.level)*m.per;
    const targets=m.targets?Math.min(healTargets,m.targets):1;
    const result=[];
@@ -174,10 +176,18 @@ function cast(sp){
      text+="Target "+(i+1)+": "+roll.text+(m.type==="heal"?" + "+wis+" casting + "+life+" Life":"")+" = "+amount+". ";
    }
    total=(targets>1?result.reduce((a,b)=>a+b,0)+" HP TOTAL":result[0]+(m.type==="heal"?" HP HEALED":" DAMAGE"));
-   if(m.type==="heal"&&character.life)text+="Disciple of Life applied. Blessed Healer may also restore "+(2+slot)+" HP when healing someone else. ";
+   if(m.type==="heal"){
+     const self=healWho==="self",allies=targets-(self?1:0);
+     const restoredSelf=self?result[0]:0,blessed=character.blessedHealer&&allies>0?(2+slot):0;
+     if(self||blessed){character.hp=Math.min(character.hpMax,character.hp+restoredSelf+blessed);text+="Self HP is now "+character.hp+"/"+character.hpMax+". ";}
+     if(character.life)text+="Disciple of Life applied. ";
+     if(blessed)text+="Blessed Healer +"+blessed+" self HP from healing another creature. ";
+     if(self)text+="Target 1 was self. ";
+   }
  }else if(sp.level===0){total="CANTRIP";text+="Effect details may require the rulebook. ";}
  else{text+="Dice/effects could not be safely derived from this PDF; consult the spell text. ";}
- text+=(sp.level?"Level "+slot+" slot spent; "+character.remaining[slot]+" remain.":"No spell slot used.")+" "+(sp.save||"")+" "+(sp.duration||"");
+ if(sp.duration&&/Concentration/i.test(sp.duration)&&!ongoing){character.concentration=sp.name;character.concentrationSlot=slot;}
+ text+=(sp.level?(ongoing?"Concentration ongoing; no extra slot spent. ":"Level "+slot+" slot spent; "+character.remaining[slot]+" remain. "):"No spell slot used. ")+(sp.save||"")+" "+(sp.duration||"");
  show(sp.name,total,text);
 }
 function feature(f){show(f.name,"FEATURE / RULES",f.text||"Review feature in your source material.");}
@@ -239,6 +249,8 @@ function renderAll(){
  $("castLevel").replaceChildren(new Option("Auto","auto"),...Object.keys(character.slots).sort((a,b)=>a-b).map(k=>new Option("Level "+k,k)));
  $("castLevel").value=selectedSlot;
  $("healTargets").value=String(healTargets);
+ $("healWho").value=healWho;
+ $("wounded").checked=targetWounded;
  $("modes").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.mode===mode));
  $("result").replaceChildren();
  const h=document.createElement("h3"),b=document.createElement("div"),p=document.createElement("p");
@@ -279,15 +291,17 @@ function initialize(){
  $("loadBtn").addEventListener("click",()=>{try{const id=$("roster").value;const c=JSON.parse(localStorage.getItem(STORAGE)||"{}")[id];if(c)loadCard(c);else $("message").textContent="Choose a saved character first.";}catch(e){$("message").textContent="Saved character could not be loaded."; }});
  $("initiativeBtn").addEventListener("click",()=>doCheck("INITIATIVE",character.initiative));
  $("nextBtn").addEventListener("click",()=>{character.turn++;show("TURN "+character.turn,"READY","Actions and reactions available.");});
- $("fightBtn").addEventListener("click",()=>{character.turn=1;show("TURN 1","ROLL INITIATIVE","New fight. HP and spent slots preserved.");});
- $("restBtn").addEventListener("click",()=>{character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;show("LONG REST","READY FOR INITIATIVE","HP and spell slots restored. Verify limited-use class abilities separately.");});
- $("resetBtn").addEventListener("click",()=>{if(!confirm("Reset HP, spell slots and turn to starting values? Notes remain."))return;character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;show("RESET ALL","ROLL INITIATIVE","Character resources restored to imported maximum. Notes preserved.");});
+ $("fightBtn").addEventListener("click",()=>{character.turn=1;character.concentration="";character.concentrationSlot=0;show("TURN 1","ROLL INITIATIVE","New fight. HP and spent slots preserved.");});
+ $("restBtn").addEventListener("click",()=>{character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;character.concentration="";character.concentrationSlot=0;show("LONG REST","READY FOR INITIATIVE","HP and spell slots restored. Verify limited-use class abilities separately.");});
+ $("resetBtn").addEventListener("click",()=>{if(!confirm("Reset HP, spell slots and turn to starting values? Notes remain."))return;character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;character.concentration="";character.concentrationSlot=0;show("RESET ALL","ROLL INITIATIVE","Character resources restored to imported maximum. Notes preserved.");});
  document.querySelectorAll("[data-hp]").forEach(b=>b.addEventListener("click",()=>{character.hp=Math.max(0,Math.min(character.hpMax,character.hp+Number(b.dataset.hp)));show("HIT POINTS",character.hp+" / "+character.hpMax,"HP tracker updated.");}));
  for(const [id,mult] of [["damageBtn",-1],["healBtn",1]])$(id).addEventListener("click",()=>{const n=Number($("hpChange").value);if(!Number.isInteger(n)||n<1)return;character.hp=Math.max(0,Math.min(character.hpMax,character.hp+mult*n));show("HIT POINTS",character.hp+" / "+character.hpMax,(mult<0?"Damage":"Healing")+" "+n+".");});
  $("modes").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{mode=b.dataset.mode;renderAll();}));
  $("tabs").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>selectTab(b.dataset.tab)));
  $("castLevel").addEventListener("change",()=>{selectedSlot=$("castLevel").value;});
  $("healTargets").addEventListener("change",()=>{healTargets=Number($("healTargets").value);});
+ $("healWho").addEventListener("change",()=>{healWho=$("healWho").value;});
+ $("wounded").addEventListener("change",()=>{targetWounded=$("wounded").checked;});
  $("notes").addEventListener("input",()=>{character.notes=$("notes").value;persist();});
  $("editBtn").addEventListener("click",reviewSpells);
  $("deleteBtn").addEventListener("click",()=>{if(!confirm("Delete this saved character card and notes?"))return;const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");delete roster[character.id];localStorage.setItem(STORAGE,JSON.stringify(roster));localStorage.removeItem(ACTIVE);character=null;$("play").classList.add("hidden");fillRoster();$("message").textContent="Saved card deleted.";});
