@@ -14,6 +14,16 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;touch-action:man
 #result{background:#101e2b;border:1px solid #8a734f;border-radius:12px;min-height:170px;padding:16px}#result h3{font-size:20px;margin:3px 0 7px}#result .big{font-size:clamp(25px,4vw,38px);font-weight:900;color:var(--green);line-height:1.2;overflow-wrap:anywhere}#result p{margin:7px 0;color:#e1e7ec;font-size:13px;overflow-wrap:anywhere}
 .tabs{display:flex;gap:5px;overflow-x:auto;padding:2px 0 10px}.tabs button{white-space:nowrap;flex:1 0 auto}.tabs button.active{background:#b18a52;color:#121a23}
 .buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.action{min-height:81px;background:#152c3d;border:1px solid #4c6780;border-radius:11px;text-align:left;padding:10px;display:flex;flex-direction:column;gap:3px;justify-content:start}.action b{font-size:15px;line-height:1.2}.action small{font-size:11px;color:#ccd5df}.action .tag{color:#f3ca81;font-size:10px;font-weight:900;letter-spacing:.07em}.action.uncertain{border-style:dashed}.action.featured{background:#364032;border-color:#a5a171}
+
+.weapon-card{grid-column:1/-1;border:1px solid #607688;background:#192b3b;border-radius:14px;padding:13px;display:flex;flex-direction:column;gap:9px}
+.weapon-head{display:flex;align-items:center;gap:11px;min-width:0}.weapon-icon{width:46px;height:46px;border:1px solid #927650;border-radius:10px;background:#283649;color:#efd6a5;display:grid;place-items:center;font-size:27px;flex:0 0 auto}.weapon-icon svg{width:38px;height:38px}.weapon-name{font-size:17px;line-height:1.2;margin:0;color:#f9f1df}.weapon-sub{font-size:11px;color:#c1d0dc}
+.weapon-rolls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.weapon-rolls button{min-height:49px;font-size:14px;border-radius:10px;background:#284158;border:1px solid #6c8298}.weapon-rolls button:nth-child(2){background:#92704a;color:#fff9e9;border-color:#deb784;font-weight:950}
+.weapon-special-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:5px 0}.weapon-special-row label{font-size:12px;font-weight:800;color:#d9e6d7;display:flex;align-items:center;gap:8px}.weapon-special-row input[type=checkbox]{width:20px;height:20px;accent-color:#e4b57a}.weapon-special-row .note{font-size:11px}
+.weapon-editor summary{font-size:11px;color:#f0c98b;cursor:pointer;font-weight:750}.weapon-editor .row{margin-top:8px}.weapon-editor input[type=text]{width:90px;background:#102030;border:1px solid #60788a;border-radius:7px;padding:7px;color:white}.weapon-editor input[type=text].special-label-input{width:min(165px,100%)}.weapon-editor button{font-size:11px;min-height:32px}
+.weapon-roll-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 8px}.weapon-roll-stat{background:#1a3545;border:1px solid #4d7182;border-radius:10px;text-align:center;padding:11px 4px}.weapon-roll-stat small{display:block;color:#d0dbe4;font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:850}.weapon-roll-stat strong{display:block;font-size:clamp(22px,3.8vw,36px);color:#f1f6ec;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.weapon-roll-stat:nth-child(3) strong{color:#eac580}.weapon-roll-stat.muted strong{color:#8294a3}
+.result-status{color:#ecce9a;font-size:12px;font-weight:800;margin:7px 0}.roll-log summary{cursor:pointer;font-size:15px;font-weight:900;color:#f7c878}.roll-log ol{list-style:none;padding:0;margin:11px 0 0;display:grid;gap:8px}.roll-log li{border:1px solid #40596d;background:#0d1d2b;border-radius:9px;padding:11px;font-size:12px}.roll-log li strong{color:#f4d29a}.roll-log li span{color:#b9c6d2;font-size:11px;margin-left:8px}.roll-log li p{margin:5px 0 0;white-space:pre-wrap;line-height:1.5;overflow-wrap:anywhere}#result .compact-total{font-size:clamp(24px,4vw,35px);font-weight:900;color:#a3e9c3;margin:10px 0}
+@media(max-width:450px){.weapon-rolls button{min-height:48px}.weapon-roll-summary{gap:5px}.weapon-roll-stat{padding:10px 3px}}
+
 .section{grid-column:1/-1;color:var(--gold);font-size:11px;letter-spacing:.08em;margin:9px 0 0;border-bottom:1px solid #4a5b6f;padding-bottom:5px}
 .setup-details summary{cursor:pointer;font-weight:850;color:var(--gold);padding:5px 0}.setup-details h2{margin-top:12px}
 .inset{padding:10px;border-radius:10px;background:#112234;border:1px solid #405a70}.inset label{font-size:11px;color:var(--gold);font-weight:800}
@@ -58,7 +68,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <section class="panel"><div class="tabs" id="tabs"><button data-tab="fight" class="active">Fight</button><button data-tab="spells">Spells</button><button data-tab="checks">Saves &amp; Skills</button><button data-tab="features">Features</button><button data-tab="sheet">Sheet</button></div><div id="actions" class="buttons"></div></section>
 </div>
 <div class="sticky">
-<section class="panel"><h2>Latest result</h2><div id="result" role="status" aria-live="polite"><h3>READY</h3><div class="big">ROLL INITIATIVE</div></div><p class="hint">A new roll replaces this result. The attack total, dice breakdown, and remaining slots are shown here.</p></section>
+<section class="panel"><h2>Latest result</h2><div id="result" role="status" aria-live="polite"><h3>READY</h3><div class="big">ROLL INITIATIVE</div></div></section>
 <section class="panel"><h2>Notes</h2><textarea id="notes" placeholder="Enemy AC, clues, tactics, loot, session notes…"></textarea><div class="hint" id="notesHint">Auto-saved for this character in this browser.</div></section>
 <details class="panel setup-details"><summary>Configure custom spell actions (optional)</summary><h2>Make any spell one-click playable</h2>
 <p class="hint">Spells without safe dice information in the PDF can be configured once. Read the spell's description in your source, enter its dice and target count, and future taps roll automatically.</p>
@@ -68,6 +78,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 </details>
 <section class="panel"><h2>Import review</h2><p class="hint" id="review">Review bonuses and spell preparation before play.</p><button id="editBtn">Review spell preparation</button><div id="spellReview" class="hidden"></div></section>
 </div></div></div>
+<details class="panel roll-log"><summary>Roll Log · detailed dice and rules</summary><div id="rollLog"></div></details>
 <section class="panel remote-panel" id="remotePanel" aria-label="QR pairing for a read-only phone display"><div><h2>Phone Display · QR Pairing</h2><p class="hint">Scan this code on your iPhone. The phone shows only the latest roll, HP and remaining spell slots; it cannot control the character. Phone and laptop may be on different networks. Small result snapshots travel through the ntfy.sh relay (not end-to-end encrypted); your PDF and notes are not uploaded.</p></div><div class="remote-row"><div id="remoteQR" class="qr-paper">Loading QR…</div><div><a id="remotePhoneLink" href="#" target="_blank" rel="noopener">Open paired phone display</a><p id="remoteStatus" role="status">Connecting…</p><button type="button" id="phoneRefresh">Refresh Phone Display</button></div></div></section>
 <footer>This is an importer for your exported character sheet, not an official D&D Beyond integration. Unknown or custom ability mechanics are shown for manual resolution instead of being invented. Saved cards are local to this browser.</footer>
 </div>
@@ -86,7 +97,7 @@ let character=null,tab="fight",mode="normal",selectedSlot="auto",healTargets=1,h
 const toNum=(value,otherwise=0)=>{const match=String(value??"").match(/[+-]?\d+/);return match?Number(match[0]):otherwise;};
 const signed=n=>(n>=0?"+":"")+n;
 const die=faces=>Math.floor(Math.random()*faces)+1;
-function d20(){const a=die(20),b=mode==="normal"?null:die(20),pick=b===null?a:mode==="adv"?Math.max(a,b):Math.min(a,b);return {value:pick,text:"d20 "+(b===null?a:a+" / "+b+" ("+mode.toUpperCase()+")")+" → "+pick};}
+function d20(chosen=mode){const a=die(20),b=chosen==="normal"?null:die(20),pick=b===null?a:chosen==="adv"?Math.max(a,b):Math.min(a,b);return {value:pick,text:"d20 "+(b===null?a:a+" / "+b+" ("+chosen.toUpperCase()+")")+" → "+pick};}
 function dice(formula){const m=/^(\d+)d(\d+)([+-]\d+)?$/i.exec(String(formula).replace(/\s/g,""));if(!m)return null;const count=Number(m[1]),faces=Number(m[2]),add=Number(m[3]||0);if(count>40||faces>1000)return null;const rolls=Array.from({length:count},()=>die(faces));const total=rolls.reduce((a,b)=>a+b,0)+add;return {total,text:count+"d"+faces+" ("+rolls.join(" + ")+")"+(add?" "+signed(add):"")+" = "+total};}
 const safeFields=objects=>{const out={};for(const [key,group] of Object.entries(objects||{})){const v=group?.find(x=>x&&x.value!==undefined&&x.value!==null)?.value;const first=group?.[0];if(v!==undefined&&v!==null){out[key]={value:String(v),page:first?.page??0,rect:first?.rect||[]};}}return out;};
 function parseCharacter(fields){
@@ -164,28 +175,35 @@ function fillRoster(){
  try{const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");for(const c of Object.values(roster))select.add(new Option(c.name+" · "+c.classes,c.id));}catch(_){}
  select.value=character?.id||old||"";
 }
-function loadCard(c){character=c;tab="fight";mode="normal";selectedSlot="auto";healTargets=1;healWho="others";targetWounded=false;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();setupCustomActions();}
-function show(name,total,detail){character.result={name,total:String(total),detail};persist();renderAll();}
+function loadCard(c){character=c;c.log=Array.isArray(c.log)?c.log:[];tab="fight";mode="normal";selectedSlot="auto";healTargets=1;healWho="others";targetWounded=false;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();setupCustomActions();}
+function show(name,total,detail,extra={}){character.result={name,total:String(total),detail,...extra};character.log=Array.isArray(character.log)?character.log:[];character.log.unshift({...character.result,at:new Date().toLocaleTimeString()});character.log=character.log.slice(0,50);persist();renderAll();}
 function useSlot(level){if(!level)return {level:0};let target=selectedSlot==="auto"?Object.keys(character.remaining).map(Number).sort((a,b)=>a-b).find(x=>x>=level&&character.remaining[x]>0):Number(selectedSlot);
  if(!target||target<level||!character.remaining[target]){show("NO SPELL SLOT","NOT CAST","No available level-"+(target||level)+" spell slot. Choose a slot or take a Long Rest.");return null;}
  character.remaining[target]--;return {level:target};
 }
-function doAttack(w){
+function doAttack(w,chosenMode="normal"){
  character.actionUsed=true;
- const r=d20(),crit=r.value===20;
- const base=w.formula?.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
- const formula=base&&crit?Number(base[1])*2+"d"+base[2]+(base[3]||""):w.formula;
- const d=formula?dice(formula):null;
- const fixed=!d&&/^\d+\s/.test(w.damage||"")?toNum(w.damage):null;
- const special=/Mace of Disruption/i.test(w.name)&&targetFiend;
- const radiant=special?dice(crit?"4d6":"2d6"):null;
- const damage=(d?.total??fixed??null),sum=damage===null?null:damage+(radiant?.total||0);
- const note=special?"Fiend/Undead: "+radiant.text+" extra Radiant. If target has 25 HP or fewer after damage, WIS DC 15 or destroyed; save succeeds: Frightened until end of your next turn. ":
-   /Mace of Disruption/i.test(w.name)?"Check Fiend or Undead when applicable for +2d6 Radiant. ":"";
- show(w.name,(crit?"CRITICAL · ":"")+"ATTACK "+(r.value+w.bonus)+(sum!==null?" · DMG "+sum:""),
-   r.text+" "+signed(w.bonus)+" = "+(r.value+w.bonus)+". "+
-   (d?d.text+". ":fixed!==null?"Fixed damage "+fixed+". ":"Damage dice not readable from the PDF. ")+
-   (crit?"Critical: attack damage dice doubled. ":"")+note+(w.notes?"Weapon notes: "+w.notes:""));
+ const r=d20(chosenMode),critical=r.value===20;
+ const ordinary=String(w.formula||"");
+ const parsed=ordinary.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+ const baseFormula=parsed&&critical?(Number(parsed[1])*2)+"d"+parsed[2]+(parsed[3]||""):ordinary;
+ const base=baseFormula?dice(baseFormula):null;
+ const fixed=base===null&&/^\s*\d+\b/.test(w.damage||"")?toNum(w.damage):null;
+ const extra=weaponExtra(w),active=!!w.includeSpecial&&!!extra;
+ const extraParsed=active&&extra.formula.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+ const extraFormula=extraParsed&&critical?(Number(extraParsed[1])*2)+"d"+extraParsed[2]+(extraParsed[3]||""):extra?.formula;
+ const bonus=active?dice(extraFormula):null;
+ const hit=r.value+(Number(w.bonus)||0);
+ const weapon={hit,damage:base?.total??fixed??null,special:bonus?.total??null,critical,mode:chosenMode,specialLabel:extra?.label||"Special damage"};
+ const detail=[
+  "Attack "+(chosenMode==="normal"?"Normal":chosenMode==="adv"?"Advantage":"Disadvantage")+": "+r.text+" "+signed(Number(w.bonus)||0)+" = "+hit+".",
+  "Weapon damage: "+(base?base.text:fixed!==null?"Fixed "+fixed:"Damage formula not readable from export; review weapon.")+".",
+  active?"Special damage: "+(bonus?.text||"unverified")+".":"Special damage not selected; no extra dice rolled.",
+  critical?"Natural 20: attack damage dice doubled.":"",
+  active&&/Mace of Disruption/i.test(w.name)?"Mace rider: against a Fiend or Undead, if the target has 25 HP or fewer after damage, WIS DC 15 or destroyed; successful save Frightened until end of your next turn.":"",
+  w.notes?"Imported weapon notes: "+w.notes:""
+ ].filter(Boolean).join("\n");
+ show(w.name,hit+" HIT",detail,{weapon});
 }
 function doCheck(label,mod,forcedAdv=false){
  const previous=mode;
@@ -269,6 +287,67 @@ function feature(f){
 function selectTab(t){tab=t;renderActions();document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));}
 const btn=(parent,title,tag,desc,fn,cls="")=>{const b=document.createElement("button");b.className="action "+cls;const strong=document.createElement("b");strong.textContent=title;const top=document.createElement("span");top.className="tag";top.textContent=tag;const small=document.createElement("small");small.textContent=desc;b.append(top,strong,small);b.addEventListener("click",fn);parent.append(b);};
 function heading(parent,s){const h=document.createElement("h3");h.className="section";h.textContent=s;parent.append(h);}
+
+function weaponExtra(w){
+ if(Object.prototype.hasOwnProperty.call(w,"specialDice"))
+  return w.specialDice?{formula:String(w.specialDice),label:String(w.specialLabel||"Special damage")}:null;
+ const found=String(w.notes||"").match(/(?:^|[\s,;:(])\+?(\d{1,2}d(?:4|6|8|10|12|20)(?:\s*[+-]\s*\d+)?)\s*(Radiant|Necrotic|Fire|Cold|Lightning|Thunder|Psychic|Poison|Acid|Force|Piercing|Slashing|Bludgeoning)?\b/i);
+ return found?{formula:found[1].replace(/\s/g,""),label:found[2]?found[2]+" damage":"Special damage"}:null;
+}
+function weaponSymbol(name){
+ const item=String(name).toLowerCase();
+ if(/mace|morningstar|flail|warhammer|club/.test(item))
+ return '<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(42 32 32)"><rect x="29" y="24" width="6" height="36" rx="2" fill="#caa978" stroke="#f5dbac" stroke-width="2"/><rect x="26" y="52" width="12" height="5" rx="2" fill="#96704a"/><circle cx="32" cy="19" r="13" fill="#a7b4c3" stroke="#f1d3a0" stroke-width="2"/><path d="M32 0v7M32 31v7M13 19h6M45 19h6M19 6l5 6M45 6l-5 6M19 32l5-6M45 32l-5-6" stroke="#f7e1b8" stroke-width="4" stroke-linecap="round"/></g></svg>';
+ if(/bow|crossbow|sling/.test(item))return "🏹";
+ if(/dagger|knife/.test(item))return "🗡️";
+ if(/staff|wand|rod/.test(item))return "🪄";
+ if(/spear|trident|pike|javelin|lance/.test(item))return "🔱";
+ if(/unarmed|fist|claw|bite/.test(item))return "👊";
+ return "⚔️";
+}
+function weaponCard(parent,w){
+ const article=document.createElement("article");article.className="weapon-card";
+ const head=document.createElement("div");head.className="weapon-head";
+ const icon=document.createElement("span");icon.className="weapon-icon";
+ const symbol=weaponSymbol(w.name);if(symbol.startsWith("<svg"))icon.innerHTML=symbol;else icon.textContent=symbol;
+ const title=document.createElement("div"),h=document.createElement("h3"),sub=document.createElement("div");
+ h.className="weapon-name";h.textContent=w.name;
+ sub.className="weapon-sub";sub.textContent=signed(Number(w.bonus)||0)+" to hit · "+(w.damage||w.formula||"Check damage");
+ title.append(h,sub);head.append(icon,title);article.append(head);
+ const row=document.createElement("div");row.className="weapon-rolls";
+ for(const [chosen,label] of [["adv","ADV"],["normal","ATTACK"],["dis","DIS"]]){
+  const b=document.createElement("button");b.type="button";b.textContent=label;
+  b.setAttribute("aria-label",w.name+" — roll "+(chosen==="adv"?"with advantage":chosen==="dis"?"with disadvantage":"normally"));
+  b.addEventListener("click",()=>doAttack(w,chosen));row.append(b);
+ }
+ article.append(row);
+ const special=weaponExtra(w),wrap=document.createElement("div");wrap.className="weapon-special-row";
+ const label=document.createElement("label"),box=document.createElement("input");
+ box.type="checkbox";box.checked=!!w.includeSpecial;box.disabled=!special;
+ box.setAttribute("aria-label",w.name+": include extra damage when applicable");
+ box.addEventListener("change",()=>{w.includeSpecial=box.checked;persist();});
+ const words=document.createElement("span");
+ words.textContent=special?"Include "+special.formula+" "+special.label+" (if applicable)":"Special: none configured";
+ label.append(box,words);wrap.append(label);article.append(wrap);
+ const details=document.createElement("details");details.className="weapon-editor";
+ const summary=document.createElement("summary");summary.textContent="Configure special damage";details.append(summary);
+ const config=document.createElement("div");config.className="row";
+ const diceInput=document.createElement("input");diceInput.type="text";diceInput.placeholder="e.g. 2d6";diceInput.value=special?.formula||"";diceInput.setAttribute("aria-label",w.name+" special damage dice");
+ const typeInput=document.createElement("input");typeInput.type="text";typeInput.className="special-label-input";typeInput.placeholder="e.g. radiant damage";typeInput.value=special?.label||"";typeInput.setAttribute("aria-label",w.name+" special damage type");
+ const save=document.createElement("button");save.type="button";save.textContent="Save special";
+ const feedback=document.createElement("small");feedback.className="note";
+ save.addEventListener("click",()=>{
+  const formula=diceInput.value.trim().replace(/\s/g,"");
+  if(formula&&!/^([1-9]|[12]\d|30)d(4|6|8|10|12|20)(?:[+-]\d{1,2})?$/i.test(formula)){
+   feedback.textContent="Enter dice like 2d6 or leave blank to remove.";return;
+  }
+  w.specialDice=formula;w.specialLabel=typeInput.value.trim().slice(0,60)||"Special damage";
+  if(!formula)w.includeSpecial=false;
+  persist();renderActions();
+ });
+ config.append(diceInput,typeInput,save,feedback);details.append(config);article.append(details);parent.append(article);
+}
+
 function spellBtn(root,sp){
  const ready=sp.prepared||sp.level===0;
  const mechanic=sp.custom||(character.rules==="2024"?KNOWN_2024[sp.name]:null);
@@ -281,7 +360,7 @@ function renderActions(){
  const root=$("actions");root.replaceChildren();
  if(tab==="fight"){
    heading(root,"Weapons and attacks");
-   for(const w of character.weapons.filter(x=>x.formula).slice(0,5))btn(root,w.name,"ATTACK "+signed(w.bonus),w.damage||w.notes,()=>doAttack(w),"featured");
+   for(const w of character.weapons.slice(0,8))weaponCard(root,w);
    const cantrips=character.spells.filter(x=>x.level===0&&/Produce Flame|Toll the Dead|Fire Bolt|Eldritch Blast|Sacred Flame|Ray of Frost/i.test(x.name)).slice(0,4);
    cantrips.forEach(sp=>spellBtn(root,sp));
    heading(root,"Prepared combat spells · one tap");
@@ -309,7 +388,7 @@ function renderActions(){
    character.features.forEach(f=>btn(root,f.name,f.usesMax?"USES "+f.remainingUses+"/"+f.usesMax:"RULES / REVIEW",f.text.slice(0,135),()=>feature(f),f.usesMax?"featured":"uncertain"));
  }else{
    heading(root,"All weapon attacks from PDF");
-   character.weapons.forEach(w=>btn(root,w.name,"ATTACK "+signed(w.bonus),w.damage+" "+w.notes,()=>doAttack(w)));
+   character.weapons.forEach(w=>weaponCard(root,w));
    heading(root,"Equipment");
    for(const item of character.equipment||[])btn(root,item,"INVENTORY","Imported item; consult item text for special rules.",()=>show("EQUIPMENT",item,"Inventory item from D&D Beyond PDF."));
    heading(root,"Character stats");
@@ -337,11 +416,45 @@ function renderAll(){
  $("fiend").checked=targetFiend;
  $("modes").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.mode===mode));
  $("result").replaceChildren();
- const h=document.createElement("h3"),b=document.createElement("div"),p=document.createElement("p");
- h.textContent=character.result.name;b.className="big";b.textContent=character.result.total;p.textContent=character.result.detail;$("result").append(h,b,p);
+ const result=character.result||{};
+ const h=document.createElement("h3");h.textContent=result.name||"READY";$("result").append(h);
+ if(result.weapon){
+  const w=result.weapon,grid=document.createElement("div");grid.className="weapon-roll-summary";
+  for(const [label,value] of [["Hit",w.hit],["Damage",w.damage],["Special damage",w.special]]){
+   const cell=document.createElement("div");cell.className="weapon-roll-stat"+(value===null||value===undefined?" muted":"");
+   const name=document.createElement("small"),number=document.createElement("strong");
+   name.textContent=label;number.textContent=value===null||value===undefined?"—":String(value);
+   cell.append(name,number);grid.append(cell);
+  }
+  const status=document.createElement("p");status.className="result-status";
+  status.textContent=(w.mode==="adv"?"ADV":w.mode==="dis"?"DIS":"NORMAL")+(w.critical?" · CRITICAL HIT":"")+
+   (w.special!==null&&w.special!==undefined?" · SPECIAL INCLUDED":" · NO SPECIAL");
+  $("result").append(grid,status);
+ }else{
+  const b=document.createElement("div");b.className="compact-total";b.textContent=result.total||"ROLL INITIATIVE";$("result").append(b);
+ }
+ const hint=document.createElement("p");hint.textContent="Full dice calculations and effect notes are in the Roll Log below.";hint.className="hint";$("result").append(hint);
+ renderLog();
  $("review").textContent=character.name+": "+character.spells.length+" spells listed ("+character.spells.filter(x=>x.prepared&&x.level>0).length+" prepared), "+character.features.length+" described features. Buttons for unverified effects show the printed notes, without made-up damage.";
  $("notes").value=character.notes||"";
  renderActions();
+}
+
+function renderLog(){
+ const root=$("rollLog");if(!root||!character)return;
+ root.replaceChildren();
+ const logs=Array.isArray(character.log)?character.log:[];
+ if(!logs.length){const p=document.createElement("p");p.className="hint";p.textContent="No rolls yet.";root.append(p);return;}
+ const list=document.createElement("ol");
+ for(const item of logs.slice(0,50)){
+  const li=document.createElement("li"),title=document.createElement("strong"),meta=document.createElement("span"),body=document.createElement("p");
+  title.textContent=item.name||"Roll";meta.textContent=item.at||"";
+  const w=item.weapon;
+  const line=w?("Hit "+w.hit+" · Damage "+(w.damage??"—")+" · Special "+(w.special??"—")+(w.critical?" · CRITICAL":"")):(item.total||"");
+  body.textContent=line+(item.detail?"\n"+item.detail:"");
+  li.append(title,meta,body);list.append(li);
+ }
+ root.append(list);
 }
 
 function setupCustomActions(){
