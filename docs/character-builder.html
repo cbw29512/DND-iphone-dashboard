@@ -53,15 +53,14 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 .phone-sheet .phone-note{font-size:10px;font-weight:850;color:#f4c77c;text-align:center;letter-spacing:.07em}
 @media(max-width:850px){.layout{grid-template-columns:1fr}.sticky{position:static}.wrap{padding:10px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:380px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.buttons{grid-template-columns:1fr}.resources{grid-template-columns:1fr}}
-</style></head><body><div class="wrap">
-<div class="header"><div><h1>D&D One-Click Character Cards</h1><p class="subtitle">Import an exported D&D Beyond PDF. Roll attacks, saves and skills with one tap.</p></div><a href="./index.html">Donovan’s existing card</a></div>
-<section class="panel">
-<h2>1. Import a character</h2>
+</style><link rel="stylesheet" href="character-card.css?v=one-sheet-20261026"></head><body><div class="wrap">
+<div class="header"><div><h1>D&D One-Touch Character Sheet</h1><p class="subtitle">One full-screen card: choose an action, press once, get the result.</p></div><a href="./index.html">Donovan’s existing card</a></div>
+<details class="panel import-drawer" id="importPanel" open><summary>Import / switch character</summary>
 <div class="row"><input type="file" id="pdfFile" accept="application/pdf,.pdf" aria-label="Choose a D&D Beyond exported character PDF"><button id="importBtn" class="primary">Build Character Card</button><button id="demoBtn" class="good" type="button">Try Playable Demo</button><select id="roster" aria-label="Previously imported characters"><option value="">Saved characters…</option></select><button id="loadBtn">Load Saved</button><label class="linkbtn" for="jsonFile" style="cursor:pointer">Restore Card JSON</label><input id="jsonFile" type="file" accept=".json,application/json" aria-label="Restore previously exported character card JSON" style="max-width:175px"></div>
 <p class="hint">D&D Beyond → open character → Manage → Export to PDF. Your PDF is read locally in this browser; it is not uploaded to a server. Needs an internet connection to load the PDF reader library the first time.</p>
 <p id="message" role="status">Choose an exported PDF to begin.</p>
-</section>
-<div id="play" class="hidden">
+</details>
+<div id="play" class="hidden" aria-label="One-screen character combat sheet">
 <div class="panel titlebar"><div><h2 id="who">Character</h2><div id="identity" class="subtitle"></div></div><div class="row"><button id="backupBtn">Export Card JSON</button><button id="deleteBtn" class="danger">Delete Saved Card</button></div></div>
 <div class="layout">
 <div>
@@ -76,15 +75,15 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <section class="panel"><div class="tabs" id="tabs"><button data-tab="fight" class="active">Fight</button><button data-tab="spells">Spells</button><button data-tab="checks">Saves &amp; Skills</button><button data-tab="features">Features</button><button data-tab="sheet">Sheet</button></div><div id="actions" class="buttons"></div></section>
 </div>
 <div class="sticky">
-<section class="panel"><h2>Latest result</h2><div id="result" role="status" aria-live="polite"><h3>READY</h3><div class="big">ROLL INITIATIVE</div></div></section>
-<section class="panel"><h2>Notes</h2><textarea id="notes" placeholder="Enemy AC, clues, tactics, loot, session notes…"></textarea><div class="hint" id="notesHint">Auto-saved for this character in this browser.</div></section>
+<section class="panel" id="latestPanel"><h2>Other event result</h2><div id="result" role="status" aria-live="polite"><h3>READY</h3><div class="big">ROLL INITIATIVE</div></div></section>
+<details class="panel support-details"><summary>Notes</summary><textarea id="notes" placeholder="Enemy AC, clues, tactics, loot, session notes…"></textarea><div class="hint" id="notesHint">Auto-saved for this character in this browser.</div></details>
 <details class="panel setup-details"><summary>Configure custom spell actions (optional)</summary><h2>Make any spell one-click playable</h2>
 <p class="hint">Spells without safe dice information in the PDF can be configured once. Read the spell's description in your source, enter its dice and target count, and future taps roll automatically.</p>
 <div class="row"><label for="customSpell">Spell:</label><select id="customSpell"><option value="">Choose spell…</option></select><label for="customKind">Result:</label><select id="customKind"><option value="damage">Damage</option><option value="heal">Healing</option></select></div>
 <div class="row" style="margin-top:8px"><label for="customDice">Base dice:</label><input id="customDice" type="text" placeholder="2d8" style="width:105px;padding:9px;background:#0e1c29;color:#fff;border:1px solid #648099;border-radius:7px"><label for="customScale">Extra dice/upcast:</label><input id="customScale" type="number" min="0" max="5" step="1" value="0"><label for="customTargets">Targets:</label><input id="customTargets" type="number" min="1" max="12" step="1" value="1"></div>
 <div class="row" style="margin-top:8px"><label><input type="checkbox" id="customAbility"> Add Wisdom to HP healing</label><button id="customSave" class="good" type="button">Save One-Click Action</button><button id="customClear" type="button">Remove Custom Roll</button></div><p class="hint" id="customStatus">Select a spell to configure its dice.</p>
 </details>
-<section class="panel"><h2>Import review</h2><p class="hint" id="review">Review bonuses and spell preparation before play.</p><button id="editBtn">Review spell preparation</button><div id="spellReview" class="hidden"></div></section>
+<details class="panel support-details"><summary>Import review / spell preparation</summary><p class="hint" id="review">Review bonuses and spell preparation before play.</p><button id="editBtn">Review spell preparation</button><div id="spellReview" class="hidden"></div></details>
 </div></div></div>
 <details class="panel roll-log"><summary>Roll Log · detailed dice and rules</summary><div id="rollLog"></div></details>
 <section class="panel remote-panel" id="remotePanel" aria-label="QR pairing for a read-only phone display"><div><h2>Phone Display · QR Pairing</h2><p class="hint">Scan this code on your iPhone. The phone shows only the latest roll, HP and remaining spell slots; it cannot control the character. Phone and laptop may be on different networks. Small result snapshots travel through the ntfy.sh relay (not end-to-end encrypted); your PDF and notes are not uploaded.</p></div><div class="remote-row"><div id="remoteQR" class="qr-paper">Loading QR…</div><div><a id="remotePhoneLink" href="#" target="_blank" rel="noopener">Open paired phone display</a><p id="remoteStatus" role="status">Connecting…</p><button type="button" id="phoneRefresh">Refresh Phone Display</button></div></div></section>
@@ -96,6 +95,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="character-spell-logic.js?v=level-cards-20261026"></script>
 <script src="character-spell-runtime.js?v=level-cards-20261026"></script>
+<script src="character-compact-card.js?v=one-sheet-20261026"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -185,7 +185,9 @@ function fillRoster(){
  try{const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");for(const c of Object.values(roster))select.add(new Option(c.name+" · "+c.classes,c.id));}catch(_){}
  select.value=character?.id||old||"";
 }
-function loadCard(c){character=c;c.log=Array.isArray(c.log)?c.log:[];tab="fight";mode="normal";c.castChoices=c.castChoices||{};healTargets=1;healWho="others";targetWounded=false;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();setupCustomActions();}
+function loadCard(c){character=c;
+ if($("importPanel"))$("importPanel").open=false;
+ const log=document.querySelector(".roll-log");if(log&&log.parentElement!==$("play"))$("play").append(log);c.log=Array.isArray(c.log)?c.log:[];tab="fight";mode="normal";c.castChoices=c.castChoices||{};healTargets=1;healWho="others";targetWounded=false;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();setupCustomActions();}
 function show(name,total,detail,extra={}){character.result={name,total:String(total),detail,...extra};character.log=Array.isArray(character.log)?character.log:[];character.log.unshift({...character.result,at:new Date().toLocaleTimeString()});character.log=character.log.slice(0,50);persist();renderAll();}
 function useSlot(level,selected=level){
  if(!level)return {level:0};
@@ -262,6 +264,7 @@ function weaponSymbol(name){
 }
 function weaponCard(parent,w){
  const article=document.createElement("article");article.className="weapon-card";
+ article.dataset.actionName=w.name;article.dataset.actionKind="weapon";
  const head=document.createElement("div");head.className="weapon-head";
  const icon=document.createElement("span");icon.className="weapon-icon";
  const symbol=weaponSymbol(w.name);if(symbol.startsWith("<svg"))icon.innerHTML=symbol;else icon.textContent=symbol;
@@ -309,6 +312,7 @@ function spellBtn(root,sp){
  const attack=CharacterSpellLogic.needsAttack(sp,rule);
  const card=document.createElement("article");
  card.className="spell-card"+(!sp.prepared&&sp.level>0?" uncertain":"");
+ card.dataset.actionName=sp.name;card.dataset.actionKind="spell";
  const head=document.createElement("div");head.className="spell-head";
  const name=document.createElement("strong");name.textContent=sp.name;
  const desc=document.createElement("small");
@@ -367,10 +371,10 @@ function renderActions(){
  if(!character)return;
  const root=$("actions");root.replaceChildren();
  if(tab==="fight"){
-    heading(root,"WEAPONS & CANTRIPS · AT WILL");
-    for(const weapon of character.weapons)weaponCard(root,weapon);
-    for(const sp of orderedSpells(character.spells.filter(x=>x.level===0)))spellBtn(root,sp);
-    groupedSpells(root,character.spells.filter(x=>x.level>0&&x.prepared));
+    heading(root,"ATTACKS & AT-WILL CANTRIPS");
+   CharacterCompactCard.quickActions(root,character.weapons,
+    orderedSpells(character.spells.filter(x=>x.level===0)),weaponCard,spellBtn);
+   groupedSpells(root,character.spells.filter(x=>x.level>0&&x.prepared));
     heading(root,"Quick checks");
     for(const stat of ["STR","DEX","CON","WIS"])
      btn(root,stat+" SAVE","SAVE "+signed(character.saves[stat]),
@@ -401,12 +405,13 @@ function renderActions(){
    heading(root,"Character stats");
    ABBR.forEach(k=>btn(root,k+" "+character.ability[k].score,"MOD "+signed(character.ability[k].mod),"Use Checks tab to roll",()=>doCheck(k+" Check",character.ability[k].mod)));
  }
+ CharacterCompactCard.decorate(character,root);
 }
 function renderAll(){
  if(!character)return;
  $("who").textContent=character.name;
  $("identity").textContent=character.classes+" · "+character.species+" · "+character.background+" · "+character.rules+" rules";
- const stats=$("stats");stats.replaceChildren();for(const [label,n] of [["AC",character.ac],["INIT",signed(character.initiative)],["LEVEL",character.level],["TURN",character.turn],["SPELL ATK",signed(character.spellAttack)],["SPELL DC",character.spellDC],["WEAPONS",character.weapons.length],["PREPARED",character.spells.filter(x=>x.prepared&&x.level>0).length]]){
+ const stats=$("stats");stats.replaceChildren();for(const [label,n] of [["HP",character.hp+"/"+character.hpMax],["AC",character.ac],["INIT",signed(character.initiative)],["LEVEL",character.level],["SPELL ATK",signed(character.spellAttack)],["SPELL DC",character.spellDC]]){
   const d=document.createElement("div");d.className="stat";const small=document.createElement("small");small.textContent=label;const strong=document.createElement("b");strong.textContent=n;d.append(small,strong);stats.append(d);
  }
  $("hpLabel").textContent=character.hp+" / "+character.hpMax;
