@@ -55,6 +55,12 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <div class="sticky">
 <section class="panel"><h2>Latest result</h2><div id="result" role="status" aria-live="polite"><h3>READY</h3><div class="big">ROLL INITIATIVE</div></div><p class="hint">A new roll replaces this result. The attack total, dice breakdown, and remaining slots are shown here.</p></section>
 <section class="panel"><h2>Notes</h2><textarea id="notes" placeholder="Enemy AC, clues, tactics, loot, session notes…"></textarea><div class="hint" id="notesHint">Auto-saved for this character in this browser.</div></section>
+<section class="panel"><h2>Make any spell one-click playable</h2>
+<p class="hint">Spells without safe dice information in the PDF can be configured once. Read the spell's description in your source, enter its dice and target count, and future taps roll automatically.</p>
+<div class="row"><label for="customSpell">Spell:</label><select id="customSpell"><option value="">Choose spell…</option></select><label for="customKind">Result:</label><select id="customKind"><option value="damage">Damage</option><option value="heal">Healing</option></select></div>
+<div class="row" style="margin-top:8px"><label for="customDice">Base dice:</label><input id="customDice" type="text" placeholder="2d8" style="width:105px;padding:9px;background:#0e1c29;color:#fff;border:1px solid #648099;border-radius:7px"><label for="customScale">Extra dice/upcast:</label><input id="customScale" type="number" min="0" max="5" step="1" value="0"><label for="customTargets">Targets:</label><input id="customTargets" type="number" min="1" max="12" step="1" value="1"></div>
+<div class="row" style="margin-top:8px"><label><input type="checkbox" id="customAbility"> Add Wisdom to HP healing</label><button id="customSave" class="good" type="button">Save One-Click Action</button><button id="customClear" type="button">Remove Custom Roll</button></div><p class="hint" id="customStatus">Select a spell to configure its dice.</p>
+</section>
 <section class="panel"><h2>Import review</h2><p class="hint" id="review">Review bonuses and spell preparation before play.</p><button id="editBtn">Review spell preparation</button><div id="spellReview" class="hidden"></div></section>
 </div></div></div>
 <section class="panel remote-panel" id="remotePanel" aria-label="QR pairing for a read-only phone display"><div><h2>Phone Display · QR Pairing</h2><p class="hint">Scan this code on your iPhone. The phone shows only the latest roll, HP and remaining spell slots; it cannot control the character. Phone and laptop may be on different networks.</p></div><div class="remote-row"><div id="remoteQR" class="qr-paper">Loading QR…</div><div><a id="remotePhoneLink" href="#" target="_blank" rel="noopener">Open paired phone display</a><p id="remoteStatus" role="status">Connecting…</p><button type="button" id="phoneRefresh">Refresh Phone Display</button></div></div></section>
@@ -145,7 +151,7 @@ function fillRoster(){
  try{const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");for(const c of Object.values(roster))select.add(new Option(c.name+" · "+c.classes,c.id));}catch(_){}
  select.value=character?.id||old||"";
 }
-function loadCard(c){character=c;tab="fight";mode="normal";selectedSlot="auto";healTargets=1;healWho="others";targetWounded=false;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();}
+function loadCard(c){character=c;tab="fight";mode="normal";selectedSlot="auto";healTargets=1;healWho="others";targetWounded=false;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();setupCustomActions();}
 function show(name,total,detail){character.result={name,total:String(total),detail};persist();renderAll();}
 function useSlot(level){if(!level)return {level:0};let target=selectedSlot==="auto"?Object.keys(character.remaining).map(Number).sort((a,b)=>a-b).find(x=>x>=level&&character.remaining[x]>0):Number(selectedSlot);
  if(!target||target<level||!character.remaining[target]){show("NO SPELL SLOT","NOT CAST","No available level-"+(target||level)+" spell slot. Choose a slot or take a Long Rest.");return null;}
@@ -170,7 +176,7 @@ function cast(sp){
  // Ongoing Spirit Guardians damage is a repeat effect, not a new spell slot.
  const ongoing=sp.name==="Spirit Guardians"&&character.concentration===sp.name;
  const spent=ongoing?{level:character.concentrationSlot||sp.level}:useSlot(sp.level);if(!spent)return;
- const slot=spent.level,m=character.rules==="2024"?KNOWN_2024[sp.name]:null;
+ const slot=spent.level,m=sp.custom||(character.rules==="2024"?KNOWN_2024[sp.name]:null);
  let text=sp.name+": "+(sp.notes||sp.range||sp.duration||"Consult the full spell description.")+". ";
  let total="CAST";
  if(m){
@@ -184,7 +190,7 @@ function cast(sp){
    for(let i=0;i<targets;i++){
      const roll=dice(count+"d"+sides);
      const life=m.type==="heal"&&character.life?(2+slot):0;
-     const wis=character.ability.WIS?.mod||0;
+     const wis=m.type==="heal"&&(!sp.custom||m.addAbility)?(character.ability.WIS?.mod||0):0;
      const amount=roll.total+(m.type==="heal"?wis+life:0);
      result.push(amount);
      text+="Target "+(i+1)+": "+roll.text+(m.type==="heal"?" + "+wis+" casting + "+life+" Life":"")+" = "+amount+". ";
@@ -210,8 +216,8 @@ const btn=(parent,title,tag,desc,fn,cls="")=>{const b=document.createElement("bu
 function heading(parent,s){const h=document.createElement("h3");h.className="section";h.textContent=s;parent.append(h);}
 function spellBtn(root,sp){
  const ready=sp.prepared||sp.level===0;
- const text=sp.level===0?"CANTRIP · AT WILL":ready?"LEVEL "+sp.level+" · READY":"LEVEL "+sp.level+" · NOT PREPARED";
- btn(root,sp.name,text,(sp.range||sp.time||"")+" · "+(sp.notes||sp.duration||"").slice(0,80),()=>cast(sp),ready?"":"uncertain");
+ const text=sp.custom?"CUSTOM ROLL · LEVEL "+sp.level:sp.level===0?"CANTRIP · AT WILL":ready?"LEVEL "+sp.level+" · READY":"LEVEL "+sp.level+" · NOT PREPARED";
+ btn(root,sp.name,text,(sp.custom?("Configured "+sp.custom.dice+" · "+sp.custom.targets+" target(s)"):((sp.range||sp.time||"")+" · "+(sp.notes||sp.duration||"").slice(0,80))),()=>cast(sp),!ready?"uncertain":sp.custom?"featured":"");
 }
 function renderActions(){
  if(!character)return;
@@ -273,6 +279,38 @@ function renderAll(){
  $("notes").value=character.notes||"";
  renderActions();
 }
+
+function setupCustomActions(){
+ const choose=$("customSpell"),status=$("customStatus");
+ choose.replaceChildren(new Option("Choose spell…",""));
+ if(!character)return;
+ for(const sp of character.spells)choose.add(new Option("L"+sp.level+" · "+sp.name,character.spells.indexOf(sp).toString()));
+ choose.onchange=()=>{
+  const sp=character.spells[Number(choose.value)];
+  if(!sp){status.textContent="Choose a spell first.";return;}
+  const c=sp.custom||KNOWN_2024[sp.name]||{};
+  $("customKind").value=c.type==="heal"?"heal":"damage";
+  $("customDice").value=c.dice||"";
+  $("customScale").value=Number(c.per)||0;
+  $("customTargets").value=Number(c.targets)||1;
+  $("customAbility").checked=Boolean(c.addAbility);
+  status.textContent=sp.custom?"Custom one-click roll saved.":"Set dice from the source spell description; the PDF may not contain those rules.";
+ };
+}
+function saveCustomAction(){
+ if(!character)return;
+ const n=$("customSpell").value,sp=character.spells[Number(n)];
+ if(n===""||!sp){$("customStatus").textContent="Choose a spell.";return;}
+ const formula=$("customDice").value.trim().replace(/\s+/g,"");
+ const dieMatch=/^([1-9]|[12]\d|30)d(4|6|8|10|12|20)$/i.exec(formula);
+ const scale=Number($("customScale").value),targets=Number($("customTargets").value);
+ if(!dieMatch||!Number.isInteger(scale)||scale<0||scale>5||!Number.isInteger(targets)||targets<1||targets>12){
+  $("customStatus").textContent="Enter dice like 2d8 (max 30), 0–5 extra dice per slot level, and 1–12 targets.";return;
+ }
+ sp.custom={type:$("customKind").value,dice:formula,per:scale,targets,addAbility:$("customAbility").checked};
+ persist();renderAll();
+ $("customStatus").textContent=sp.name+" is now a saved one-click "+sp.custom.type+" action.";
+}
 function reviewSpells(){
  const parent=$("spellReview");parent.classList.toggle("hidden");if(parent.classList.contains("hidden"))return;
  parent.replaceChildren();heading(parent,"Mark spells prepared before your session");
@@ -318,6 +356,8 @@ function initialize(){
  $("wounded").addEventListener("change",()=>{targetWounded=$("wounded").checked;});
  $("notes").addEventListener("input",()=>{character.notes=$("notes").value;persist();});
  $("editBtn").addEventListener("click",reviewSpells);
+ $("customSave").addEventListener("click",saveCustomAction);
+ $("customClear").addEventListener("click",()=>{if(!character)return;const idx=$("customSpell").value,sp=character.spells[Number(idx)];if(idx===""||!sp)return;delete sp.custom;persist();renderAll();$("customStatus").textContent="Custom roll removed; using imported rules.";});
  $("deleteBtn").addEventListener("click",()=>{if(!confirm("Delete this saved character card and notes?"))return;const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");delete roster[character.id];localStorage.setItem(STORAGE,JSON.stringify(roster));localStorage.removeItem(ACTIVE);character=null;$("play").classList.add("hidden");fillRoster();$("message").textContent="Saved card deleted.";});
  $("backupBtn").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(character,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=character.name.replace(/[^a-z0-9]+/gi,"-")+".json";link.click();setTimeout(()=>URL.revokeObjectURL(url),500);});
  try{const last=localStorage.getItem(ACTIVE),r=JSON.parse(localStorage.getItem(STORAGE)||"{}");if(last&&r[last])loadCard(r[last]);}catch(error){console.warn("Saved card not loaded",error);}
