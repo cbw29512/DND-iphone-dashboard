@@ -10,7 +10,8 @@ function input(label,value,kind="text",extra={}){
   for(const [key,name] of extra.options||[]){
    const opt=document.createElement("option");opt.value=String(key);opt.textContent=name;node.add(opt);
   }
-  node.value=String(value??"");
+  const desired=String(value??"");
+  node.value=Array.from(node.options).some(o=>o.value===desired)?desired:(node.options[0]?.value||"");
  }
  if(extra.min!==undefined)node.min=extra.min;
  if(extra.max!==undefined)node.max=extra.max;
@@ -94,7 +95,12 @@ function build(rootEl,card){
   ["name","Weapon name","text"],["category","Type","choice",{options:[["melee","Melee"],["ranged","Ranged"]]}],
   ["bonus","Attack bonus","number",{min:-30,max:40}],["formula","Damage dice","text"]
  ],"Add weapon");
- const spells=listEditor(rootEl,"Spells and cantrips",card.spells||[],[
+ const spellRecords=(card.spells||[]).map(sp=>{
+  const roll=CharacterSpellLogic.saveAbility(sp,CharacterSpellLogic.profile(sp,card.rules));
+  return {...sp,diceEdit:sp.custom?.dice||"",kindEdit:sp.custom?.type||"damage",
+   rollEdit:sp.custom?.attack?"ATTACK":roll||""};
+ });
+ const spells=listEditor(rootEl,"Spells and cantrips",spellRecords,[
   ["name","Spell name","text"],["level","Level (0 = cantrip)","number",{min:0,max:9}],
   ["prepared","Prepared?","choice",{options:[["true","Yes"],["false","No"]]}],
   ["diceEdit","Damage/heal dice (optional)","text"],
