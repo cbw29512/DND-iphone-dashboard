@@ -186,7 +186,7 @@ function cast(sp){
    }
  }else if(sp.level===0){total="CANTRIP";text+="Effect details may require the rulebook. ";}
  else{text+="Dice/effects could not be safely derived from this PDF; consult the spell text. ";}
- if(sp.duration&&/Concentration/i.test(sp.duration)&&!ongoing){character.concentration=sp.name;character.concentrationSlot=slot;}
+ if((sp.name==="Spirit Guardians"||/Concentration/i.test(sp.duration||""))&&!ongoing){character.concentration=sp.name;character.concentrationSlot=slot;}
  text+=(sp.level?(ongoing?"Concentration ongoing; no extra slot spent. ":"Level "+slot+" slot spent; "+character.remaining[slot]+" remain. "):"No spell slot used. ")+(sp.save||"")+" "+(sp.duration||"");
  show(sp.name,total,text);
 }
