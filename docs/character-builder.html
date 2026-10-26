@@ -20,6 +20,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;touch-action:man
 .weapon-rolls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.weapon-rolls button{min-height:49px;font-size:14px;border-radius:10px;background:#284158;border:1px solid #6c8298}.weapon-rolls button:nth-child(2){background:#92704a;color:#fff9e9;border-color:#deb784;font-weight:950}
 .weapon-special-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:5px 0}.weapon-special-row label{font-size:12px;font-weight:800;color:#d9e6d7;display:flex;align-items:center;gap:8px}.weapon-special-row input[type=checkbox]{width:20px;height:20px;accent-color:#e4b57a}.weapon-special-row .note{font-size:11px}
 .weapon-editor summary{font-size:11px;color:#f0c98b;cursor:pointer;font-weight:750}.weapon-editor .row{margin-top:8px}.weapon-editor input[type=text]{width:90px;background:#102030;border:1px solid #60788a;border-radius:7px;padding:7px;color:white}.weapon-editor input[type=text].special-label-input{width:min(165px,100%)}.weapon-editor button{font-size:11px;min-height:32px}
+#phoneWeaponStats[hidden],#phoneResultTotal[hidden]{display:none!important}
 .weapon-roll-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 8px}.weapon-roll-stat{background:#1a3545;border:1px solid #4d7182;border-radius:10px;text-align:center;padding:11px 4px}.weapon-roll-stat small{display:block;color:#d0dbe4;font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:850}.weapon-roll-stat strong{display:block;font-size:clamp(22px,3.8vw,36px);color:#f1f6ec;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.weapon-roll-stat:nth-child(3) strong{color:#eac580}.weapon-roll-stat.muted strong{color:#8294a3}
 .result-status{color:#ecce9a;font-size:12px;font-weight:800;margin:7px 0}.roll-log summary{cursor:pointer;font-size:15px;font-weight:900;color:#f7c878}.roll-log ol{list-style:none;padding:0;margin:11px 0 0;display:grid;gap:8px}.roll-log li{border:1px solid #40596d;background:#0d1d2b;border-radius:9px;padding:11px;font-size:12px}.roll-log li strong{color:#f4d29a}.roll-log li span{color:#b9c6d2;font-size:11px;margin-left:8px}.roll-log li p{margin:5px 0 0;white-space:pre-wrap;line-height:1.5;overflow-wrap:anywhere}#result .compact-total{font-size:clamp(24px,4vw,35px);font-weight:900;color:#a3e9c3;margin:10px 0}
 @media(max-width:450px){.weapon-rolls button{min-height:48px}.weapon-roll-summary{gap:5px}.weapon-roll-stat{padding:10px 3px}}
@@ -63,7 +64,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <div class="resources"><div class="resource"><label>HIT POINTS</label><strong id="hpLabel">—</strong><div class="row"><button data-hp="-5">−5</button><button data-hp="5">+5</button><input id="hpChange" aria-label="Damage or healing amount" type="number" min="1" value="10"><button id="damageBtn">Damage</button><button id="healBtn">Heal</button></div></div>
 <div class="resource"><label>SPELL SLOTS REMAINING</label><strong id="slotsLabel">—</strong><div class="row"><span class="note">Use level:</span><select id="castLevel" aria-label="Spell slot level"><option value="auto">Auto</option></select></div></div></div>
 <div id="turnTrack" class="row action-economy" aria-label="Turn action economy"><span id="actionUsed" class="turnchip">ACTION READY</span><span id="bonusUsed" class="turnchip">BONUS READY</span><button id="reactionBtn" type="button">REACTION READY</button><span id="slotUsed" class="turnchip">SLOTTED SPELL READY</span></div>
-<div class="inset" style="margin-top:9px"><div class="row"><label>Roll type:</label><div class="counter" id="modes"><button data-mode="normal" class="active">Normal</button><button data-mode="adv">ADV</button><button data-mode="dis">DIS</button></div><label>Heal targets:</label><select id="healTargets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><label for="healWho">Include self:</label><select id="healWho"><option value="others">Allies only</option><option value="self">Donovan / Self first</option></select><label for="wounded">Target wounded:</label><input id="wounded" type="checkbox" aria-label="Target is wounded for Toll the Dead"><label for="fiend">Fiend or Undead:</label><input id="fiend" type="checkbox" aria-label="Target is Fiend or Undead for Mace of Disruption"></div></div>
+<div class="inset" style="margin-top:9px"><div class="row"><label>Other d20 rolls:</label><div class="counter" id="modes"><button data-mode="normal" class="active">Normal</button><button data-mode="adv">ADV</button><button data-mode="dis">DIS</button></div><label>Heal targets:</label><select id="healTargets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><label for="healWho">Include self:</label><select id="healWho"><option value="others">Allies only</option><option value="self">Donovan / Self first</option></select><label for="wounded">Target wounded:</label><input id="wounded" type="checkbox" aria-label="Target is wounded for Toll the Dead"></div></div>
 </section>
 <section class="panel"><div class="tabs" id="tabs"><button data-tab="fight" class="active">Fight</button><button data-tab="spells">Spells</button><button data-tab="checks">Saves &amp; Skills</button><button data-tab="features">Features</button><button data-tab="sheet">Sheet</button></div><div id="actions" class="buttons"></div></section>
 </div>
@@ -83,7 +84,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <footer>This is an importer for your exported character sheet, not an official D&D Beyond integration. Unknown or custom ability mechanics are shown for manual resolution instead of being invented. Saved cards are local to this browser.</footer>
 </div>
 <main id="phoneView" hidden aria-label="Read-only D&D character phone card">
-  <div class="phone-sheet"><div class="phone-top"><span id="phoneTurn">TURN 1</span><span id="phoneSignal">CONNECTING</span></div><h1 id="phoneName">ONE-CLICK CHARACTER</h1><p id="phoneClass">Scan the QR on the laptop to connect.</p><div class="phone-vitals"><b id="phoneHP">HP —</b><b id="phoneSlots">SLOTS —</b></div><div class="phone-result"><h2 id="phoneResultTitle">READY FOR INITIATIVE</h2><div id="phoneResultTotal">ROLL INITIATIVE</div><p id="phoneResultDetails">The laptop controls the character. Results appear here.</p></div><p class="phone-note">READ-ONLY DISPLAY · ROLLS COME FROM LAPTOP</p></div>
+  <div class="phone-sheet"><div class="phone-top"><span id="phoneTurn">TURN 1</span><span id="phoneSignal">CONNECTING</span></div><h1 id="phoneName">ONE-CLICK CHARACTER</h1><p id="phoneClass">Scan the QR on the laptop to connect.</p><div class="phone-vitals"><b id="phoneHP">HP —</b><b id="phoneSlots">SLOTS —</b></div><div class="phone-result"><h2 id="phoneResultTitle">READY FOR INITIATIVE</h2><div id="phoneResultTotal">ROLL INITIATIVE</div><div id="phoneWeaponStats" class="weapon-roll-summary" hidden></div><p id="phoneResultDetails">The laptop controls the character. Results appear here.</p></div><p class="phone-note">READ-ONLY DISPLAY · ROLLS COME FROM LAPTOP</p></div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script>
@@ -413,7 +414,7 @@ function renderAll(){
  $("healTargets").value=String(healTargets);
  $("healWho").value=healWho;
  $("wounded").checked=targetWounded;
- $("fiend").checked=targetFiend;
+
  $("modes").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.mode===mode));
  $("result").replaceChildren();
  const result=character.result||{};
@@ -596,7 +597,7 @@ function initialize(){
  $("healTargets").addEventListener("change",()=>{healTargets=Number($("healTargets").value);});
  $("healWho").addEventListener("change",()=>{healWho=$("healWho").value;});
  $("wounded").addEventListener("change",()=>{targetWounded=$("wounded").checked;});
- $("fiend").addEventListener("change",()=>{targetFiend=$("fiend").checked;});
+
  $("notes").addEventListener("input",()=>{character.notes=$("notes").value;persist();});
  $("editBtn").addEventListener("click",reviewSpells);
  $("customSave").addEventListener("click",saveCustomAction);
