@@ -42,7 +42,7 @@ function weaponRow(root,record){
  row.append(name.wrap,bonus.wrap,damage.wrap,remove);root.append(row);
  return {row,remove,read:()=>({
   ...record,name:name.node.value,bonus:bonus.node.value,formula:damage.node.value,
-  damage:damage.node.value
+  damage:damage.node.value===String(record.formula||"")?(record.damage||damage.node.value):damage.node.value
  })};
 }
 function spellRow(root,record,level,rules){
