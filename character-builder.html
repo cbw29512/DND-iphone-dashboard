@@ -39,7 +39,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <div class="header"><div><h1>D&D One-Click Character Cards</h1><p class="subtitle">Import an exported D&D Beyond PDF. Roll attacks, saves and skills with one tap.</p></div><a href="./index.html">Donovan’s existing card</a></div>
 <section class="panel">
 <h2>1. Import a character</h2>
-<div class="row"><input type="file" id="pdfFile" accept="application/pdf,.pdf" aria-label="Choose a D&D Beyond exported character PDF"><button id="importBtn" class="primary">Build Character Card</button><select id="roster" aria-label="Previously imported characters"><option value="">Saved characters…</option></select><button id="loadBtn">Load Saved</button><label class="linkbtn" for="jsonFile" style="cursor:pointer">Restore Card JSON</label><input id="jsonFile" type="file" accept=".json,application/json" aria-label="Restore previously exported character card JSON" style="max-width:175px"></div>
+<div class="row"><input type="file" id="pdfFile" accept="application/pdf,.pdf" aria-label="Choose a D&D Beyond exported character PDF"><button id="importBtn" class="primary">Build Character Card</button><button id="demoBtn" class="good" type="button">Try Playable Demo</button><select id="roster" aria-label="Previously imported characters"><option value="">Saved characters…</option></select><button id="loadBtn">Load Saved</button><label class="linkbtn" for="jsonFile" style="cursor:pointer">Restore Card JSON</label><input id="jsonFile" type="file" accept=".json,application/json" aria-label="Restore previously exported character card JSON" style="max-width:175px"></div>
 <p class="hint">D&D Beyond → open character → Manage → Export to PDF. Your PDF is read locally in this browser; it is not uploaded to a server. Needs an internet connection to load the PDF reader library the first time.</p>
 <p id="message" role="status">Choose an exported PDF to begin.</p>
 </section>
@@ -417,9 +417,44 @@ async function importBackup(file){
   $("message").textContent=restored.name+" restored from backup.";
  }catch(error){$("message").textContent="Could not restore backup: "+error.message;}
 }
+
+function demoCharacter(){
+ const ability={STR:{score:12,mod:1},DEX:{score:8,mod:-1},CON:{score:14,mod:2},INT:{score:13,mod:1},WIS:{score:18,mod:4},CHA:{score:10,mod:0}};
+ const saves={STR:2,DEX:0,CON:3,INT:2,WIS:8,CHA:4};
+ const skills={Acrobatics:-1,"Animal Handling":4,Arcana:8,Athletics:1,Deception:0,History:1,Insight:7,Intimidation:0,Investigation:1,Medicine:4,Nature:1,Perception:7,Performance:0,Persuasion:0,Religion:8,"Sleight of Hand":-1,Stealth:-1,Survival:4};
+ const presets=[
+  ["Toll the Dead",0,"cantrip","O","1A","60 ft.","WIS 15","",""],
+  ["Produce Flame",0,"cantrip","O","1BA","Self","+7","",""],
+  ["Healing Word",1,"Cleric","P","1BA","60 ft.","--","",""],
+  ["Cure Wounds",1,"Cleric","P","1A","Touch","--","",""],
+  ["Guiding Bolt",1,"Cleric","P","1A","120 ft.","+7","",""],
+  ["Bless",1,"Cleric","P","1A","30 ft.","--","Concentration, up to 1 minute",""],
+  ["Goodberry",1,"Magic Initiate (Druid)","P","1A","Touch","--","",""],
+  ["Prayer of Healing",2,"Cleric","P","10m","30 ft.","--","",""],
+  ["Aid",2,"Cleric","P","1A","30 ft.","--","",""],
+  ["Spirit Guardians",3,"Cleric","P","1A","Self","WIS 15","Concentration, up to 10 minutes",""],
+  ["Mass Healing Word",3,"Cleric","P","1BA","60 ft.","--","",""],
+  ["Revivify",3,"Cleric","P","1A","Touch","--","",""]
+ ];
+ const spells=presets.map(([name,level,source,prepared,time,range,save,duration,notes])=>({
+  name,level,source,prepared:level===0||prepared==="P",time,range,save,duration,notes,
+  freeCastMax:name==="Goodberry"?1:0,freeCastRemaining:name==="Goodberry"?1:0
+ }));
+ return {id:"demo-donovan-level6",name:"Donovan — Playable Demo",classes:"Cleric 6 · Life Domain",level:6,rules:"2024",life:true,blessedHealer:true,background:"Acolyte",species:"Dwarf",
+  ac:16,hpMax:51,hp:51,initiative:-1,initiativeAdvantage:true,equipment:["Mace of Disruption","Sentinel Shield","Ring of Protection"],
+  ability,saves,skills,weapons:[{name:"Mace of Disruption",bonus:4,damage:"1d6+1 Bludgeoning",formula:"1d6+1",notes:"+2d6 Radiant vs Fiends or Undead"}],
+  features:[{name:"Channel Divinity",text:"3 uses per Long Rest. Regain one spent use after a Short Rest; choose Divine Spark, Turn Undead, or Preserve Life.",usesMax:3,remainingUses:3,recovers:"long"},
+   {name:"Stonecunning",text:"3 / Long Rest. Gain Tremorsense 60 ft while touching stone.",usesMax:3,remainingUses:3,recovers:"long"},
+   {name:"Disciple of Life",text:"Healing spells cast with spell slots restore +2 + spell slot level HP.",usesMax:0},
+   {name:"Blessed Healer",text:"If you use a spell slot to heal someone else, regain 2 + spell slot level HP.",usesMax:0}],
+  spells,slots:{1:4,2:3,3:3},remaining:{1:4,2:3,3:3},spellAttack:7,spellDC:15,
+  turn:1,actionUsed:false,bonusUsed:false,reactionUsed:false,slotUsed:false,notes:"",
+  concentration:"",concentrationSlot:0,result:{name:"TURN 1 · READY FOR INITIATIVE",total:"ROLL INITIATIVE",detail:"Sample card loaded. Choose an attack, heal, spell or saving throw. This demo is independent of your imported PDFs."}};
+}
 function initialize(){
  fillRoster();
  $("importBtn").addEventListener("click",() => importPDF($("pdfFile").files[0]));
+ $("demoBtn").addEventListener("click",()=>{loadCard(demoCharacter());$("message").textContent="Sample level-6 Life Cleric loaded. Try Mace, Healing Word or Guiding Bolt.";});
  $("pdfFile").addEventListener("change",()=>{$("message").textContent=$("pdfFile").files[0]?.name||"Select a PDF."});
  $("jsonFile").addEventListener("change",e=>importBackup(e.target.files[0]));
  $("loadBtn").addEventListener("click",()=>{try{const id=$("roster").value;const c=JSON.parse(localStorage.getItem(STORAGE)||"{}")[id];if(c)loadCard(c);else $("message").textContent="Choose a saved character first.";}catch(e){$("message").textContent="Saved character could not be loaded."; }});
