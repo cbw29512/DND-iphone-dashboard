@@ -15,6 +15,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;touch-action:man
 .tabs{display:flex;gap:5px;overflow-x:auto;padding:2px 0 10px}.tabs button{white-space:nowrap;flex:1 0 auto}.tabs button.active{background:#b18a52;color:#121a23}
 .buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.action{min-height:81px;background:#152c3d;border:1px solid #4c6780;border-radius:11px;text-align:left;padding:10px;display:flex;flex-direction:column;gap:3px;justify-content:start}.action b{font-size:15px;line-height:1.2}.action small{font-size:11px;color:#ccd5df}.action .tag{color:#f3ca81;font-size:10px;font-weight:900;letter-spacing:.07em}.action.uncertain{border-style:dashed}.action.featured{background:#364032;border-color:#a5a171}
 .section{grid-column:1/-1;color:var(--gold);font-size:11px;letter-spacing:.08em;margin:9px 0 0;border-bottom:1px solid #4a5b6f;padding-bottom:5px}
+.setup-details summary{cursor:pointer;font-weight:850;color:var(--gold);padding:5px 0}.setup-details h2{margin-top:12px}
 .inset{padding:10px;border-radius:10px;background:#112234;border:1px solid #405a70}.inset label{font-size:11px;color:var(--gold);font-weight:800}
 .counter{display:flex;gap:7px;flex-wrap:wrap}.counter button.active{background:#b28b53;color:#172332}.note{font-size:12px;color:#b9c7d5}
 textarea{width:100%;min-height:125px;resize:vertical;padding:10px;color:var(--ink);background:#0e1d2c;border:1px solid #5c7489;border-radius:9px}
@@ -35,7 +36,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <div class="header"><div><h1>D&D One-Click Character Cards</h1><p class="subtitle">Import an exported D&D Beyond PDF. Roll attacks, saves and skills with one tap.</p></div><a href="./index.html">Donovan’s existing card</a></div>
 <section class="panel">
 <h2>1. Import a character</h2>
-<div class="row"><input type="file" id="pdfFile" accept="application/pdf,.pdf" aria-label="Choose a D&D Beyond exported character PDF"><button id="importBtn" class="primary">Build Character Card</button><select id="roster" aria-label="Previously imported characters"><option value="">Saved characters…</option></select><button id="loadBtn">Load Saved</button></div>
+<div class="row"><input type="file" id="pdfFile" accept="application/pdf,.pdf" aria-label="Choose a D&D Beyond exported character PDF"><button id="importBtn" class="primary">Build Character Card</button><select id="roster" aria-label="Previously imported characters"><option value="">Saved characters…</option></select><button id="loadBtn">Load Saved</button><label class="linkbtn" for="jsonFile" style="cursor:pointer">Restore Card JSON</label><input id="jsonFile" type="file" accept=".json,application/json" aria-label="Restore previously exported character card JSON" style="max-width:175px"></div>
 <p class="hint">D&D Beyond → open character → Manage → Export to PDF. Your PDF is read locally in this browser; it is not uploaded to a server. Needs an internet connection to load the PDF reader library the first time.</p>
 <p id="message" role="status">Choose an exported PDF to begin.</p>
 </section>
@@ -55,12 +56,12 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <div class="sticky">
 <section class="panel"><h2>Latest result</h2><div id="result" role="status" aria-live="polite"><h3>READY</h3><div class="big">ROLL INITIATIVE</div></div><p class="hint">A new roll replaces this result. The attack total, dice breakdown, and remaining slots are shown here.</p></section>
 <section class="panel"><h2>Notes</h2><textarea id="notes" placeholder="Enemy AC, clues, tactics, loot, session notes…"></textarea><div class="hint" id="notesHint">Auto-saved for this character in this browser.</div></section>
-<section class="panel"><h2>Make any spell one-click playable</h2>
+<details class="panel setup-details"><summary>Configure custom spell actions (optional)</summary><h2>Make any spell one-click playable</h2>
 <p class="hint">Spells without safe dice information in the PDF can be configured once. Read the spell's description in your source, enter its dice and target count, and future taps roll automatically.</p>
 <div class="row"><label for="customSpell">Spell:</label><select id="customSpell"><option value="">Choose spell…</option></select><label for="customKind">Result:</label><select id="customKind"><option value="damage">Damage</option><option value="heal">Healing</option></select></div>
 <div class="row" style="margin-top:8px"><label for="customDice">Base dice:</label><input id="customDice" type="text" placeholder="2d8" style="width:105px;padding:9px;background:#0e1c29;color:#fff;border:1px solid #648099;border-radius:7px"><label for="customScale">Extra dice/upcast:</label><input id="customScale" type="number" min="0" max="5" step="1" value="0"><label for="customTargets">Targets:</label><input id="customTargets" type="number" min="1" max="12" step="1" value="1"></div>
 <div class="row" style="margin-top:8px"><label><input type="checkbox" id="customAbility"> Add Wisdom to HP healing</label><button id="customSave" class="good" type="button">Save One-Click Action</button><button id="customClear" type="button">Remove Custom Roll</button></div><p class="hint" id="customStatus">Select a spell to configure its dice.</p>
-</section>
+</details>
 <section class="panel"><h2>Import review</h2><p class="hint" id="review">Review bonuses and spell preparation before play.</p><button id="editBtn">Review spell preparation</button><div id="spellReview" class="hidden"></div></section>
 </div></div></div>
 <section class="panel remote-panel" id="remotePanel" aria-label="QR pairing for a read-only phone display"><div><h2>Phone Display · QR Pairing</h2><p class="hint">Scan this code on your iPhone. The phone shows only the latest roll, HP and remaining spell slots; it cannot control the character. Phone and laptop may be on different networks.</p></div><div class="remote-row"><div id="remoteQR" class="qr-paper">Loading QR…</div><div><a id="remotePhoneLink" href="#" target="_blank" rel="noopener">Open paired phone display</a><p id="remoteStatus" role="status">Connecting…</p><button type="button" id="phoneRefresh">Refresh Phone Display</button></div></div></section>
@@ -222,7 +223,7 @@ function cast(sp){
      const wis=m.type==="heal"&&(!sp.custom||m.addAbility)?(character.ability.WIS?.mod||0):0;
      const amount=roll.total+(m.type==="heal"?wis+life:0);
      result.push(amount);
-     text+="Target "+(i+1)+": "+roll.text+(m.type==="heal"?" + "+wis+" casting + "+life+" Life":"")+" = "+amount+". ";
+     text+="Target "+(i+1)+": "+roll.text+(m.type==="heal"?" + "+wis+" casting + "+life+" Life = "+amount:"")+". ";
    }
    total=(targets>1?result.reduce((a,b)=>a+b,0)+" HP TOTAL":result[0]+(m.type==="heal"?" HP HEALED":" DAMAGE"));
    if(attack){
@@ -380,10 +381,29 @@ async function importPDF(file){
   if(typeof pdf.destroy==="function")await pdf.destroy();
  }catch(error){console.error("Character import failed",error);$("message").textContent="Import failed: "+error.message;}
 }
+async function importBackup(file){
+ if(!file)return;
+ if(file.size>2_000_000){$("message").textContent="Backup JSON exceeds the 2 MB limit.";return;}
+ try{
+  const item=JSON.parse(await file.text());
+  if(!item||typeof item!=="object"||typeof item.name!=="string"||!item.name.trim()||
+   !Array.isArray(item.weapons)||!Array.isArray(item.spells)||!Array.isArray(item.features)||
+   !item.slots||!item.remaining||!item.ability||!item.saves||!item.skills||
+   item.weapons.length>200||item.spells.length>500||item.features.length>200)throw Error("Not a valid One-Click Character Card backup.");
+  const restored={...item,id:String(item.id||item.name+"|"+item.classes).toLowerCase().replace(/[^a-z0-9|]/g,"-").slice(0,120)};
+  if(!restored.id||restored.id==="__proto__"||restored.id==="constructor")throw Error("Invalid card identifier.");
+  restored.hpMax=Math.max(1,Math.min(9999,Number(restored.hpMax)||1));
+  restored.hp=Math.max(0,Math.min(restored.hpMax,Number(restored.hp)||restored.hpMax));
+  if(!Array.isArray(restored.notes))restored.notes=String(restored.notes||"").slice(0,100000);
+  loadCard(restored);
+  $("message").textContent=restored.name+" restored from backup.";
+ }catch(error){$("message").textContent="Could not restore backup: "+error.message;}
+}
 function initialize(){
  fillRoster();
  $("importBtn").addEventListener("click",() => importPDF($("pdfFile").files[0]));
  $("pdfFile").addEventListener("change",()=>{$("message").textContent=$("pdfFile").files[0]?.name||"Select a PDF."});
+ $("jsonFile").addEventListener("change",e=>importBackup(e.target.files[0]));
  $("loadBtn").addEventListener("click",()=>{try{const id=$("roster").value;const c=JSON.parse(localStorage.getItem(STORAGE)||"{}")[id];if(c)loadCard(c);else $("message").textContent="Choose a saved character first.";}catch(e){$("message").textContent="Saved character could not be loaded."; }});
  $("initiativeBtn").addEventListener("click",()=>doCheck("INITIATIVE",character.initiative,character.initiativeAdvantage));
  $("nextBtn").addEventListener("click",()=>{character.turn++;show("TURN "+character.turn,"READY","Actions and reactions available.");});
