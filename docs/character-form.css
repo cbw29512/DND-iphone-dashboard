@@ -1,0 +1,71 @@
+/* Editing mode and compact portrait-led play layout. */
+#editor[hidden],#play[hidden]{display:none!important}
+.character-editor{max-width:1280px;margin:0 auto 10px}
+.edit-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+ position:sticky;top:0;z-index:10;background:#172536;border-bottom:1px solid #4c6175;padding:8px}
+.edit-header h2{margin:0}.edit-header p{font-size:12px;margin:2px 0;color:#bdd0dc}
+.edit-section{padding:10px;margin:8px 0;border:1px solid #4e667c;background:#112536;border-radius:10px}
+.edit-section h3{font-size:15px;color:#f5c877;margin:0 0 8px}
+.edit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.edit-grid h3{grid-column:1/-1}
+.edit-field{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:11px;color:#edce90}
+.edit-field input,.edit-field select{width:100%;min-width:0;max-width:none!important;
+ font-size:13px;padding:8px;border-radius:6px;border:1px solid #668097;
+ background:#0e2030;color:#f6f4eb}
+.edit-rows{display:grid;gap:5px;margin:7px 0}
+.edit-row{display:grid;grid-template-columns:minmax(160px,2fr) repeat(3,minmax(92px,1fr)) auto;
+ align-items:end;gap:6px;border-bottom:1px solid #344d62;padding:5px}
+.edit-row button{padding:5px;min-height:36px}
+.edit-footer{position:sticky;bottom:0;background:#172536;padding:10px 6px;text-align:right;border-top:1px solid #50697e}
+#portraitPreview{object-fit:cover;border-radius:7px;border:1px solid #64778a}
+.portrait-hero{position:relative;display:flex;min-height:165px;align-items:stretch;
+ overflow:hidden;border:1px solid #536e80;border-radius:12px;background:linear-gradient(125deg,#23394b,#102132)}
+.portrait-visual{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;min-height:0}
+.portrait-visual img{width:100%;height:100%;object-fit:cover;object-position:center 25%}
+.portrait-visual img[hidden]{display:none!important}
+#portraitInitials{font:700 clamp(55px,9vw,100px) Georgia,serif;color:#e9d1a3;opacity:.42}
+#play .stats.portrait-stats{position:absolute;bottom:0;left:0;right:0;display:grid;
+ grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:0;padding:27px 7px 7px;
+ background:linear-gradient(transparent,rgba(4,11,19,.94))}
+#play .portrait-stats .stat{background:rgba(10,29,43,.87);border-color:#758a99}
+#play .portrait-stats .stat b{color:#fff3d8}
+.quick-checks{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:6px 0;font-size:11px}
+.quick-checks label{color:#f1c984;font-weight:800}
+.quick-checks select{min-height:34px;background:#102135;color:white;border:1px solid #7088a0;border-radius:6px}
+.quick-checks button{min-height:34px;padding:5px 8px;font-size:11px}
+.spell-button-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+#play .weapon-card{grid-template-columns:minmax(90px,1fr) minmax(68px,auto)}
+#play .weapon-head{min-width:0}
+#play button.weapon-name,#play button.spell-primary{
+ background:#806036;color:#fff7e8;border:1px solid #dcb57f;min-height:38px;
+ font-size:13px;text-align:left;font-weight:800;border-radius:7px;padding:7px 9px;
+ width:100%;overflow-wrap:anywhere}
+#play .spell-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;
+ align-items:center;min-width:0;padding:7px}
+#play .spell-card .spell-head{grid-column:1;grid-row:1;min-width:0}
+#play .spell-card .spell-upcast{grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+#play .spell-card .spell-upcast span{font-size:9px}
+#play .spell-card .spell-upcast select{width:100px;max-width:100%;font-size:10px;padding:5px}
+#play .spell-card .spell-rolls{grid-column:1/-1;grid-row:auto;display:flex;justify-content:flex-end;gap:3px}
+#play .spell-card .spell-rolls button{flex:0 1 auto;min-height:26px;padding:3px 10px}
+#play .spell-card .spell-rolls:empty{display:none}
+#play .quick-section .spell-card{grid-template-columns:minmax(0,1fr);padding:5px}
+#play .quick-section .spell-card .spell-head{grid-column:1}
+#play .quick-section .spell-card .spell-rolls{grid-column:1}
+#play .quick-section .spell-card .spell-upcast{display:none}
+#play .weapon-rolls{grid-template-columns:repeat(2,34px);gap:3px}
+#play .weapon-rolls button{font-size:9px;padding:5px 1px;min-height:35px}
+#play .weapon-special-row{grid-column:1/-1}
+@media(max-width:980px){
+ .edit-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .edit-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .spell-button-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+ .edit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .spell-button-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #play .stats.portrait-stats{grid-template-columns:repeat(3,minmax(0,1fr));padding-top:45px}
+ .portrait-hero{min-height:215px}
+ #play .spell-card .spell-upcast select{width:85px}
+ #play .spell-card button.spell-primary{font-size:12px}
+}
