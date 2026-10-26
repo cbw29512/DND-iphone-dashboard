@@ -1,7 +1,7 @@
 /* Controller: creation/import and editing share one normalized character schema. */
 (function(root){
 "use strict";
-let active=null,creating=false,form=null,saveCallback=null;
+let active=null,creating=false,form=null,saveCallback=null,getCurrent=null;
 const $=id=>document.getElementById(id);
 function open(card,isNew=false){
  active=card;creating=isNew;
@@ -14,12 +14,12 @@ function open(card,isNew=false){
  const portrait=$("portraitPreview");
  const photo=CharacterFormModel.safePortrait(card.portrait);
  portrait.src=photo||"";portrait.hidden=!photo;
- $("portraitUpload").value="";
+ $("portraitUpload").value="";portrait.dataset.ready="";
  $("editor").scrollIntoView({block:"start",behavior:"instant"});
 }
 function cancel(){
  $("editor").hidden=true;active=null;form=null;
- if(window.character){
+ if(getCurrent?.()){
   $("play").classList.remove("hidden");
  }else $("importPanel").open=true;
 }
@@ -70,10 +70,10 @@ function updatePortrait(file){
  img.onerror=()=>{URL.revokeObjectURL(url);$("editorMessage").textContent="Picture could not be read.";};
  img.src=url;
 }
-function initialize(onSave){
- saveCallback=onSave;
+function initialize(onSave,current){
+ saveCallback=onSave;getCurrent=current;
  $("createBtn").addEventListener("click",()=>open(CharacterFormModel.blank(),true));
- $("editCharacterBtn").addEventListener("click",()=>open(window.character,false));
+ $("editCharacterBtn").addEventListener("click",()=>{const current=getCurrent?.();if(current)open(current,false);});
  $("saveCharacterBtn").addEventListener("click",save);
  $("cancelCharacterBtn").addEventListener("click",cancel);
  $("portraitUpload").addEventListener("change",e=>updatePortrait(e.target.files?.[0]));
