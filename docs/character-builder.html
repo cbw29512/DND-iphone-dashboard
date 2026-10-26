@@ -15,6 +15,13 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;touch-action:man
 .tabs{display:flex;gap:5px;overflow-x:auto;padding:2px 0 10px}.tabs button{white-space:nowrap;flex:1 0 auto}.tabs button.active{background:#b18a52;color:#121a23}
 .buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.action{min-height:81px;background:#152c3d;border:1px solid #4c6780;border-radius:11px;text-align:left;padding:10px;display:flex;flex-direction:column;gap:3px;justify-content:start}.action b{font-size:15px;line-height:1.2}.action small{font-size:11px;color:#ccd5df}.action .tag{color:#f3ca81;font-size:10px;font-weight:900;letter-spacing:.07em}.action.uncertain{border-style:dashed}.action.featured{background:#364032;border-color:#a5a171}
 
+.spell-card{grid-column:1/-1;border:1px solid #607688;background:#172e3d;border-radius:12px;padding:12px;display:grid;gap:9px}
+.spell-card.uncertain{border-style:dashed;opacity:.9}.spell-head{display:flex;flex-direction:column;gap:3px}
+.spell-head strong{font-size:17px;color:#f9f1df}.spell-head small{font-size:11px;color:#d1dbe4}
+.spell-upcast{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:11px;font-weight:850;color:#f0cc90}
+.spell-upcast select{min-width:0;max-width:78%;background:#102135;border:1px solid #64839b;border-radius:8px;padding:8px;color:white}
+.spell-rolls{display:flex;gap:7px}.spell-rolls button{flex:1;background:#284158;border:1px solid #6c8298;min-height:46px}
+.spell-rolls button:nth-child(2),.spell-rolls button:only-child{background:#92704a;border-color:#deb784}
 .weapon-card{grid-column:1/-1;border:1px solid #607688;background:#192b3b;border-radius:14px;padding:13px;display:flex;flex-direction:column;gap:9px}
 .weapon-head{display:flex;align-items:center;gap:11px;min-width:0}.weapon-icon{width:46px;height:46px;border:1px solid #927650;border-radius:10px;background:#283649;color:#efd6a5;display:grid;place-items:center;font-size:27px;flex:0 0 auto}.weapon-icon svg{width:38px;height:38px}.weapon-name{font-size:17px;line-height:1.2;margin:0;color:#f9f1df}.weapon-sub{font-size:11px;color:#c1d0dc}
 .weapon-rolls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.weapon-rolls button{min-height:49px;font-size:14px;border-radius:10px;background:#284158;border:1px solid #6c8298}.weapon-rolls button:nth-child(2){background:#92704a;color:#fff9e9;border-color:#deb784;font-weight:950}
@@ -417,7 +424,7 @@ function renderAll(){
  const h=document.createElement("h3");h.textContent=result.name||"READY";$("result").append(h);
  if(result.weapon){
   const w=result.weapon,grid=document.createElement("div");grid.className="weapon-roll-summary";
-  for(const [label,value] of [["Hit",w.hit],["Damage",w.damage],["Special damage",w.special]]){
+  for(const [label,value] of [["TO HIT",w.hit],["DAMAGE",w.damage],["SPECIAL",w.special]]){
    const cell=document.createElement("div");cell.className="weapon-roll-stat"+(value===null||value===undefined?" muted":"");
    const name=document.createElement("small"),number=document.createElement("strong");
    name.textContent=label;number.textContent=value===null||value===undefined?"—":String(value);
@@ -426,6 +433,20 @@ function renderAll(){
   const status=document.createElement("p");status.className="result-status";
   status.textContent=(w.mode==="adv"?"ADV":w.mode==="dis"?"DIS":"NORMAL")+(w.critical?" · CRITICAL HIT":"")+
    (w.special!==null&&w.special!==undefined?" · SPECIAL INCLUDED":" · NO SPECIAL");
+  $("result").append(grid,status);
+ }else if(result.spell){
+  const sp=result.spell,grid=document.createElement("div");grid.className="weapon-roll-summary";
+  const firstLabel=sp.hit!==null?"TO HIT":sp.save?sp.save+" DC":"EFFECT";
+  const firstValue=sp.hit!==null?sp.hit:sp.save?sp.dc:null;
+  for(const [label,value] of [[firstLabel,firstValue],[sp.kind==="heal"?"HEALING":"DAMAGE",sp.value],["SLOT",sp.slotText]]){
+   const cell=document.createElement("div");cell.className="weapon-roll-stat"+(value===null||value===undefined?" muted":"");
+   const labelEl=document.createElement("small"),number=document.createElement("strong");
+   labelEl.textContent=label;number.textContent=value===null||value===undefined?"—":String(value);
+   cell.append(labelEl,number);grid.append(cell);
+  }
+  const status=document.createElement("p");status.className="result-status";
+  status.textContent=(sp.critical?"CRITICAL · ":"")+(sp.half?"SAVE FOR HALF · ":"")+
+   (sp.level===0?"CANTRIP · AT WILL":"LEVEL "+sp.level);
   $("result").append(grid,status);
  }else{
   const b=document.createElement("div");b.className="compact-total";b.textContent=result.total||"ROLL INITIATIVE";$("result").append(b);
@@ -447,7 +468,7 @@ function renderLog(){
   const li=document.createElement("li"),title=document.createElement("strong"),meta=document.createElement("span"),body=document.createElement("p");
   title.textContent=item.name||"Roll";meta.textContent=item.at||"";
   const w=item.weapon;
-  const line=w?("Hit "+w.hit+" · Damage "+(w.damage??"—")+" · Special "+(w.special??"—")+(w.critical?" · CRITICAL":"")):(item.total||"");
+  const sp=item.spell;const line=w?("To hit "+w.hit+" · Damage "+(w.damage??"—")+" · Special "+(w.special??"—")+(w.critical?" · CRITICAL":"")):sp?((sp.hit!==null?"To hit "+sp.hit:sp.save?sp.save+" DC "+sp.dc:"Spell effect")+" · "+sp.kind+" "+(sp.value??"—")+" · "+sp.slotText):(item.total||"");
   body.textContent=line+(item.detail?"\n"+item.detail:"");
   li.append(title,meta,body);list.append(li);
  }
