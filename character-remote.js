@@ -101,8 +101,24 @@ async function startPhone(){
    set("phoneSlots",Object.keys(snap.slots||{}).sort((a,b)=>a-b).map(k=>"L"+k+" "+snap.slots[k]).join(" · "));
    set("phoneTurn","TURN "+snap.turn);
    set("phoneResultTitle",snap.result?.name||"READY");
-   set("phoneResultTotal",snap.result?.total||"ROLL INITIATIVE");
-   set("phoneResultDetails",snap.result?.detail||"");
+   const weapon=snap.result?.weapon,grid=document.getElementById("phoneWeaponStats");
+   const total=document.getElementById("phoneResultTotal");
+   if(grid){grid.replaceChildren();grid.hidden=!weapon;}
+   if(total)total.hidden=!!weapon;
+   if(weapon&&grid){
+    for(const [label,value] of [["Hit",weapon.hit],["Damage",weapon.damage],["Special damage",weapon.special]]){
+     const cell=document.createElement("div");cell.className="weapon-roll-stat"+(value===null||value===undefined?" muted":"");
+     const name=document.createElement("small"),amount=document.createElement("strong");
+     name.textContent=label;amount.textContent=value===null||value===undefined?"—":String(value);
+     cell.append(name,amount);grid.append(cell);
+    }
+    set("phoneResultDetails",(weapon.mode==="adv"?"ADV":weapon.mode==="dis"?"DIS":"NORMAL")+
+      (weapon.critical?" · CRITICAL":"")+
+      (weapon.special!==null&&weapon.special!==undefined?" · SPECIAL INCLUDED":" · NO SPECIAL"));
+   }else{
+    set("phoneResultTotal",snap.result?.total||"ROLL INITIATIVE");
+    set("phoneResultDetails",snap.result?.detail||"");
+   }
   };
   const accept=async event=>{
    try{
