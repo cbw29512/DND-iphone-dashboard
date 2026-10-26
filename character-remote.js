@@ -111,7 +111,7 @@ async function startPhone(){
    const rows=weapon?[["TO HIT",weapon.hit],["DAMAGE",weapon.damage],["SPECIAL",weapon.special]]:
     spell?[[spell.hit!==null?"TO HIT":spell.save?spell.save+" DC":"EFFECT",
      spell.hit!==null?spell.hit:spell.save?spell.dc:null],
-     [spell.kind==="heal"?"HEALING":"DAMAGE",spell.value],["SLOT",spell.slotText]]:null;
+     [spell.kind==="heal"?"HEALING":spell.kind==="damage"?"DAMAGE":"EFFECT",spell.value],["SLOT",spell.slotText]]:null;
    if(rows&&grid){
     for(const [label,value] of rows){
      const cell=document.createElement("div");cell.className="weapon-roll-stat"+(value===null||value===undefined?" muted":"");
