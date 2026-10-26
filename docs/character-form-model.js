@@ -42,7 +42,7 @@ function apply(base,values){
  next.ac=clamp(values.ac,0,50);
  const hpMax=clamp(values.hpMax,1,9999);
  next.hpMax=hpMax;
- next.hp=Math.min(hpMax,Math.max(0,Number(base.hp)||0)); // Editing never heals.
+ next.hp=values.fresh?hpMax:Math.min(hpMax,Math.max(0,Number(base.hp)||0)); // Editing never heals.
  next.speed=parsedSpeed(values.speed);
  next.initiative=clamp(values.initiative,-30,30);
  next.spellAttack=clamp(values.spellAttack,-30,30);
