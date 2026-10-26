@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#111b29">
+<title>One-Click D&D Character Builder</title>
+<style>
+:root{color-scheme:dark;--bg:#0d1520;--panel:#182535;--line:#3f536b;--ink:#f5f1e8;--mute:#b9c7d5;--gold:#f7c878;--green:#95e0bb;--red:#f3b0a5}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#132336,var(--bg) 40%);color:var(--ink);font:15px/1.5 system-ui,sans-serif}
+button,input,textarea,select{font:inherit}button{cursor:pointer;touch-action:manipulation}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #f2c579;outline-offset:2px}
+.wrap{max-width:1140px;margin:auto;padding:18px}.header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.header h1{font-size:24px;margin:5px 0;font-family:Georgia,serif}.subtitle{color:var(--mute);font-size:13px;margin:4px 0 13px}a{color:#f2cf91}
+.panel{padding:15px;background:var(--panel);border:1px solid var(--line);border-radius:13px;margin-bottom:13px}.panel h2{font-size:19px;margin:0 0 8px;font-family:Georgia,serif}.hint{font-size:12px;color:var(--mute);margin:7px 0}.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}button,.linkbtn{background:#31445a;border:1px solid #627991;color:#fefaf2;border-radius:9px;padding:9px 12px;font-size:13px;font-weight:780;text-align:center;min-height:39px}.primary{background:#846034;border-color:#d5aa6e}.good{background:#265a43;border-color:#6dba96}.danger{background:#6b373c;border-color:#c78483}.muted{color:var(--mute)}input[type=file]{max-width:100%;padding:8px;border:1px dashed #7794a4;border-radius:8px}input[type=number]{background:#091524;border:1px solid #60768c;border-radius:7px;color:var(--ink);padding:7px;max-width:86px}.row select{background:#102135;color:var(--ink);border:1px solid #668097;border-radius:8px;padding:9px;max-width:100%}
+#message{color:#f7dba6;min-height:22px}.hidden{display:none!important}
+.titlebar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.titlebar h2{font-size:25px;margin:0}.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:14px}.sticky{position:sticky;top:10px;align-self:start}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:10px 0}.stat{background:#102032;border:1px solid #405b70;border-radius:9px;padding:9px 5px;text-align:center}.stat small{display:block;font-size:10px;color:var(--mute)}.stat b{font-size:19px;color:var(--gold);font-variant-numeric:tabular-nums}
+.resources{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.resource{padding:10px;background:#132837;border-radius:10px;border:1px solid #46667a}.resource strong{font-size:22px;color:var(--green)}.resource label{display:block;font-size:11px;letter-spacing:.08em;color:var(--gold)}.resource .row{margin-top:7px}
+#result{background:#101e2b;border:1px solid #8a734f;border-radius:12px;min-height:170px;padding:16px}#result h3{font-size:20px;margin:3px 0 7px}#result .big{font-size:clamp(25px,4vw,38px);font-weight:900;color:var(--green);line-height:1.2;overflow-wrap:anywhere}#result p{margin:7px 0;color:#e1e7ec;font-size:13px;overflow-wrap:anywhere}
+.tabs{display:flex;gap:5px;overflow-x:auto;padding:2px 0 10px}.tabs button{white-space:nowrap;flex:1 0 auto}.tabs button.active{background:#b18a52;color:#121a23}
+.buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.action{min-height:81px;background:#152c3d;border:1px solid #4c6780;border-radius:11px;text-align:left;padding:10px;display:flex;flex-direction:column;gap:3px;justify-content:start}.action b{font-size:15px;line-height:1.2}.action small{font-size:11px;color:#ccd5df}.action .tag{color:#f3ca81;font-size:10px;font-weight:900;letter-spacing:.07em}.action.uncertain{border-style:dashed}.action.featured{background:#364032;border-color:#a5a171}
+.section{grid-column:1/-1;color:var(--gold);font-size:11px;letter-spacing:.08em;margin:9px 0 0;border-bottom:1px solid #4a5b6f;padding-bottom:5px}
+.inset{padding:10px;border-radius:10px;background:#112234;border:1px solid #405a70}.inset label{font-size:11px;color:var(--gold);font-weight:800}
+.counter{display:flex;gap:7px;flex-wrap:wrap}.counter button.active{background:#b28b53;color:#172332}.note{font-size:12px;color:#b9c7d5}
+textarea{width:100%;min-height:125px;resize:vertical;padding:10px;color:var(--ink);background:#0e1d2c;border:1px solid #5c7489;border-radius:9px}
+footer{font-size:12px;color:var(--mute);padding:12px 0}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.sticky{position:static}.wrap{padding:10px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:380px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.buttons{grid-template-columns:1fr}.resources{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<div class="header"><div><h1>D&D One-Click Character Cards</h1><p class="subtitle">Import an exported D&D Beyond PDF. Roll attacks, saves and skills with one tap.</p></div><a href="./index.html">Donovan’s existing card</a></div>
+<section class="panel">
+<h2>1. Import a character</h2>
+<div class="row"><input type="file" id="pdfFile" accept="application/pdf,.pdf" aria-label="Choose a D&D Beyond exported character PDF"><button id="importBtn" class="primary">Build Character Card</button><select id="roster" aria-label="Previously imported characters"><option value="">Saved characters…</option></select><button id="loadBtn">Load Saved</button></div>
+<p class="hint">D&D Beyond → open character → Manage → Export to PDF. Your PDF is read locally in this browser; it is not uploaded to a server. Needs an internet connection to load the PDF reader library the first time.</p>
+<p id="message" role="status">Choose an exported PDF to begin.</p>
+</section>
+<div id="play" class="hidden">
+<div class="panel titlebar"><div><h2 id="who">Character</h2><div id="identity" class="subtitle"></div></div><div class="row"><button id="backupBtn">Export Card JSON</button><button id="deleteBtn" class="danger">Delete Saved Card</button></div></div>
+<div class="layout">
+<div>
+<section class="panel">
+<div class="row"><button id="initiativeBtn" class="primary">Roll Initiative</button><button id="nextBtn">Next Turn</button><button id="fightBtn">New Fight</button><button id="restBtn" class="good">Long Rest</button><button id="resetBtn" class="danger">Reset All</button></div>
+<div id="stats" class="stats"></div>
+<div class="resources"><div class="resource"><label>HIT POINTS</label><strong id="hpLabel">—</strong><div class="row"><button data-hp="-5">−5</button><button data-hp="5">+5</button><input id="hpChange" aria-label="Damage or healing amount" type="number" min="1" value="10"><button id="damageBtn">Damage</button><button id="healBtn">Heal</button></div></div>
+<div class="resource"><label>SPELL SLOTS REMAINING</label><strong id="slotsLabel">—</strong><div class="row"><span class="note">Use level:</span><select id="castLevel" aria-label="Spell slot level"><option value="auto">Auto</option></select></div></div></div>
+<div class="inset" style="margin-top:9px"><div class="row"><label>Roll type:</label><div class="counter" id="modes"><button data-mode="normal" class="active">Normal</button><button data-mode="adv">ADV</button><button data-mode="dis">DIS</button></div><label>Group heal targets:</label><select id="healTargets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div></div>
+</section>
+<section class="panel"><div class="tabs" id="tabs"><button data-tab="fight" class="active">Fight</button><button data-tab="spells">Spells</button><button data-tab="checks">Saves &amp; Skills</button><button data-tab="features">Features</button><button data-tab="sheet">Sheet</button></div><div id="actions" class="buttons"></div></section>
+</div>
+<div class="sticky">
+<section class="panel"><h2>Latest result</h2><div id="result" role="status" aria-live="polite"><h3>READY</h3><div class="big">ROLL INITIATIVE</div></div><p class="hint">A new roll replaces this result. The attack total, dice breakdown, and remaining slots are shown here.</p></section>
+<section class="panel"><h2>Notes</h2><textarea id="notes" placeholder="Enemy AC, clues, tactics, loot, session notes…"></textarea><div class="hint" id="notesHint">Auto-saved for this character in this browser.</div></section>
+<section class="panel"><h2>Import review</h2><p class="hint" id="review">Review bonuses and spell preparation before play.</p><button id="editBtn">Review spell preparation</button><div id="spellReview" class="hidden"></div></section>
+</div></div></div>
+<footer>This is an importer for your exported character sheet, not an official D&D Beyond integration. Unknown or custom ability mechanics are shown for manual resolution instead of being invented. Saved cards are local to this browser.</footer>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const STORAGE="oneclick_cards_v1",ACTIVE="oneclick_active_v1";
+const ABILITIES=["Strength","Dexterity","Constitution","Intelligence","Wisdom","Charisma"];
+const ABBR=["STR","DEX","CON","INT","WIS","CHA"];
+const SKILLS=["Acrobatics","Animal Handling","Arcana","Athletics","Deception","History","Insight","Intimidation","Investigation","Medicine","Nature","Perception","Performance","Persuasion","Religion","Sleight of Hand","Stealth","Survival"];
+let character=null,tab="fight",mode="normal",selectedSlot="auto",healTargets=1;
+const toNum=(value,otherwise=0)=>{const match=String(value??"").match(/[+-]?\d+/);return match?Number(match[0]):otherwise;};
+const signed=n=>(n>=0?"+":"")+n;
+const die=faces=>Math.floor(Math.random()*faces)+1;
+function d20(){const a=die(20),b=mode==="normal"?null:die(20),pick=b===null?a:mode==="adv"?Math.max(a,b):Math.min(a,b);return {value:pick,text:"d20 "+(b===null?a:a+" / "+b+" ("+mode.toUpperCase()+")")+" → "+pick};}
+function dice(formula){const m=/^(\d+)d(\d+)([+-]\d+)?$/i.exec(String(formula).replace(/\s/g,""));if(!m)return null;const count=Number(m[1]),faces=Number(m[2]),add=Number(m[3]||0);if(count>40||faces>1000)return null;const rolls=Array.from({length:count},()=>die(faces));const total=rolls.reduce((a,b)=>a+b,0)+add;return {total,text:count+"d"+faces+" ("+rolls.join(" + ")+")"+(add?" "+signed(add):"")+" = "+total};}
+const safeFields=objects=>{const out={};for(const [key,group] of Object.entries(objects||{})){const v=group?.find(x=>x&&x.value!==undefined&&x.value!==null)?.value;const first=group?.[0];if(v!==undefined&&v!==null){out[key]={value:String(v),page:first?.page??0,rect:first?.rect||[]};}}return out;};
+function parseCharacter(fields){
+ const raw=name=>fields[name]?.value||"";
+ const value=(...names)=>{for(const name of names){if(raw(name))return raw(name);}return "";};
+ const name=value("CharacterName","CharacterName2","Character Name").replace(/\s+\d+$/,"").trim();
+ const classLine=value("CLASS  LEVEL","CLASS LEVEL","CLASS & LEVEL");
+ if(!name||!classLine)throw Error("The PDF has no readable D&D Beyond character-name/class fields. Export the character with Manage → Export to PDF, rather than using Print → Save as PDF.");
+ const level=toNum(classLine.match(/\d+/)?.[0],1);
+ const ability={},saves={},skills={};
+ ABBR.forEach((abbr,i)=>{ability[abbr]={score:toNum(value(abbr),10),mod:toNum(value(abbr+"mod",abbr+"mod "),0)};saves[abbr]=toNum(value("ST "+ABILITIES[i]),ability[abbr].mod)});
+ SKILLS.forEach(skill=>{skills[skill]=toNum(value(skill),0)});
+ const classes=classLine,features=[];
+ for(let i=1;i<=10;i++){const src=raw("FeaturesTraits"+i);if(!src)continue;
+  const blocks=src.split(/\n\s*\*\s+/);
+  for(let block of blocks){const title=block.match(/^([^\n•]{2,75})\s*•/);if(!title)continue;const label=title[1].trim();if(features.some(f=>f.name===label))continue;
+   features.push({name:label,text:block.slice(0,1200).trim()});}
+ }
+ const featureText=features.map(f=>f.name+" "+f.text).join(" ");
+ const rules=featureText.includes("PHB-2024")?"2024":"unspecified";
+ const life=/Life Domain|Disciple of Life/i.test(featureText);
+ const weapons=[];
+ for(let i=1;i<=6;i++){const suffix=i===1?"":" "+i;
+   const wname=value(i===1?"Wpn Name":"Wpn Name"+suffix);
+   if(!wname)continue;
+   const bonus=toNum(value("Wpn"+i+" AtkBonus"),0);
+   const damage=value("Wpn"+i+" Damage"),notes=value("Wpn Notes "+i);
+   const formula=damage.match(/\b\d+d\d+(?:\s*[+-]\s*\d+)?/i)?.[0]?.replace(/\s/g,"")||"";
+   weapons.push({name:wname,bonus,damage,formula,notes});
+ }
+ const headers=[];
+ for(let i=0;i<=12;i++){
+  const f=fields["spellHeader"+i],header=f?.value||"";
+  if(!header)continue;
+  const l=/CANTRIP/i.test(header)?0:toNum(header,0);
+  headers.push({level:l,page:f.page??0,y:Number(f.rect?.[1]||0)});
+ }
+ const spellMap=new Map();
+ for(let i=0;i<400;i++){
+  const f=fields["spellName"+i];if(!f?.value)continue;
+  const rawName=f.value.trim(),spellName=rawName.replace(/\s+\[R\]$/,"");
+  const candidates=headers.filter(h=>h.page<=f.page&&((h.page<f.page)||h.y>=Number(f.rect?.[1]||0)));
+  const level=candidates.length?candidates[candidates.length-1].level:0;
+  const prepared=level===0||value("spellPrepared"+i).trim().toUpperCase()==="P";
+  const key=level+"|"+spellName.toLowerCase();
+  const old=spellMap.get(key);
+  if(old){old.prepared=old.prepared||prepared;continue;}
+  spellMap.set(key,{name:spellName,level,prepared,source:value("spellSource"+i),save:value("spellSaveHit"+i),time:value("spellCastingTime"+i),range:value("spellRange"+i),duration:value("spellDuration"+i),notes:value("spellNotes"+i)});
+ }
+ const slots={};
+ for(let i=1;i<=9;i++){
+  const txt=raw("spellSlotHeader"+i),m=txt.match(/(\d+)\s+Slots?/i);
+  if(m)slots[i]=Number(m[1]);
+ }
+ const char={id:(name+"|"+classes).toLowerCase().replace(/[^a-z0-9|]/g,"-").slice(0,120),name,classes,level,rules,life,background:value("BACKGROUND"),species:value("RACE"),
+   ac:toNum(value("AC"),10),hpMax:toNum(value("MaxHP"),1),hp:toNum(value("CurrentHP"),toNum(value("MaxHP"),1)),initiative:toNum(value("Init"),0),
+   ability,saves,skills,weapons,features,spells:[...spellMap.values()].sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)),slots,remaining:{...slots},
+   spellAttack:toNum(value("spellAtkBonus0"),0),spellDC:toNum(value("spellSaveDC0"),0),turn:1,notes:"",result:{name:"TURN 1",total:"ROLL INITIATIVE",detail:"Ready for one-click combat."}};
+ return char;
+}
+function persist(){
+ if(!character)return;
+ try{const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");roster[character.id]=character;localStorage.setItem(STORAGE,JSON.stringify(roster));localStorage.setItem(ACTIVE,character.id);$("message").textContent="Card saved in this browser.";fillRoster();}catch(error){$("message").textContent="Storage could not save this card: "+error.message;}
+}
+function fillRoster(){
+ const select=$("roster"),old=select.value;select.replaceChildren(new Option("Saved characters…",""));
+ try{const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");for(const c of Object.values(roster))select.add(new Option(c.name+" · "+c.classes,c.id));}catch(_){}
+ select.value=character?.id||old||"";
+}
+function loadCard(c){character=c;tab="fight";mode="normal";selectedSlot="auto";healTargets=1;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();}
+function show(name,total,detail){character.result={name,total:String(total),detail};persist();renderAll();}
+function useSlot(level){if(!level)return {level:0};let target=selectedSlot==="auto"?Object.keys(character.remaining).map(Number).sort((a,b)=>a-b).find(x=>x>=level&&character.remaining[x]>0):Number(selectedSlot);
+ if(!target||target<level||!character.remaining[target]){show("NO SPELL SLOT","NOT CAST","No available level-"+(target||level)+" spell slot. Choose a slot or take a Long Rest.");return null;}
+ character.remaining[target]--;return {level:target};
+}
+function doAttack(w){
+ const r=d20(),d=w.formula?dice(w.formula):null;
+ show(w.name,"ATTACK "+(r.value+w.bonus)+(d?" · DMG "+d.total:""),r.text+" "+signed(w.bonus)+" = "+(r.value+w.bonus)+". "+(d?d.text+". ":"Damage dice not readable from the PDF. ")+(w.notes?"Other weapon effects (check conditions): "+w.notes:""));
+}
+function doCheck(label,mod){const r=d20();show(label,r.value+mod+" TOTAL",r.text+" "+signed(mod)+" = "+(r.value+mod)+". DM sets the DC.");}
+const KNOWN_2024={
+ "Healing Word":{type:"heal",dice:"2d4",per:2,targets:1},
+ "Cure Wounds":{type:"heal",dice:"2d8",per:2,targets:1},
+ "Mass Healing Word":{type:"heal",dice:"2d4",per:1,targets:6},
+ "Guiding Bolt":{type:"damage",dice:"4d6",per:1},
+ "Produce Flame":{type:"damage",dice:"1d8",per:0,cantrip:true},
+ "Spirit Guardians":{type:"damage",dice:"3d8",per:1},
+ "Toll the Dead":{type:"damage",dice:"1d8",per:0,cantrip:true}
+};
+function cast(sp){
+ if(sp.level>0&&!sp.prepared){show("NOT PREPARED",sp.name,"The exported PDF does not mark this spell as prepared. Review spell preparation to enable it.");return;}
+ // Resolve a slot once, only for a new cast. Unknown effects still expend a slot as directed.
+ const spent=useSlot(sp.level);if(!spent)return;
+ const slot=spent.level,m=character.rules==="2024"?KNOWN_2024[sp.name]:null;
+ let text=sp.name+": "+(sp.notes||sp.range||sp.duration||"Consult the full spell description.")+". ";
+ let total="CAST";
+ if(m){
+   let count=Number(m.dice.match(/^\d+/)[0]);
+   const sides=Number(m.dice.match(/d(\d+)/i)[1]);
+   if(m.cantrip)count=character.level>=17?4:character.level>=11?3:character.level>=5?2:1;
+   else count+=Math.max(0,slot-sp.level)*m.per;
+   const targets=m.targets?Math.min(healTargets,m.targets):1;
+   const result=[];
+   for(let i=0;i<targets;i++){
+     const roll=dice(count+"d"+sides);
+     const life=m.type==="heal"&&character.life?(2+slot):0;
+     const wis=character.ability.WIS?.mod||0;
+     const amount=roll.total+(m.type==="heal"?wis+life:0);
+     result.push(amount);
+     text+="Target "+(i+1)+": "+roll.text+(m.type==="heal"?" + "+wis+" casting + "+life+" Life":"")+" = "+amount+". ";
+   }
+   total=(targets>1?result.reduce((a,b)=>a+b,0)+" HP TOTAL":result[0]+(m.type==="heal"?" HP HEALED":" DAMAGE"));
+   if(m.type==="heal"&&character.life)text+="Disciple of Life applied. Blessed Healer may also restore "+(2+slot)+" HP when healing someone else. ";
+ }else if(sp.level===0){total="CANTRIP";text+="Effect details may require the rulebook. ";}
+ else{text+="Dice/effects could not be safely derived from this PDF; consult the spell text. ";}
+ text+=(sp.level?"Level "+slot+" slot spent; "+character.remaining[slot]+" remain.":"No spell slot used.")+" "+(sp.save||"")+" "+(sp.duration||"");
+ show(sp.name,total,text);
+}
+function feature(f){show(f.name,"FEATURE / RULES",f.text||"Review feature in your source material.");}
+function selectTab(t){tab=t;renderActions();document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));}
+const btn=(parent,title,tag,desc,fn,cls="")=>{const b=document.createElement("button");b.className="action "+cls;const strong=document.createElement("b");strong.textContent=title;const top=document.createElement("span");top.className="tag";top.textContent=tag;const small=document.createElement("small");small.textContent=desc;b.append(top,strong,small);b.addEventListener("click",fn);parent.append(b);};
+function heading(parent,s){const h=document.createElement("h3");h.className="section";h.textContent=s;parent.append(h);}
+function spellBtn(root,sp){
+ const ready=sp.prepared||sp.level===0;
+ const text=sp.level===0?"CANTRIP · AT WILL":ready?"LEVEL "+sp.level+" · READY":"LEVEL "+sp.level+" · NOT PREPARED";
+ btn(root,sp.name,text,(sp.range||sp.time||"")+" · "+(sp.notes||sp.duration||"").slice(0,80),()=>cast(sp),ready?"":"uncertain");
+}
+function renderActions(){
+ if(!character)return;
+ const root=$("actions");root.replaceChildren();
+ if(tab==="fight"){
+   heading(root,"Weapons and attacks");
+   for(const w of character.weapons.filter(x=>x.formula).slice(0,5))btn(root,w.name,"ATTACK "+signed(w.bonus),w.damage||w.notes,()=>doAttack(w),"featured");
+   const cantrips=character.spells.filter(x=>x.level===0&&/Produce Flame|Toll the Dead|Fire Bolt|Eldritch Blast|Sacred Flame|Ray of Frost/i.test(x.name)).slice(0,4);
+   cantrips.forEach(sp=>spellBtn(root,sp));
+   heading(root,"Prepared combat spells · one tap");
+   const targets=character.spells.filter(x=>x.prepared&&x.level>0);
+   targets.slice(0,10).forEach(sp=>spellBtn(root,sp));
+   if(!targets.length)btn(root,"Review spell preparation","SETUP NEEDED","No spells marked prepared in the PDF",()=>$("editBtn").click());
+   heading(root,"Quick checks");
+   for(const k of ["STR","DEX","CON","WIS"])btn(root,k+" SAVE","SAVE "+signed(character.saves[k]),"Roll d20 with current roll mode",()=>doCheck(k+" Save",character.saves[k]));
+ }else if(tab==="spells"){
+   for(const level of [...new Set(character.spells.map(x=>x.level))]){
+     heading(root,level===0?"Cantrips · at will":"Level "+level+" · "+(character.remaining[level]??0)+" slots remaining");
+     for(const sp of character.spells.filter(x=>x.level===level&&sp.prepared))spellBtn(root,sp);
+   }
+   heading(root,"Other listed spells · review preparation");
+   for(const sp of character.spells.filter(x=>!x.prepared))spellBtn(root,sp);
+ }else if(tab==="checks"){
+   heading(root,"Saving throws");
+   ABBR.forEach((k,i)=>btn(root,ABILITIES[i],"SAVE "+signed(character.saves[k]),"d20 "+signed(character.saves[k]),()=>doCheck(ABILITIES[i]+" Save",character.saves[k])));
+   heading(root,"Ability checks");
+   ABBR.forEach((k,i)=>btn(root,ABILITIES[i],"ABILITY "+signed(character.ability[k].mod),"d20 "+signed(character.ability[k].mod),()=>doCheck(ABILITIES[i]+" Check",character.ability[k].mod)));
+   heading(root,"Skill checks");
+   SKILLS.forEach(name=>btn(root,name,"SKILL "+signed(character.skills[name]),"d20 "+signed(character.skills[name]),()=>doCheck(name,character.skills[name])));
+ }else if(tab==="features"){
+   heading(root,"Class features, feats, species traits");
+   character.features.forEach(f=>btn(root,f.name,"RULES / REVIEW",f.text.slice(0,135),()=>feature(f),"uncertain"));
+ }else{
+   heading(root,"All weapon attacks from PDF");
+   character.weapons.forEach(w=>btn(root,w.name,"ATTACK "+signed(w.bonus),w.damage+" "+w.notes,()=>doAttack(w)));
+   heading(root,"Character stats");
+   ABBR.forEach(k=>btn(root,k+" "+character.ability[k].score,"MOD "+signed(character.ability[k].mod),"Use Checks tab to roll",()=>doCheck(k+" Check",character.ability[k].mod)));
+ }
+}
+function renderAll(){
+ if(!character)return;
+ $("who").textContent=character.name;
+ $("identity").textContent=character.classes+" · "+character.species+" · "+character.background+" · "+character.rules+" rules";
+ const stats=$("stats");stats.replaceChildren();for(const [label,n] of [["AC",character.ac],["INIT",signed(character.initiative)],["LEVEL",character.level],["TURN",character.turn],["SPELL ATK",signed(character.spellAttack)],["SPELL DC",character.spellDC],["WEAPONS",character.weapons.length],["PREPARED",character.spells.filter(x=>x.prepared&&x.level>0).length]]){
+  const d=document.createElement("div");d.className="stat";const small=document.createElement("small");small.textContent=label;const strong=document.createElement("b");strong.textContent=n;d.append(small,strong);stats.append(d);
+ }
+ $("hpLabel").textContent=character.hp+" / "+character.hpMax;
+ $("slotsLabel").textContent=Object.keys(character.remaining).sort((a,b)=>a-b).map(k=>"L"+k+" "+character.remaining[k]+"/"+character.slots[k]).join(" · ")||"No spell slots";
+ $("castLevel").replaceChildren(new Option("Auto","auto"),...Object.keys(character.slots).sort((a,b)=>a-b).map(k=>new Option("Level "+k,k)));
+ $("castLevel").value=selectedSlot;
+ $("healTargets").value=String(healTargets);
+ $("modes").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.mode===mode));
+ $("result").replaceChildren();
+ const h=document.createElement("h3"),b=document.createElement("div"),p=document.createElement("p");
+ h.textContent=character.result.name;b.className="big";b.textContent=character.result.total;p.textContent=character.result.detail;$("result").append(h,b,p);
+ $("review").textContent=character.name+": "+character.spells.length+" spells listed ("+character.spells.filter(x=>x.prepared&&x.level>0).length+" prepared), "+character.features.length+" described features. Buttons for unverified effects show the printed notes, without made-up damage.";
+ $("notes").value=character.notes||"";
+ renderActions();
+}
+function reviewSpells(){
+ const parent=$("spellReview");parent.classList.toggle("hidden");if(parent.classList.contains("hidden"))return;
+ parent.replaceChildren();heading(parent,"Mark spells prepared before your session");
+ for(const sp of character.spells.filter(x=>x.level>0)){
+  const label=document.createElement("label");label.style.display="block";label.style.padding="5px";
+  const cb=document.createElement("input");cb.type="checkbox";cb.checked=sp.prepared;cb.addEventListener("change",()=>{sp.prepared=cb.checked;persist();renderAll();});
+  label.append(cb,document.createTextNode(" Level "+sp.level+" · "+sp.name));parent.append(label);
+ }
+}
+async function importPDF(file){
+ if(!file||!(/pdf/i.test(file.type)||/\.pdf$/i.test(file.name))){$("message").textContent="Choose a PDF file.";return;}
+ if(!window.pdfjsLib){$("message").textContent="The PDF reader did not load. Connect to the internet and reload the page.";return;}
+ $("message").textContent="Reading "+file.name+"…";
+ try{
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const task=window.pdfjsLib.getDocument({data:bytes});
+  const pdf=await task.promise, fields=safeFields(await pdf.getFieldObjects());
+  const c=parseCharacter(fields);
+  if(!c.weapons.length&&!c.spells.length)throw Error("The PDF has character stats but no readable weapons or spell records. Check the exported sheet.");
+  loadCard(c);
+  $("message").textContent="Imported "+c.name+" · "+c.weapons.length+" weapons · "+c.spells.length+" spells · "+c.features.length+" features. Review prepared spells.";
+  if(typeof pdf.destroy==="function")await pdf.destroy();
+ }catch(error){console.error("Character import failed",error);$("message").textContent="Import failed: "+error.message;}
+}
+function initialize(){
+ fillRoster();
+ $("importBtn").addEventListener("click",() => importPDF($("pdfFile").files[0]));
+ $("pdfFile").addEventListener("change",()=>{$("message").textContent=$("pdfFile").files[0]?.name||"Select a PDF."});
+ $("loadBtn").addEventListener("click",()=>{try{const id=$("roster").value;const c=JSON.parse(localStorage.getItem(STORAGE)||"{}")[id];if(c)loadCard(c);else $("message").textContent="Choose a saved character first.";}catch(e){$("message").textContent="Saved character could not be loaded."; }});
+ $("initiativeBtn").addEventListener("click",()=>doCheck("INITIATIVE",character.initiative));
+ $("nextBtn").addEventListener("click",()=>{character.turn++;show("TURN "+character.turn,"READY","Actions and reactions available.");});
+ $("fightBtn").addEventListener("click",()=>{character.turn=1;show("TURN 1","ROLL INITIATIVE","New fight. HP and spent slots preserved.");});
+ $("restBtn").addEventListener("click",()=>{character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;show("LONG REST","READY FOR INITIATIVE","HP and spell slots restored. Verify limited-use class abilities separately.");});
+ $("resetBtn").addEventListener("click",()=>{if(!confirm("Reset HP, spell slots and turn to starting values? Notes remain."))return;character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;show("RESET ALL","ROLL INITIATIVE","Character resources restored to imported maximum. Notes preserved.");});
+ document.querySelectorAll("[data-hp]").forEach(b=>b.addEventListener("click",()=>{character.hp=Math.max(0,Math.min(character.hpMax,character.hp+Number(b.dataset.hp)));show("HIT POINTS",character.hp+" / "+character.hpMax,"HP tracker updated.");}));
+ for(const [id,mult] of [["damageBtn",-1],["healBtn",1]])$(id).addEventListener("click",()=>{const n=Number($("hpChange").value);if(!Number.isInteger(n)||n<1)return;character.hp=Math.max(0,Math.min(character.hpMax,character.hp+mult*n));show("HIT POINTS",character.hp+" / "+character.hpMax,(mult<0?"Damage":"Healing")+" "+n+".");});
+ $("modes").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{mode=b.dataset.mode;renderAll();}));
+ $("tabs").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>selectTab(b.dataset.tab)));
+ $("castLevel").addEventListener("change",()=>{selectedSlot=$("castLevel").value;});
+ $("healTargets").addEventListener("change",()=>{healTargets=Number($("healTargets").value);});
+ $("notes").addEventListener("input",()=>{character.notes=$("notes").value;persist();});
+ $("editBtn").addEventListener("click",reviewSpells);
+ $("deleteBtn").addEventListener("click",()=>{if(!confirm("Delete this saved character card and notes?"))return;const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");delete roster[character.id];localStorage.setItem(STORAGE,JSON.stringify(roster));localStorage.removeItem(ACTIVE);character=null;$("play").classList.add("hidden");fillRoster();$("message").textContent="Saved card deleted.";});
+ $("backupBtn").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(character,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=character.name.replace(/[^a-z0-9]+/gi,"-")+".json";link.click();setTimeout(()=>URL.revokeObjectURL(url),500);});
+ try{const last=localStorage.getItem(ACTIVE),r=JSON.parse(localStorage.getItem(STORAGE)||"{}");if(last&&r[last])loadCard(r[last]);}catch(error){console.warn("Saved card not loaded",error);}
+}
+initialize();
+</script></body></html>
