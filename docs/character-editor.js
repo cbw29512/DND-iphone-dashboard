@@ -1,85 +1,90 @@
-/* Controller: creation/import and editing share one normalized character schema. */
+/* Two modes of the SAME #play card. Editing never creates a second card. */
 (function(root){
 "use strict";
-let active=null,creating=false,form=null,saveCallback=null,getCurrent=null;
 const $=id=>document.getElementById(id);
+let active=null,previous=null,creating=false,form=null,saveCard=null,getCurrent=null,showDraft=null,restore=null,showFight=null;
+function message(value){$("cardEditMessage").textContent=value;}
 function open(card,isNew=false){
- active=card;creating=isNew;
- form=CharacterFormFields.build($("editorFields"),card);
- $("editorMessage").textContent=isNew?
-  "Fill out the character, then choose Save & Play.":"Changes take effect only when you save.";
- $("editorMessage").textContent=isNew?"Create your character on the card.":"Edit this card in place; Save & Play returns to the buttons.";
- $("editor").hidden=false;$("play").classList.add("hidden");
+ if(!card)return;
+ previous=getCurrent?.()||null;
+ creating=isNew;active=card;
+ if(isNew)showDraft(card);
+ else showFight();
  $("importPanel").open=false;
- const portrait=$("portraitPreview");
- const photo=CharacterFormModel.safePortrait(card.portrait);
- portrait.src=photo||"";portrait.hidden=!photo;
- $("editPortraitPlaceholder").hidden=!!photo;
- $("portraitUpload").value="";portrait.dataset.ready="";
- $("editor").scrollIntoView({block:"start",behavior:"instant"});
+ $("play").classList.add("editing");
+ form=CharacterFormFields.build(card);
+ $("editCharacterBtn").hidden=true;
+ $("saveCharacterBtn").hidden=false;
+ $("cancelCharacterBtn").hidden=false;
+ $("saveCharacterBottom").hidden=false;
+ message(isNew?"Fill in this character card, then Save & Play.":"Edit these fields right on your character card.");
+ $("portraitUpload").value="";
+ $("portraitImage").dataset.editSrc="";
+ $("play").scrollIntoView({block:"start",behavior:"instant"});
+}
+function close(){
+ $("play").classList.remove("editing");
+ $("saveCharacterBtn").hidden=true;
+ $("cancelCharacterBtn").hidden=true;
+ $("saveCharacterBottom").hidden=true;
+ $("editCharacterBtn").hidden=false;
+ $("portraitImage").dataset.editSrc="";
+ active=null;form=null;creating=false;
 }
 function cancel(){
- $("editor").hidden=true;active=null;form=null;
- if(getCurrent?.()){
-  $("play").classList.remove("hidden");
- }else $("importPanel").open=true;
+ const original=previous;
+ close();
+ restore(original);
+ previous=null;
 }
 function save(){
  if(!active||!form)return;
  try{
   const values=form.collect();
-  values.portrait=$("portraitPreview").dataset.ready||active.portrait||"";
   values.fresh=creating;
+  values.portrait=$("portraitImage").dataset.editSrc||active.portrait||"";
   const updated=CharacterFormModel.apply(active,values);
-  if(updated.weapons.some(w=>w.formula&&!/^\d+d\d+(?:[+-]\d+)?$/i.test(w.formula))){
-   throw Error("Weapon dice must look like 1d8+3.");
+  if(updated.weapons.some(w=>w.formula&&!/^\d+d\d+(?:[+-]\d+)?$/i.test(w.formula)))
+   throw Error("Damage dice should look like 1d8+3.");
+  for(const spell of updated.spells){
+   if(spell.custom?.dice&&!/^([1-9]|[12]\d|30)d(4|6|8|10|12|20)$/i.test(spell.custom.dice))
+    throw Error("Spell dice should look like 8d6.");
   }
-  const previous=active;
-  active=null;form=null;creating=false;
-  $("portraitPreview").dataset.ready="";
-  $("editor").hidden=true;
-  saveCallback(updated,previous);
- }catch(error){
-  console.error("Character form validation failed",error);
-  $("editorMessage").textContent=error.message;
- }
+  close();previous=null;saveCard(updated);
+ }catch(error){message(error.message);}
 }
-function updatePortrait(file){
+function portrait(file){
  if(!file)return;
- if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>7_000_000){
-  $("editorMessage").textContent="Choose a PNG, JPEG, or WebP picture under 7 MB.";return;
+ if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>7000000){
+  message("Choose PNG, JPEG or WebP under 7 MB.");return;
  }
- const img=new Image(),url=URL.createObjectURL(file);
- img.onload=()=>{
+ const photo=new Image(),url=URL.createObjectURL(file);
+ photo.onload=()=>{
   try{
    const canvas=document.createElement("canvas");
-   const factor=Math.min(1,350/img.naturalWidth,420/img.naturalHeight);
-   canvas.width=Math.max(1,Math.round(img.naturalWidth*factor));
-   canvas.height=Math.max(1,Math.round(img.naturalHeight*factor));
-   canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
-   const encoded=canvas.toDataURL("image/jpeg",0.74);
-   if(encoded.length>450000)throw Error("Portrait is too large after resizing.");
-   $("portraitPreview").src=encoded;
-   $("portraitPreview").dataset.ready=encoded;
-   $("portraitPreview").hidden=false;
-   $("editPortraitPlaceholder").hidden=true;
-   $("editorMessage").textContent="Portrait selected. Save & Play to apply it.";
-  }catch(error){
-   console.warn("Could not prepare portrait",error);
-   $("editorMessage").textContent="Unable to process the picture. Try a smaller image.";
-  }finally{URL.revokeObjectURL(url);}
+   const scale=Math.min(1,350/photo.naturalWidth,420/photo.naturalHeight);
+   canvas.width=Math.max(1,Math.round(photo.naturalWidth*scale));
+   canvas.height=Math.max(1,Math.round(photo.naturalHeight*scale));
+   canvas.getContext("2d").drawImage(photo,0,0,canvas.width,canvas.height);
+   const data=canvas.toDataURL("image/jpeg",.74);
+   if(!CharacterFormModel.safePortrait(data))throw Error("The picture could not fit in the saved card.");
+   $("portraitImage").src=data;$("portraitImage").hidden=false;
+   $("portraitInitials").hidden=true;$("portraitImage").dataset.editSrc=data;
+   message("Picture selected. Save & Play to keep it.");
+  }catch(error){message(error.message);}
+  finally{URL.revokeObjectURL(url);}
  };
- img.onerror=()=>{URL.revokeObjectURL(url);$("editorMessage").textContent="Picture could not be read.";};
- img.src=url;
+ photo.onerror=()=>{URL.revokeObjectURL(url);message("Picture could not be read.");};
+ photo.src=url;
 }
-function initialize(onSave,current){
- saveCallback=onSave;getCurrent=current;
+function initialize(onSave,current,displayDraft,restoreCard,renderFight){
+ saveCard=onSave;getCurrent=current;showDraft=displayDraft;restore=restoreCard;showFight=renderFight;
  $("createBtn").addEventListener("click",()=>open(CharacterFormModel.blank(),true));
- $("editCharacterBtn").addEventListener("click",()=>{const current=getCurrent?.();if(current)open(current,false);});
+ $("editCharacterBtn").addEventListener("click",()=>open(getCurrent?.(),false));
  $("saveCharacterBtn").addEventListener("click",save);
  $("saveCharacterBottom").addEventListener("click",save);
  $("cancelCharacterBtn").addEventListener("click",cancel);
- $("portraitUpload").addEventListener("change",e=>updatePortrait(e.target.files?.[0]));
+ $("portraitUpload").addEventListener("change",e=>portrait(e.target.files?.[0]));
 }
 root.CharacterEditor=Object.freeze({initialize,open,cancel});
 })(typeof globalThis!=="undefined"?globalThis:this);
