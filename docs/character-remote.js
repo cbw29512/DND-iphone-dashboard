@@ -13,8 +13,11 @@ let session=null,latestIssued=0,latestSeen=0,lastPayload="",source=null;
 function copySnapshot(){
  if(typeof character==="undefined"||!character)return null;
  const c=character;
+ const result={...(c.result||{name:"READY",total:"ROLL INITIATIVE",detail:""})};
+ // Phone needs compact numbers, not the private detailed dice log.
+ if(result.weapon||result.spell)result.detail="";
  return {name:c.name,classes:c.classes,ac:c.ac,hp:c.hp,hpMax:c.hpMax,turn:c.turn,
-  slots:c.remaining||{},result:c.result||{name:"READY",total:"ROLL INITIATIVE",detail:""},
+  slots:c.remaining||{},result,
   sent:Date.now()};
 }
 function phoneUrl(pair){
@@ -101,20 +104,28 @@ async function startPhone(){
    set("phoneSlots",Object.keys(snap.slots||{}).sort((a,b)=>a-b).map(k=>"L"+k+" "+snap.slots[k]).join(" · "));
    set("phoneTurn","TURN "+snap.turn);
    set("phoneResultTitle",snap.result?.name||"READY");
-   const weapon=snap.result?.weapon,grid=document.getElementById("phoneWeaponStats");
-   const total=document.getElementById("phoneResultTotal");
-   if(grid){grid.replaceChildren();grid.hidden=!weapon;}
-   if(total)total.hidden=!!weapon;
-   if(weapon&&grid){
-    for(const [label,value] of [["Hit",weapon.hit],["Damage",weapon.damage],["Special damage",weapon.special]]){
+   const weapon=snap.result?.weapon,spell=snap.result?.spell;
+   const grid=document.getElementById("phoneWeaponStats"),total=document.getElementById("phoneResultTotal");
+   if(grid){grid.replaceChildren();grid.hidden=!weapon&&!spell;}
+   if(total)total.hidden=Boolean(weapon||spell);
+   const rows=weapon?[["TO HIT",weapon.hit],["DAMAGE",weapon.damage],["SPECIAL",weapon.special]]:
+    spell?[[spell.hit!==null?"TO HIT":spell.save?spell.save+" DC":"EFFECT",
+     spell.hit!==null?spell.hit:spell.save?spell.dc:null],
+     [spell.kind==="heal"?"HEALING":spell.kind==="damage"?"DAMAGE":"EFFECT",spell.value],["SLOT",spell.slotText]]:null;
+   if(rows&&grid){
+    for(const [label,value] of rows){
      const cell=document.createElement("div");cell.className="weapon-roll-stat"+(value===null||value===undefined?" muted":"");
-     const name=document.createElement("small"),amount=document.createElement("strong");
-     name.textContent=label;amount.textContent=value===null||value===undefined?"—":String(value);
-     cell.append(name,amount);grid.append(cell);
+     const title=document.createElement("small"),amount=document.createElement("strong");
+     title.textContent=label;amount.textContent=value===null||value===undefined?"—":String(value);
+     cell.append(title,amount);grid.append(cell);
     }
-    set("phoneResultDetails",(weapon.mode==="adv"?"ADV":weapon.mode==="dis"?"DIS":"NORMAL")+
-      (weapon.critical?" · CRITICAL":"")+
-      (weapon.special!==null&&weapon.special!==undefined?" · SPECIAL INCLUDED":" · NO SPECIAL"));
+    if(weapon){
+     set("phoneResultDetails",(weapon.mode==="adv"?"ADV":weapon.mode==="dis"?"DIS":"NORMAL")+
+      (weapon.critical?" · CRITICAL":"")+(weapon.special!==null?" · SPECIAL INCLUDED":" · NO SPECIAL"));
+    }else{
+     set("phoneResultDetails",(spell.critical?"CRITICAL · ":"")+
+      (spell.half?"SAVE FOR HALF · ":"")+(spell.level===0?"CANTRIP · AT WILL":"LEVEL "+spell.level));
+    }
    }else{
     set("phoneResultTotal",snap.result?.total||"ROLL INITIATIVE");
     set("phoneResultDetails",snap.result?.detail||"");

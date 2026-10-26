@@ -15,6 +15,13 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;touch-action:man
 .tabs{display:flex;gap:5px;overflow-x:auto;padding:2px 0 10px}.tabs button{white-space:nowrap;flex:1 0 auto}.tabs button.active{background:#b18a52;color:#121a23}
 .buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.action{min-height:81px;background:#152c3d;border:1px solid #4c6780;border-radius:11px;text-align:left;padding:10px;display:flex;flex-direction:column;gap:3px;justify-content:start}.action b{font-size:15px;line-height:1.2}.action small{font-size:11px;color:#ccd5df}.action .tag{color:#f3ca81;font-size:10px;font-weight:900;letter-spacing:.07em}.action.uncertain{border-style:dashed}.action.featured{background:#364032;border-color:#a5a171}
 
+.spell-card{grid-column:1/-1;border:1px solid #607688;background:#172e3d;border-radius:12px;padding:12px;display:grid;gap:9px}
+.spell-card.uncertain{border-style:dashed;opacity:.9}.spell-head{display:flex;flex-direction:column;gap:3px}
+.spell-head strong{font-size:17px;color:#f9f1df}.spell-head small{font-size:11px;color:#d1dbe4}
+.spell-upcast{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:11px;font-weight:850;color:#f0cc90}
+.spell-upcast select{min-width:0;max-width:78%;background:#102135;border:1px solid #64839b;border-radius:8px;padding:8px;color:white}
+.spell-rolls{display:flex;gap:7px}.spell-rolls button{flex:1;background:#284158;border:1px solid #6c8298;min-height:46px}
+.spell-rolls button:nth-child(2),.spell-rolls button:only-child{background:#92704a;border-color:#deb784}
 .weapon-card{grid-column:1/-1;border:1px solid #607688;background:#192b3b;border-radius:14px;padding:13px;display:flex;flex-direction:column;gap:9px}
 .weapon-head{display:flex;align-items:center;gap:11px;min-width:0}.weapon-icon{width:46px;height:46px;border:1px solid #927650;border-radius:10px;background:#283649;color:#efd6a5;display:grid;place-items:center;font-size:27px;flex:0 0 auto}.weapon-icon svg{width:38px;height:38px}.weapon-name{font-size:17px;line-height:1.2;margin:0;color:#f9f1df}.weapon-sub{font-size:11px;color:#c1d0dc}
 .weapon-rolls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.weapon-rolls button{min-height:49px;font-size:14px;border-radius:10px;background:#284158;border:1px solid #6c8298}.weapon-rolls button:nth-child(2){background:#92704a;color:#fff9e9;border-color:#deb784;font-weight:950}
@@ -62,7 +69,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <div class="row"><button id="initiativeBtn" class="primary">Roll Initiative</button><button id="nextBtn">Next Turn</button><button id="fightBtn">New Fight</button><button id="shortRestBtn">Short Rest</button><button id="restBtn" class="good">Long Rest</button><button id="resetBtn" class="danger">Reset All</button></div>
 <div id="stats" class="stats"></div>
 <div class="resources"><div class="resource"><label>HIT POINTS</label><strong id="hpLabel">—</strong><div class="row"><button data-hp="-5">−5</button><button data-hp="5">+5</button><input id="hpChange" aria-label="Damage or healing amount" type="number" min="1" value="10"><button id="damageBtn">Damage</button><button id="healBtn">Heal</button></div></div>
-<div class="resource"><label>SPELL SLOTS REMAINING</label><strong id="slotsLabel">—</strong><div class="row"><span class="note">Use level:</span><select id="castLevel" aria-label="Spell slot level"><option value="auto">Auto</option></select></div></div></div>
+<div class="resource"><label>SPELL SLOTS REMAINING</label><strong id="slotsLabel">—</strong><div class="row"><span class="note">Select Upcast level on each spell card. Base level is used by default.</span></div></div></div>
 <div id="turnTrack" class="row action-economy" aria-label="Turn action economy"><span id="actionUsed" class="turnchip">ACTION READY</span><span id="bonusUsed" class="turnchip">BONUS READY</span><button id="reactionBtn" type="button">REACTION READY</button><span id="slotUsed" class="turnchip">SLOTTED SPELL READY</span></div>
 <div class="inset" style="margin-top:9px"><div class="row"><label>Other d20 rolls:</label><div class="counter" id="modes"><button data-mode="normal" class="active">Normal</button><button data-mode="adv">ADV</button><button data-mode="dis">DIS</button></div><label>Heal targets:</label><select id="healTargets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><label for="healWho">Include self:</label><select id="healWho"><option value="others">Allies only</option><option value="self">Donovan / Self first</option></select><label for="wounded">Target wounded:</label><input id="wounded" type="checkbox" aria-label="Target is wounded for Toll the Dead"></div></div>
 </section>
@@ -87,6 +94,8 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
   <div class="phone-sheet"><div class="phone-top"><span id="phoneTurn">TURN 1</span><span id="phoneSignal">CONNECTING</span></div><h1 id="phoneName">ONE-CLICK CHARACTER</h1><p id="phoneClass">Scan the QR on the laptop to connect.</p><div class="phone-vitals"><b id="phoneHP">HP —</b><b id="phoneSlots">SLOTS —</b></div><div class="phone-result"><h2 id="phoneResultTitle">READY FOR INITIATIVE</h2><div id="phoneResultTotal">ROLL INITIATIVE</div><div id="phoneWeaponStats" class="weapon-roll-summary" hidden></div><p id="phoneResultDetails">The laptop controls the character. Results appear here.</p></div><p class="phone-note">READ-ONLY DISPLAY · ROLLS COME FROM LAPTOP</p></div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="character-spell-logic.js?v=level-cards-20261026"></script>
+<script src="character-spell-runtime.js?v=level-cards-20261026"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -94,7 +103,7 @@ const STORAGE="oneclick_cards_v1",ACTIVE="oneclick_active_v1";
 const ABILITIES=["Strength","Dexterity","Constitution","Intelligence","Wisdom","Charisma"];
 const ABBR=["STR","DEX","CON","INT","WIS","CHA"];
 const SKILLS=["Acrobatics","Animal Handling","Arcana","Athletics","Deception","History","Insight","Intimidation","Investigation","Medicine","Nature","Perception","Performance","Persuasion","Religion","Sleight of Hand","Stealth","Survival"];
-let character=null,tab="fight",mode="normal",selectedSlot="auto",healTargets=1,healWho="others",targetWounded=false,targetFiend=false;
+let character=null,tab="fight",mode="normal",healTargets=1,healWho="others",targetWounded=false,targetFiend=false;
 const toNum=(value,otherwise=0)=>{const match=String(value??"").match(/[+-]?\d+/);return match?Number(match[0]):otherwise;};
 const signed=n=>(n>=0?"+":"")+n;
 const die=faces=>Math.floor(Math.random()*faces)+1;
@@ -176,11 +185,18 @@ function fillRoster(){
  try{const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");for(const c of Object.values(roster))select.add(new Option(c.name+" · "+c.classes,c.id));}catch(_){}
  select.value=character?.id||old||"";
 }
-function loadCard(c){character=c;c.log=Array.isArray(c.log)?c.log:[];tab="fight";mode="normal";selectedSlot="auto";healTargets=1;healWho="others";targetWounded=false;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();setupCustomActions();}
+function loadCard(c){character=c;c.log=Array.isArray(c.log)?c.log:[];tab="fight";mode="normal";c.castChoices=c.castChoices||{};healTargets=1;healWho="others";targetWounded=false;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();setupCustomActions();}
 function show(name,total,detail,extra={}){character.result={name,total:String(total),detail,...extra};character.log=Array.isArray(character.log)?character.log:[];character.log.unshift({...character.result,at:new Date().toLocaleTimeString()});character.log=character.log.slice(0,50);persist();renderAll();}
-function useSlot(level){if(!level)return {level:0};let target=selectedSlot==="auto"?Object.keys(character.remaining).map(Number).sort((a,b)=>a-b).find(x=>x>=level&&character.remaining[x]>0):Number(selectedSlot);
- if(!target||target<level||!character.remaining[target]){show("NO SPELL SLOT","NOT CAST","No available level-"+(target||level)+" spell slot. Choose a slot or take a Long Rest.");return null;}
- character.remaining[target]--;return {level:target};
+function useSlot(level,selected=level){
+ if(!level)return {level:0};
+ const slot=Number(selected);
+ // A level-1 spell spends L1 unless the spell's upcast selector says otherwise.
+ if(!Number.isInteger(slot)||slot<level||!character.slots[slot]||!character.remaining[slot]){
+  show("NO SPELL SLOT","NOT CAST","No level-"+slot+" spell slot remains. Choose an Upcast level or rest.");
+  return null;
+ }
+ character.remaining[slot]--;
+ return {level:slot};
 }
 function doAttack(w,chosenMode="normal"){
  character.actionUsed=true;
@@ -212,69 +228,7 @@ function doCheck(label,mod,forcedAdv=false){
  const r=d20();mode=previous;
  show(label,r.value+mod+" TOTAL",r.text+" "+signed(mod)+" = "+(r.value+mod)+". DM sets the DC."+(forcedAdv?" Equipment grants advantage on this check.":""));
 }
-const KNOWN_2024={
- "Healing Word":{type:"heal",dice:"2d4",per:2,targets:1},
- "Cure Wounds":{type:"heal",dice:"2d8",per:2,targets:1},
- "Mass Healing Word":{type:"heal",dice:"2d4",per:1,targets:6},
- "Guiding Bolt":{type:"damage",dice:"4d6",per:1,attack:true},
- "Produce Flame":{type:"damage",dice:"1d8",per:0,cantrip:true,attack:true},
- "Spirit Guardians":{type:"damage",dice:"3d8",per:1},
- "Toll the Dead":{type:"damage",dice:"1d8",per:0,cantrip:true}
-};
-function cast(sp){
- if(sp.level>0&&!sp.prepared){show("NOT PREPARED",sp.name,"The exported PDF does not mark this spell as prepared. Review spell preparation to enable it.");return;}
- // Ongoing Spirit Guardians damage is a repeat effect, not a new spell slot.
- const ongoing=sp.name==="Spirit Guardians"&&character.concentration===sp.name;
- const free=!ongoing&&sp.freeCastRemaining>0;
- const spent=ongoing?{level:character.concentrationSlot||sp.level}:free?{level:sp.level,free:true}:useSlot(sp.level);
- if(!spent)return;
- if(free)sp.freeCastRemaining--;
- if(!ongoing){
-  if(/(?:^|\W)(?:1BA|Bonus Action)(?:\W|$)/i.test(sp.time||""))character.bonusUsed=true;
-  else if(/(?:^|\W)(?:1R|Reaction)(?:\W|$)/i.test(sp.time||""))character.reactionUsed=true;
-  else character.actionUsed=true;
-  if(sp.level>0&&!spent.free)character.slotUsed=true;
- }
- const slot=spent.level,m=sp.custom||(character.rules==="2024"?KNOWN_2024[sp.name]:null);
- let text=sp.name+": "+(sp.notes||sp.range||sp.duration||"Consult the full spell description.")+". ";
- let total="CAST";
- if(m){
-   let count=Number(m.dice.match(/^\d+/)[0]);
-   const sides=sp.name==="Toll the Dead"&&targetWounded?12:Number(m.dice.match(/d(\d+)/i)[1]);
-   if(m.cantrip)count=character.level>=17?4:character.level>=11?3:character.level>=5?2:1;
-   if(sp.name==="Toll the Dead") { /* Base die becomes d12 for a wounded target. */ }
-   else count+=Math.max(0,slot-sp.level)*m.per;
-   const attack=m.attack?d20():null;
-   if(attack?.value===20)count*=2; // Critical spell attack: double damage dice.
-   const targets=m.targets?Math.min(healTargets,m.targets):1;
-   const result=[];
-   for(let i=0;i<targets;i++){
-     const roll=dice(count+"d"+sides);
-     const life=m.type==="heal"&&character.life&&!spent.free?(2+slot):0;
-     const wis=m.type==="heal"&&(!sp.custom||m.addAbility)?(character.ability.WIS?.mod||0):0;
-     const amount=roll.total+(m.type==="heal"?wis+life:0);
-     result.push(amount);
-     text+="Target "+(i+1)+": "+roll.text+(m.type==="heal"?" + "+wis+" casting + "+life+" Life = "+amount:"")+". ";
-   }
-   total=(targets>1?result.reduce((a,b)=>a+b,0)+" HP TOTAL":result[0]+(m.type==="heal"?" HP HEALED":" DAMAGE"));
-   if(attack){
-    total="ATK "+(attack.value+character.spellAttack)+" · "+total;
-    text="Spell attack: "+attack.text+" "+signed(character.spellAttack)+" = "+(attack.value+character.spellAttack)+". "+text;
-   }
-   if(m.type==="heal"){
-     const self=healWho==="self",allies=targets-(self?1:0);
-     const restoredSelf=self?result[0]:0,blessed=character.blessedHealer&&allies>0&&!spent.free?(2+slot):0;
-     if(self||blessed){character.hp=Math.min(character.hpMax,character.hp+restoredSelf+blessed);text+="Self HP is now "+character.hp+"/"+character.hpMax+". ";}
-     if(character.life&&!spent.free)text+="Disciple of Life applied. ";
-     if(blessed)text+="Blessed Healer +"+blessed+" self HP from healing another creature. ";
-     if(self)text+="Target 1 was self. ";
-   }
- }else if(sp.level===0){total="CANTRIP";text+="Effect details may require the rulebook. ";}
- else{text+="Dice/effects could not be safely derived from this PDF; consult the spell text. ";}
- if((sp.name==="Spirit Guardians"||/Concentration/i.test(sp.duration||""))&&!ongoing){character.concentration=sp.name;character.concentrationSlot=slot;}
- text+=(sp.level?(ongoing?"Concentration ongoing; no extra slot spent. ":spent.free?"FREE FEAT CAST used · "+sp.freeCastRemaining+" remain until Long Rest. ":"Level "+slot+" slot spent; "+character.remaining[slot]+" remain. "):"No spell slot used. ")+(sp.save||"")+" "+(sp.duration||"");
- show(sp.name,total,text);
-}
+function cast(sp,attackMode="normal"){return CharacterSpellRuntime.cast(sp,attackMode);}
 function feature(f){
  if(f.usesMax){
    if(f.remainingUses<=0){show(f.name,"NO USES LEFT","This ability has no uses remaining until its listed rest. No charge spent.");return;}
@@ -350,34 +304,85 @@ function weaponCard(parent,w){
 }
 
 function spellBtn(root,sp){
- const ready=sp.prepared||sp.level===0;
- const mechanic=sp.custom||(character.rules==="2024"?KNOWN_2024[sp.name]:null);
- const targetNote=mechanic?.type==="heal"?(mechanic.targets>1?"HEALS UP TO "+mechanic.targets:"HEALS 1"):mechanic?.targets>1?"TARGETS "+mechanic.targets:"";
- const text=sp.freeCastRemaining>0?"FREE FEAT CAST AVAILABLE":sp.custom?"CUSTOM "+(sp.custom.type||"ROLL").toUpperCase()+" · LEVEL "+sp.level:sp.level===0?"CANTRIP · AT WILL":ready?"LEVEL "+sp.level+" · READY":"LEVEL "+sp.level+" · NOT PREPARED";
- btn(root,sp.name,text,(targetNote?targetNote+" · ":"")+(sp.custom?("Configured "+sp.custom.dice+" · "+sp.custom.targets+" target(s)"):((sp.range||sp.time||"")+" · "+(sp.notes||sp.duration||"").slice(0,80))),()=>cast(sp),!ready?"uncertain":sp.custom?"featured":"");
+ const rule=CharacterSpellLogic.profile(sp,character.rules);
+ const save=CharacterSpellLogic.saveAbility(sp,rule);
+ const attack=CharacterSpellLogic.needsAttack(sp,rule);
+ const card=document.createElement("article");
+ card.className="spell-card"+(!sp.prepared&&sp.level>0?" uncertain":"");
+ const head=document.createElement("div");head.className="spell-head";
+ const name=document.createElement("strong");name.textContent=sp.name;
+ const desc=document.createElement("small");
+ desc.textContent=sp.level===0?"CANTRIP · AT WILL":
+  (!sp.prepared?"NOT PREPARED · ":"")+
+  (attack?"SPELL ATTACK "+signed(Number(character.spellAttack)||0):
+   save?save+" SAVE · DC "+character.spellDC:rule?.type==="heal"?"HEALING":"SPELL EFFECT");
+ head.append(name,desc);card.append(head);
+ if(sp.level>0){
+  const line=document.createElement("label");line.className="spell-upcast";
+  const title=document.createElement("span");title.textContent="UPCAST";
+  const select=document.createElement("select");select.setAttribute("aria-label","Upcast "+sp.name);
+  const levels=CharacterSpellLogic.slotOptions(character,sp);
+  for(const level of levels){
+   const option=document.createElement("option");option.value=String(level);
+   option.textContent="Level "+level+(level===sp.level?" (base)":" (upcast)")+
+    " · "+(character.remaining[level]||0)+" left";
+   select.append(option);
+  }
+  if(levels.length){
+   const key=sp.name+"|"+sp.level;
+   const stored=Number(character.castChoices?.[key]??sp.level);
+   select.value=String(levels.includes(stored)?stored:levels[0]);
+   select.addEventListener("change",()=>{
+    character.castChoices=character.castChoices||{};
+    character.castChoices[key]=Number(select.value);
+    persist();
+   });
+  }else{
+   select.add(new Option("No available slot level","0"));select.disabled=true;
+  }
+  line.append(title,select);card.append(line);
+ }
+ const rolls=document.createElement("div");rolls.className="spell-rolls";
+ for(const [chosen,label] of (attack?[["adv","ADV"],["normal","CAST"],["dis","DIS"]]:[["normal","CAST SPELL"]])){
+  const button=document.createElement("button");button.type="button";button.textContent=label;
+  button.setAttribute("aria-label",sp.name+" · "+(chosen==="adv"?"advantage":chosen==="dis"?"disadvantage":"cast"));
+  button.addEventListener("click",()=>cast(sp,chosen));rolls.append(button);
+ }
+ card.append(rolls);root.append(card);
+}
+function orderedSpells(spells){
+ return [...spells].sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
+}
+function groupedSpells(root,spells){
+ let previous=-1;
+ for(const sp of orderedSpells(spells)){
+  if(previous!==sp.level){
+   previous=sp.level;
+   heading(root,"LEVEL "+previous+" SPELLS · "+(character.remaining[previous]??0)+" SLOTS LEFT");
+  }
+  spellBtn(root,sp);
+ }
 }
 function renderActions(){
  if(!character)return;
  const root=$("actions");root.replaceChildren();
  if(tab==="fight"){
-   heading(root,"Weapons and attacks");
-   for(const w of character.weapons.slice(0,8))weaponCard(root,w);
-   const cantrips=character.spells.filter(x=>x.level===0&&/Produce Flame|Toll the Dead|Fire Bolt|Eldritch Blast|Sacred Flame|Ray of Frost/i.test(x.name)).slice(0,4);
-   cantrips.forEach(sp=>spellBtn(root,sp));
-   heading(root,"Prepared combat spells · one tap");
-   const targets=character.spells.filter(x=>x.prepared&&x.level>0);
-   targets.slice(0,10).forEach(sp=>spellBtn(root,sp));
-   if(!targets.length)btn(root,"Review spell preparation","SETUP NEEDED","No spells marked prepared in the PDF",()=>$("editBtn").click());
-   heading(root,"Quick checks");
-   for(const k of ["STR","DEX","CON","WIS"])btn(root,k+" SAVE","SAVE "+signed(character.saves[k]),"Roll d20 with current roll mode",()=>doCheck(k+" Save",character.saves[k]));
- }else if(tab==="spells"){
-   for(const level of [...new Set(character.spells.map(x=>x.level))]){
-     heading(root,level===0?"Cantrips · at will":"Level "+level+" · "+(character.remaining[level]??0)+" slots remaining");
-     for(const sp of character.spells.filter(x=>x.level===level&&sp.prepared))spellBtn(root,sp);
-   }
-   heading(root,"Other listed spells · review preparation");
-   for(const sp of character.spells.filter(x=>!x.prepared))spellBtn(root,sp);
- }else if(tab==="checks"){
+    heading(root,"WEAPONS & CANTRIPS · AT WILL");
+    for(const weapon of character.weapons)weaponCard(root,weapon);
+    for(const sp of orderedSpells(character.spells.filter(x=>x.level===0)))spellBtn(root,sp);
+    groupedSpells(root,character.spells.filter(x=>x.level>0&&x.prepared));
+    heading(root,"Quick checks");
+    for(const stat of ["STR","DEX","CON","WIS"])
+     btn(root,stat+" SAVE","SAVE "+signed(character.saves[stat]),
+      "Roll d20 with current roll mode",()=>doCheck(stat+" Save",character.saves[stat]));
+  }else if(tab==="spells"){
+    const cantrips=character.spells.filter(x=>x.level===0);
+    if(cantrips.length){
+     heading(root,"CANTRIPS · UNLIMITED");
+     for(const sp of orderedSpells(cantrips))spellBtn(root,sp);
+    }
+    groupedSpells(root,character.spells.filter(x=>x.level>0));
+  }else if(tab==="checks"){
    heading(root,"Saving throws");
    ABBR.forEach((k,i)=>btn(root,ABILITIES[i],"SAVE "+signed(character.saves[k]),"d20 "+signed(character.saves[k]),()=>doCheck(ABILITIES[i]+" Save",character.saves[k])));
    heading(root,"Ability checks");
@@ -388,8 +393,9 @@ function renderActions(){
    heading(root,"Class features, feats, species traits");
    character.features.forEach(f=>btn(root,f.name,f.usesMax?"USES "+f.remainingUses+"/"+f.usesMax:"RULES / REVIEW",f.text.slice(0,135),()=>feature(f),f.usesMax?"featured":"uncertain"));
  }else{
-   heading(root,"All weapon attacks from PDF");
+   heading(root,"Weapons & cantrips · at will");
    character.weapons.forEach(w=>weaponCard(root,w));
+   for(const sp of orderedSpells(character.spells.filter(x=>x.level===0)))spellBtn(root,sp);
    heading(root,"Equipment");
    for(const item of character.equipment||[])btn(root,item,"INVENTORY","Imported item; consult item text for special rules.",()=>show("EQUIPMENT",item,"Inventory item from D&D Beyond PDF."));
    heading(root,"Character stats");
@@ -409,8 +415,6 @@ function renderAll(){
  }
  const react=$("reactionBtn");react.textContent="REACTION "+(character.reactionUsed?"USED":"READY");react.classList.toggle("used",!!character.reactionUsed);
  $("slotsLabel").textContent=Object.keys(character.remaining).sort((a,b)=>a-b).map(k=>"L"+k+" "+character.remaining[k]+"/"+character.slots[k]).join(" · ")||"No spell slots";
- $("castLevel").replaceChildren(new Option("Auto","auto"),...Object.keys(character.slots).sort((a,b)=>a-b).map(k=>new Option("Level "+k,k)));
- $("castLevel").value=selectedSlot;
  $("healTargets").value=String(healTargets);
  $("healWho").value=healWho;
  $("wounded").checked=targetWounded;
@@ -421,7 +425,7 @@ function renderAll(){
  const h=document.createElement("h3");h.textContent=result.name||"READY";$("result").append(h);
  if(result.weapon){
   const w=result.weapon,grid=document.createElement("div");grid.className="weapon-roll-summary";
-  for(const [label,value] of [["Hit",w.hit],["Damage",w.damage],["Special damage",w.special]]){
+  for(const [label,value] of [["TO HIT",w.hit],["DAMAGE",w.damage],["SPECIAL",w.special]]){
    const cell=document.createElement("div");cell.className="weapon-roll-stat"+(value===null||value===undefined?" muted":"");
    const name=document.createElement("small"),number=document.createElement("strong");
    name.textContent=label;number.textContent=value===null||value===undefined?"—":String(value);
@@ -430,6 +434,20 @@ function renderAll(){
   const status=document.createElement("p");status.className="result-status";
   status.textContent=(w.mode==="adv"?"ADV":w.mode==="dis"?"DIS":"NORMAL")+(w.critical?" · CRITICAL HIT":"")+
    (w.special!==null&&w.special!==undefined?" · SPECIAL INCLUDED":" · NO SPECIAL");
+  $("result").append(grid,status);
+ }else if(result.spell){
+  const sp=result.spell,grid=document.createElement("div");grid.className="weapon-roll-summary";
+  const firstLabel=sp.hit!==null?"TO HIT":sp.save?sp.save+" DC":"EFFECT";
+  const firstValue=sp.hit!==null?sp.hit:sp.save?sp.dc:null;
+  for(const [label,value] of [[firstLabel,firstValue],[sp.kind==="heal"?"HEALING":sp.kind==="damage"?"DAMAGE":"EFFECT",sp.value],["SLOT",sp.slotText]]){
+   const cell=document.createElement("div");cell.className="weapon-roll-stat"+(value===null||value===undefined?" muted":"");
+   const labelEl=document.createElement("small"),number=document.createElement("strong");
+   labelEl.textContent=label;number.textContent=value===null||value===undefined?"—":String(value);
+   cell.append(labelEl,number);grid.append(cell);
+  }
+  const status=document.createElement("p");status.className="result-status";
+  status.textContent=(sp.critical?"CRITICAL · ":"")+(sp.half?"SAVE FOR HALF · ":"")+
+   (sp.level===0?"CANTRIP · AT WILL":"LEVEL "+sp.level);
   $("result").append(grid,status);
  }else{
   const b=document.createElement("div");b.className="compact-total";b.textContent=result.total||"ROLL INITIATIVE";$("result").append(b);
@@ -451,7 +469,7 @@ function renderLog(){
   const li=document.createElement("li"),title=document.createElement("strong"),meta=document.createElement("span"),body=document.createElement("p");
   title.textContent=item.name||"Roll";meta.textContent=item.at||"";
   const w=item.weapon;
-  const line=w?("Hit "+w.hit+" · Damage "+(w.damage??"—")+" · Special "+(w.special??"—")+(w.critical?" · CRITICAL":"")):(item.total||"");
+  const sp=item.spell;const line=w?("To hit "+w.hit+" · Damage "+(w.damage??"—")+" · Special "+(w.special??"—")+(w.critical?" · CRITICAL":"")):sp?((sp.hit!==null?"To hit "+sp.hit:sp.save?sp.save+" DC "+sp.dc:"Spell effect")+" · "+sp.kind+" "+(sp.value??"—")+" · "+sp.slotText):(item.total||"");
   body.textContent=line+(item.detail?"\n"+item.detail:"");
   li.append(title,meta,body);list.append(li);
  }
@@ -466,7 +484,7 @@ function setupCustomActions(){
  choose.onchange=()=>{
   const sp=character.spells[Number(choose.value)];
   if(!sp){status.textContent="Choose a spell first.";return;}
-  const c=sp.custom||KNOWN_2024[sp.name]||{};
+  const c=CharacterSpellLogic.profile(sp,character.rules)||{};
   $("customKind").value=c.type==="heal"?"heal":"damage";
   $("customDice").value=c.dice||"";
   $("customScale").value=Number(c.per)||0;
@@ -593,7 +611,6 @@ function initialize(){
  for(const [id,mult] of [["damageBtn",-1],["healBtn",1]])$(id).addEventListener("click",()=>{const n=Number($("hpChange").value);if(!Number.isInteger(n)||n<1)return;character.hp=Math.max(0,Math.min(character.hpMax,character.hp+mult*n));show("HIT POINTS",character.hp+" / "+character.hpMax,(mult<0?"Damage":"Healing")+" "+n+".");});
  $("modes").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{mode=b.dataset.mode;renderAll();}));
  $("tabs").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>selectTab(b.dataset.tab)));
- $("castLevel").addEventListener("change",()=>{selectedSlot=$("castLevel").value;});
  $("healTargets").addEventListener("change",()=>{healTargets=Number($("healTargets").value);});
  $("healWho").addEventListener("change",()=>{healWho=$("healWho").value;});
  $("wounded").addEventListener("change",()=>{targetWounded=$("wounded").checked;});
