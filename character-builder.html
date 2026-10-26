@@ -48,7 +48,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <div id="stats" class="stats"></div>
 <div class="resources"><div class="resource"><label>HIT POINTS</label><strong id="hpLabel">—</strong><div class="row"><button data-hp="-5">−5</button><button data-hp="5">+5</button><input id="hpChange" aria-label="Damage or healing amount" type="number" min="1" value="10"><button id="damageBtn">Damage</button><button id="healBtn">Heal</button></div></div>
 <div class="resource"><label>SPELL SLOTS REMAINING</label><strong id="slotsLabel">—</strong><div class="row"><span class="note">Use level:</span><select id="castLevel" aria-label="Spell slot level"><option value="auto">Auto</option></select></div></div></div>
-<div class="inset" style="margin-top:9px"><div class="row"><label>Roll type:</label><div class="counter" id="modes"><button data-mode="normal" class="active">Normal</button><button data-mode="adv">ADV</button><button data-mode="dis">DIS</button></div><label>Heal targets:</label><select id="healTargets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><label for="healWho">Include self:</label><select id="healWho"><option value="others">Allies only</option><option value="self">Donovan / Self first</option></select><label for="wounded">Target wounded:</label><input id="wounded" type="checkbox" aria-label="Target is wounded for Toll the Dead"></div></div>
+<div class="inset" style="margin-top:9px"><div class="row"><label>Roll type:</label><div class="counter" id="modes"><button data-mode="normal" class="active">Normal</button><button data-mode="adv">ADV</button><button data-mode="dis">DIS</button></div><label>Heal targets:</label><select id="healTargets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><label for="healWho">Include self:</label><select id="healWho"><option value="others">Allies only</option><option value="self">Donovan / Self first</option></select><label for="wounded">Target wounded:</label><input id="wounded" type="checkbox" aria-label="Target is wounded for Toll the Dead"><label for="fiend">Fiend or Undead:</label><input id="fiend" type="checkbox" aria-label="Target is Fiend or Undead for Mace of Disruption"></div></div>
 </section>
 <section class="panel"><div class="tabs" id="tabs"><button data-tab="fight" class="active">Fight</button><button data-tab="spells">Spells</button><button data-tab="checks">Saves &amp; Skills</button><button data-tab="features">Features</button><button data-tab="sheet">Sheet</button></div><div id="actions" class="buttons"></div></section>
 </div>
@@ -77,7 +77,7 @@ const STORAGE="oneclick_cards_v1",ACTIVE="oneclick_active_v1";
 const ABILITIES=["Strength","Dexterity","Constitution","Intelligence","Wisdom","Charisma"];
 const ABBR=["STR","DEX","CON","INT","WIS","CHA"];
 const SKILLS=["Acrobatics","Animal Handling","Arcana","Athletics","Deception","History","Insight","Intimidation","Investigation","Medicine","Nature","Perception","Performance","Persuasion","Religion","Sleight of Hand","Stealth","Survival"];
-let character=null,tab="fight",mode="normal",selectedSlot="auto",healTargets=1,healWho="others",targetWounded=false;
+let character=null,tab="fight",mode="normal",selectedSlot="auto",healTargets=1,healWho="others",targetWounded=false,targetFiend=false;
 const toNum=(value,otherwise=0)=>{const match=String(value??"").match(/[+-]?\d+/);return match?Number(match[0]):otherwise;};
 const signed=n=>(n>=0?"+":"")+n;
 const die=faces=>Math.floor(Math.random()*faces)+1;
@@ -165,8 +165,20 @@ function useSlot(level){if(!level)return {level:0};let target=selectedSlot==="au
  character.remaining[target]--;return {level:target};
 }
 function doAttack(w){
- const r=d20(),d=w.formula?dice(w.formula):null;
- show(w.name,"ATTACK "+(r.value+w.bonus)+(d?" · DMG "+d.total:""),r.text+" "+signed(w.bonus)+" = "+(r.value+w.bonus)+". "+(d?d.text+". ":"Damage dice not readable from the PDF. ")+(w.notes?"Other weapon effects (check conditions): "+w.notes:""));
+ const r=d20(),crit=r.value===20;
+ const base=w.formula?.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+ const formula=base&&crit?Number(base[1])*2+"d"+base[2]+(base[3]||""):w.formula;
+ const d=formula?dice(formula):null;
+ const fixed=!d&&/^\d+\s/.test(w.damage||"")?toNum(w.damage):null;
+ const special=/Mace of Disruption/i.test(w.name)&&targetFiend;
+ const radiant=special?dice(crit?"4d6":"2d6"):null;
+ const damage=(d?.total??fixed??null),sum=damage===null?null:damage+(radiant?.total||0);
+ const note=special?"Fiend/Undead: "+radiant.text+" extra Radiant. If target has 25 HP or fewer after damage, WIS DC 15 or destroyed; save succeeds: Frightened until end of your next turn. ":
+   /Mace of Disruption/i.test(w.name)?"Check Fiend or Undead when applicable for +2d6 Radiant. ":"";
+ show(w.name,(crit?"CRITICAL · ":"")+"ATTACK "+(r.value+w.bonus)+(sum!==null?" · DMG "+sum:""),
+   r.text+" "+signed(w.bonus)+" = "+(r.value+w.bonus)+". "+
+   (d?d.text+". ":fixed!==null?"Fixed damage "+fixed+". ":"Damage dice not readable from the PDF. ")+
+   (crit?"Critical: attack damage dice doubled. ":"")+note+(w.notes?"Weapon notes: "+w.notes:""));
 }
 function doCheck(label,mod,forcedAdv=false){
  const previous=mode;
@@ -178,8 +190,8 @@ const KNOWN_2024={
  "Healing Word":{type:"heal",dice:"2d4",per:2,targets:1},
  "Cure Wounds":{type:"heal",dice:"2d8",per:2,targets:1},
  "Mass Healing Word":{type:"heal",dice:"2d4",per:1,targets:6},
- "Guiding Bolt":{type:"damage",dice:"4d6",per:1},
- "Produce Flame":{type:"damage",dice:"1d8",per:0,cantrip:true},
+ "Guiding Bolt":{type:"damage",dice:"4d6",per:1,attack:true},
+ "Produce Flame":{type:"damage",dice:"1d8",per:0,cantrip:true,attack:true},
  "Spirit Guardians":{type:"damage",dice:"3d8",per:1},
  "Toll the Dead":{type:"damage",dice:"1d8",per:0,cantrip:true}
 };
@@ -200,6 +212,8 @@ function cast(sp){
    if(m.cantrip)count=character.level>=17?4:character.level>=11?3:character.level>=5?2:1;
    if(sp.name==="Toll the Dead") { /* Base die becomes d12 for a wounded target. */ }
    else count+=Math.max(0,slot-sp.level)*m.per;
+   const attack=m.attack?d20():null;
+   if(attack?.value===20)count*=2; // Critical spell attack: double damage dice.
    const targets=m.targets?Math.min(healTargets,m.targets):1;
    const result=[];
    for(let i=0;i<targets;i++){
@@ -211,6 +225,10 @@ function cast(sp){
      text+="Target "+(i+1)+": "+roll.text+(m.type==="heal"?" + "+wis+" casting + "+life+" Life":"")+" = "+amount+". ";
    }
    total=(targets>1?result.reduce((a,b)=>a+b,0)+" HP TOTAL":result[0]+(m.type==="heal"?" HP HEALED":" DAMAGE"));
+   if(attack){
+    total="ATK "+(attack.value+character.spellAttack)+" · "+total;
+    text="Spell attack: "+attack.text+" "+signed(character.spellAttack)+" = "+(attack.value+character.spellAttack)+". "+text;
+   }
    if(m.type==="heal"){
      const self=healWho==="self",allies=targets-(self?1:0);
      const restoredSelf=self?result[0]:0,blessed=character.blessedHealer&&allies>0&&!spent.free?(2+slot):0;
@@ -296,6 +314,7 @@ function renderAll(){
  $("healTargets").value=String(healTargets);
  $("healWho").value=healWho;
  $("wounded").checked=targetWounded;
+ $("fiend").checked=targetFiend;
  $("modes").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.mode===mode));
  $("result").replaceChildren();
  const h=document.createElement("h3"),b=document.createElement("div"),p=document.createElement("p");
@@ -380,6 +399,7 @@ function initialize(){
  $("healTargets").addEventListener("change",()=>{healTargets=Number($("healTargets").value);});
  $("healWho").addEventListener("change",()=>{healWho=$("healWho").value;});
  $("wounded").addEventListener("change",()=>{targetWounded=$("wounded").checked;});
+ $("fiend").addEventListener("change",()=>{targetFiend=$("fiend").checked;});
  $("notes").addEventListener("input",()=>{character.notes=$("notes").value;persist();});
  $("editBtn").addEventListener("click",reviewSpells);
  $("customSave").addEventListener("click",saveCustomAction);
