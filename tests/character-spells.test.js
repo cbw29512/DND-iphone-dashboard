@@ -22,7 +22,7 @@ try{
  const inline=html.match(/<script>\s*([\s\S]*?)<\/script>/);
  assert.ok(inline,"Main browser script exists");
  new vm.Script(inline[1],{filename:"character-builder.inline.js"});
- assert.match(html,/WEAPONS & CANTRIPS/);
+ assert.match(html,/ATTACKS & AT-WILL CANTRIPS/);
  assert.match(html,/groupedSpells\(root,character\.spells\.filter\(x=>x\.level>0/);
  assert.match(html,/Upcast /);
  assert.match(html,/result\.spell/);
