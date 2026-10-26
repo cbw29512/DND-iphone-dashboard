@@ -20,3 +20,4 @@ jobs:
           for script in web/*.js; do node --check "$script"; done
       - run: node tests/character-spells.test.js
       - run: node tests/character-compact.test.js
+      - run: node tests/character-form.test.js
