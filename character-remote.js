@@ -24,6 +24,7 @@ function phoneUrl(pair){
  const u=new URL(location.href);
  u.search="";
  u.searchParams.set("view","phone");
+ u.searchParams.set("v","spells-20261026");
  u.searchParams.set("room",pair.room);
  u.searchParams.set("pub",pair.public);
  return u.href;
