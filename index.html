@@ -29,6 +29,7 @@ body.display .layout{display:block;margin:0;padding:0;max-width:none}body.displa
 .action.resource-empty{opacity:.68;border-style:dashed;}
 
 /* Combat actions are first. Secondary resource controls remain accessible below the action grid. */
+.character-builder-link{margin:7px 0 12px;padding:10px 12px;border-radius:10px;background:#253b40;border:1px solid #648b84;font-weight:850;font-size:13px}.character-builder-link a{color:#e5ffe8;text-decoration:none}.character-builder-link a:hover{text-decoration:underline}
 .combat-topline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 0 12px}
 .combat-topline span{color:var(--gold);font-size:13px;font-weight:850}
 .settings-toggle{margin:16px 0 10px;border:1px solid #536379;border-radius:12px;background:#131f2c;padding:10px}
@@ -136,6 +137,7 @@ body.display .internet-pair{display:none}
 </section>
 <section class="panel">
   <div class="panelheader"><div><h2>Donovan · Combat Controls</h2><p>Click an action. It stays on the phone screen until another click.</p></div><span class="pill">2024 D&D</span></div>
+  <div class="character-builder-link"><a href="character-builder.html">Import another D&D Beyond character PDF → Create One-Click Card</a></div>
   <div class="combat-topline"><button class="smallbtn rest-quick" type="button" data-roll="initiative" title="Roll initiative with Sentinel Shield Advantage and -1 modifier">ROLL INITIATIVE</button><button class="smallbtn next" type="button" data-next="1">NEXT TURN ↻</button><button class="smallbtn reset-all-quick" type="button" data-reset="card" title="One tap: restore full HP, spell slots, Channel Divinity, and all starting state">RESET ALL</button><button class="smallbtn" type="button" data-reset="fight" title="Start a new fight but keep spent HP, slots and daily uses">NEW FIGHT</button><button class="smallbtn rest-quick" type="button" data-rest="long" title="Restore HP, slots and long-rest abilities">LONG REST</button><span id="combatQuickStatus" aria-live="polite">HP 51 · Slots 4/3/3 · Channel 3/3</span></div>
   <div class="quick-choices" aria-label="Fast combat settings">
     <div class="quick-hp" aria-label="Current HP">
