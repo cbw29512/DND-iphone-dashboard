@@ -62,7 +62,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <div class="row"><button id="initiativeBtn" class="primary">Roll Initiative</button><button id="nextBtn">Next Turn</button><button id="fightBtn">New Fight</button><button id="shortRestBtn">Short Rest</button><button id="restBtn" class="good">Long Rest</button><button id="resetBtn" class="danger">Reset All</button></div>
 <div id="stats" class="stats"></div>
 <div class="resources"><div class="resource"><label>HIT POINTS</label><strong id="hpLabel">—</strong><div class="row"><button data-hp="-5">−5</button><button data-hp="5">+5</button><input id="hpChange" aria-label="Damage or healing amount" type="number" min="1" value="10"><button id="damageBtn">Damage</button><button id="healBtn">Heal</button></div></div>
-<div class="resource"><label>SPELL SLOTS REMAINING</label><strong id="slotsLabel">—</strong><div class="row"><span class="note">Use level:</span><select id="castLevel" aria-label="Spell slot level"><option value="auto">Auto</option></select></div></div></div>
+<div class="resource"><label>SPELL SLOTS REMAINING</label><strong id="slotsLabel">—</strong><div class="row"><span class="note">Select Upcast level on each spell card. Base level is used by default.</span></div></div></div>
 <div id="turnTrack" class="row action-economy" aria-label="Turn action economy"><span id="actionUsed" class="turnchip">ACTION READY</span><span id="bonusUsed" class="turnchip">BONUS READY</span><button id="reactionBtn" type="button">REACTION READY</button><span id="slotUsed" class="turnchip">SLOTTED SPELL READY</span></div>
 <div class="inset" style="margin-top:9px"><div class="row"><label>Other d20 rolls:</label><div class="counter" id="modes"><button data-mode="normal" class="active">Normal</button><button data-mode="adv">ADV</button><button data-mode="dis">DIS</button></div><label>Heal targets:</label><select id="healTargets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><label for="healWho">Include self:</label><select id="healWho"><option value="others">Allies only</option><option value="self">Donovan / Self first</option></select><label for="wounded">Target wounded:</label><input id="wounded" type="checkbox" aria-label="Target is wounded for Toll the Dead"></div></div>
 </section>
@@ -87,6 +87,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
   <div class="phone-sheet"><div class="phone-top"><span id="phoneTurn">TURN 1</span><span id="phoneSignal">CONNECTING</span></div><h1 id="phoneName">ONE-CLICK CHARACTER</h1><p id="phoneClass">Scan the QR on the laptop to connect.</p><div class="phone-vitals"><b id="phoneHP">HP —</b><b id="phoneSlots">SLOTS —</b></div><div class="phone-result"><h2 id="phoneResultTitle">READY FOR INITIATIVE</h2><div id="phoneResultTotal">ROLL INITIATIVE</div><div id="phoneWeaponStats" class="weapon-roll-summary" hidden></div><p id="phoneResultDetails">The laptop controls the character. Results appear here.</p></div><p class="phone-note">READ-ONLY DISPLAY · ROLLS COME FROM LAPTOP</p></div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="character-spell-logic.js?v=level-cards-20261026"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -94,7 +95,7 @@ const STORAGE="oneclick_cards_v1",ACTIVE="oneclick_active_v1";
 const ABILITIES=["Strength","Dexterity","Constitution","Intelligence","Wisdom","Charisma"];
 const ABBR=["STR","DEX","CON","INT","WIS","CHA"];
 const SKILLS=["Acrobatics","Animal Handling","Arcana","Athletics","Deception","History","Insight","Intimidation","Investigation","Medicine","Nature","Perception","Performance","Persuasion","Religion","Sleight of Hand","Stealth","Survival"];
-let character=null,tab="fight",mode="normal",selectedSlot="auto",healTargets=1,healWho="others",targetWounded=false,targetFiend=false;
+let character=null,tab="fight",mode="normal",healTargets=1,healWho="others",targetWounded=false,targetFiend=false;
 const toNum=(value,otherwise=0)=>{const match=String(value??"").match(/[+-]?\d+/);return match?Number(match[0]):otherwise;};
 const signed=n=>(n>=0?"+":"")+n;
 const die=faces=>Math.floor(Math.random()*faces)+1;
@@ -176,11 +177,18 @@ function fillRoster(){
  try{const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");for(const c of Object.values(roster))select.add(new Option(c.name+" · "+c.classes,c.id));}catch(_){}
  select.value=character?.id||old||"";
 }
-function loadCard(c){character=c;c.log=Array.isArray(c.log)?c.log:[];tab="fight";mode="normal";selectedSlot="auto";healTargets=1;healWho="others";targetWounded=false;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();setupCustomActions();}
+function loadCard(c){character=c;c.log=Array.isArray(c.log)?c.log:[];tab="fight";mode="normal";c.castChoices=c.castChoices||{};healTargets=1;healWho="others";targetWounded=false;$("play").classList.remove("hidden");$("message").textContent="Loaded "+c.name+". Review your features and prepared spells.";renderAll();persist();setupCustomActions();}
 function show(name,total,detail,extra={}){character.result={name,total:String(total),detail,...extra};character.log=Array.isArray(character.log)?character.log:[];character.log.unshift({...character.result,at:new Date().toLocaleTimeString()});character.log=character.log.slice(0,50);persist();renderAll();}
-function useSlot(level){if(!level)return {level:0};let target=selectedSlot==="auto"?Object.keys(character.remaining).map(Number).sort((a,b)=>a-b).find(x=>x>=level&&character.remaining[x]>0):Number(selectedSlot);
- if(!target||target<level||!character.remaining[target]){show("NO SPELL SLOT","NOT CAST","No available level-"+(target||level)+" spell slot. Choose a slot or take a Long Rest.");return null;}
- character.remaining[target]--;return {level:target};
+function useSlot(level,selected=level){
+ if(!level)return {level:0};
+ const slot=Number(selected);
+ // A level-1 spell spends L1 unless the spell's upcast selector says otherwise.
+ if(!Number.isInteger(slot)||slot<level||!character.slots[slot]||!character.remaining[slot]){
+  show("NO SPELL SLOT","NOT CAST","No level-"+slot+" spell slot remains. Choose an Upcast level or rest.");
+  return null;
+ }
+ character.remaining[slot]--;
+ return {level:slot};
 }
 function doAttack(w,chosenMode="normal"){
  character.actionUsed=true;
@@ -409,8 +417,6 @@ function renderAll(){
  }
  const react=$("reactionBtn");react.textContent="REACTION "+(character.reactionUsed?"USED":"READY");react.classList.toggle("used",!!character.reactionUsed);
  $("slotsLabel").textContent=Object.keys(character.remaining).sort((a,b)=>a-b).map(k=>"L"+k+" "+character.remaining[k]+"/"+character.slots[k]).join(" · ")||"No spell slots";
- $("castLevel").replaceChildren(new Option("Auto","auto"),...Object.keys(character.slots).sort((a,b)=>a-b).map(k=>new Option("Level "+k,k)));
- $("castLevel").value=selectedSlot;
  $("healTargets").value=String(healTargets);
  $("healWho").value=healWho;
  $("wounded").checked=targetWounded;
@@ -593,7 +599,6 @@ function initialize(){
  for(const [id,mult] of [["damageBtn",-1],["healBtn",1]])$(id).addEventListener("click",()=>{const n=Number($("hpChange").value);if(!Number.isInteger(n)||n<1)return;character.hp=Math.max(0,Math.min(character.hpMax,character.hp+mult*n));show("HIT POINTS",character.hp+" / "+character.hpMax,(mult<0?"Damage":"Healing")+" "+n+".");});
  $("modes").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{mode=b.dataset.mode;renderAll();}));
  $("tabs").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>selectTab(b.dataset.tab)));
- $("castLevel").addEventListener("change",()=>{selectedSlot=$("castLevel").value;});
  $("healTargets").addEventListener("change",()=>{healTargets=Number($("healTargets").value);});
  $("healWho").addEventListener("change",()=>{healWho=$("healWho").value;});
  $("wounded").addEventListener("change",()=>{targetWounded=$("wounded").checked;});
