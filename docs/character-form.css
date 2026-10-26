@@ -1,104 +1,88 @@
-/* Editing is the character card with editable fields replacing play values. */
-#editor[hidden],#play[hidden]{display:none!important}
-.character-editor{width:100%;max-width:none;margin:0;padding:8px clamp(8px,1.8vw,20px);
- background:#172536;border:1px solid #566b80;border-radius:15px}
-.edit-header{position:sticky;top:0;z-index:10;display:flex;align-items:center;
- justify-content:space-between;gap:12px;background:#172536;border-bottom:1px solid #4c6175;padding:5px}
-.edit-identity{display:flex;align-items:end;gap:9px;flex:1;min-width:260px}
-.edit-identity .edit-field:first-child{flex:2}
-.edit-identity .edit-field:last-child{flex:1}
-.edit-identity input{font-size:19px!important;font-weight:750}
-#editor .edit-header button{min-height:34px}
-#editor #editorMessage{margin:6px 2px}
-.edit-field{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:11px;color:#f0d19c}
-.edit-field>span{font-size:10px;line-height:1.2;font-weight:850;letter-spacing:.03em}
-.edit-field input,.edit-field select{width:100%;max-width:none!important;min-width:0;
- min-height:36px;border:1px solid #7691a6;background:#0c2031;color:#fff7e8;
- border-radius:7px;padding:6px 8px;font:13px system-ui,sans-serif}
-.edit-field input:focus-visible,.edit-field select:focus-visible{outline:2px solid #f4c377}
-.edit-portrait{min-height:185px}
-.edit-portrait .portrait-visual img{width:100%;height:100%;object-fit:cover;
- object-position:center 25%;border:0;border-radius:0}
-.edit-portrait .portrait-visual img[hidden],#editPortraitPlaceholder[hidden]{display:none!important}
-#editPortraitPlaceholder{color:#f4d6a2;font:700 clamp(21px,3vw,40px) Georgia,serif;
- opacity:.45}
-.edit-portrait-upload{position:absolute;top:8px;right:8px;z-index:2;
- max-width:250px;border:1px solid #c4a06a;background:#1a3044;
- color:#f5d3a1;border-radius:8px;padding:5px 8px;cursor:pointer;font-size:11px;font-weight:850}
-.edit-portrait-upload input{max-width:180px;display:block;font-size:10px;padding:2px}
-#editor .stats.portrait-stats{position:absolute;bottom:0;left:0;right:0;display:grid;
- grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin:0;padding:27px 7px 7px;
- background:linear-gradient(transparent,rgba(4,11,19,.96))}
-#editor .portrait-stats .edit-field{background:rgba(10,29,43,.86);
- border:1px solid #788c9c;border-radius:8px;padding:4px}
-#editor .portrait-stats .edit-field>span{text-align:center}
-#editor .portrait-stats input{text-align:center;border:0;background:transparent;
- padding:3px 2px;font-size:17px;font-weight:850;color:#fff2d5;min-height:26px}
-#editor .edit-section{margin:0;padding:7px 0;border:none;border-radius:0;background:transparent}
-#editor .edit-section>h3{font-size:12px;font-weight:900;letter-spacing:.06em;
- color:#f0c781;background:#1b3347;border-bottom:1px solid #52677e;
- padding:5px;margin:6px 0}
-#editor .quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-#editor .quick-section{background:#112130;border:1px solid #425971;border-radius:9px;
- padding:6px;min-width:0;display:flex;flex-direction:column;gap:5px}
-#editor .quick-section>h3{font-size:12px;letter-spacing:.07em;color:#f5c877;
- margin:0;padding:2px 4px;border-bottom:1px solid #466078}
-.edit-action-rows{display:flex;flex-direction:column;gap:5px}
-#editor .edit-action-row{margin:0;background:#1a3042;border:1px solid #455e74;
- border-radius:8px;min-width:0;padding:6px}
-#editor .edit-weapon{display:grid;grid-template-columns:minmax(80px,2fr) 50px minmax(60px,1fr) 22px;
- gap:4px;align-items:end}
-#editor .edit-spell{display:flex;flex-direction:column;gap:5px}
-#editor .edit-spell-top{display:flex;gap:5px;align-items:end;min-width:0}
-#editor .edit-spell-top>.edit-field{flex:1;min-width:0}
-#editor .edit-spell-top>.edit-prepared{display:flex;align-items:center;gap:3px;
- font-size:10px;color:#e7c48a}
-#editor .edit-prepared input{margin:0;width:15px;height:15px}
-#editor .edit-remove{min-height:34px;min-width:22px;padding:4px;background:#5b353a;
- border:1px solid #9b5b60;font-size:15px;line-height:1}
-#editor .edit-add{min-height:30px;font-size:11px;text-align:left;padding:5px 8px;
- background:#253c4b;border-style:dashed;color:#f5d6a7}
-#editor .edit-spell .edit-field>span,#editor .edit-weapon .edit-field>span{font-size:9px}
-#editor .edit-spell input,#editor .edit-weapon input{min-height:34px;padding:4px 5px}
-#editor .edit-effect{font-size:11px;color:#c0cbd7}
-#editor .edit-effect summary{cursor:pointer;color:#ebc58a}
-#editor .edit-effect-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
- gap:5px;padding-top:6px}
-#editor .edit-level-block{border-bottom:1px solid #405970;margin:6px 0;padding:0 2px 10px}
-#editor .edit-level-heading{display:flex;align-items:end;justify-content:space-between;
- gap:10px;margin:5px 0}
-#editor .edit-level-heading h3{color:#f4cd8d;font-size:12px;margin:0}
-#editor .edit-level-heading .edit-field{width:92px}
-#editor .edit-spell-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-#editor .edit-spell-grid>.quick-section{display:contents}
-#editor .edit-spell-grid>.quick-section>h3{display:none}
-#editor .edit-spell-grid>.quick-section>.edit-action-rows{display:contents}
-#editor .edit-spell-grid>.quick-section>.edit-add{grid-column:1/-1;justify-self:start}
-#editor .edit-advanced{border:1px solid #536a7c;border-radius:9px;margin:12px 0 4px;
- padding:9px;background:#122638}
-#editor .edit-advanced>summary{cursor:pointer;color:#f4c985;font-weight:800;font-size:12px}
-#editor .edit-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;padding:10px 0 3px}
-#editor .edit-footer{position:sticky;bottom:0;z-index:10;background:#172536;
- text-align:right;border-top:1px solid #566b7f;padding:7px 4px}
-@media(max-width:1100px){
- #editor .quick-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
- #editor .edit-weapon{grid-template-columns:minmax(60px,1fr) 43px 62px 22px}
- #editor .edit-spell-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
- #editor .edit-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+/* One DOM: play buttons become fields in exactly the same character-card slots. */
+#play.editing #editCharacterBtn,#play.editing #backupBtn,#play.editing #deleteBtn,
+#play.editing #tabs,#play.editing #latestPanel,#play.editing #turnTrack,
+#play.editing .resources,#play.editing .quick-checks,#play.editing .inset,
+#play.editing #notes,#play.editing .support-details,#play.editing .setup-details,
+#play.editing .roll-log,#play.editing #remotePanel,
+#play.editing #initiativeBtn,#play.editing #nextBtn,#play.editing #fightBtn,
+#play.editing #shortRestBtn,#play.editing #restBtn,#play.editing #resetBtn{display:none!important}
+#saveCharacterBtn[hidden],#cancelCharacterBtn[hidden],#saveCharacterBottom[hidden]{display:none!important}
+#play.editing .titlebar{align-items:flex-end}
+#play.editing .titlebar>div:first-child{flex:1;min-width:200px}
+#play.editing .titlebar h2{margin:0}
+#play.editing #who>.card-field input{font-size:21px;font-weight:800;min-height:37px}
+#play.editing #identity>.card-field input{font-size:12px;min-height:30px}
+#play.editing #who .card-field>span,#play.editing #identity .card-field>span{display:none}
+#play.editing .titlebar>.row{align-self:center}
+#play.editing #saveCharacterBtn,#play.editing #cancelCharacterBtn{min-height:38px;font-size:12px;padding:6px 9px}
+#play .card-edit-message{display:none}
+#play.editing .card-edit-message{display:block;font-size:11px;margin:1px 0 5px;color:#f0d195}
+#play .card-save-bottom{display:none}
+#play.editing .card-save-bottom{display:block;min-height:39px;margin:12px 0 4px auto}
+.card-portrait-upload{display:none;position:absolute;z-index:3;right:7px;top:7px;
+ padding:5px;border:1px solid #b6956b;background:#152d42;border-radius:8px;
+ font-size:11px;font-weight:800;color:#f8ddb1}
+#play.editing .card-portrait-upload{display:block}
+.card-portrait-upload input{display:block;font-size:10px;max-width:175px}
+#play .card-field{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+#play .card-field>span{font-size:9px;font-weight:800;letter-spacing:.025em;color:#ebca90}
+#play .card-field input,#play .card-field select{width:100%;min-width:0;max-width:100%;
+ min-height:35px;font-size:13px;font-weight:700;padding:5px 6px;
+ background:#112d40;color:#fff6eb;border:1px solid #7893a7;border-radius:7px}
+#play .card-field input:focus-visible,#play .card-field select:focus-visible{outline:2px solid #f1c883}
+#play.editing .portrait-stats .stat{padding:5px 3px}
+#play.editing .portrait-stats .stat .card-field>span{text-align:center;font-size:9px;color:#dbceba}
+#play.editing .portrait-stats .stat input{text-align:center;font-size:16px;min-height:30px;
+ padding:2px;border:0;background:rgba(11,34,48,.72);color:#fff2d5}
+#play.editing #actions.buttons{display:flex;flex-direction:column;gap:5px}
+#play.editing #actions .quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#play.editing .quick-section{display:flex;flex-direction:column;gap:5px}
+#play.editing .card-edit-action{margin:0;border:1px solid #455e74;
+ border-radius:8px;background:#1a3042;padding:6px;min-width:0}
+#play.editing .weapon-card.card-edit-action{display:grid;
+ grid-template-columns:minmax(100px,1fr) minmax(115px,1fr) 24px;align-items:end;gap:5px}
+#play.editing .card-edit-rolls{display:grid;grid-template-columns:45px minmax(64px,1fr);gap:5px}
+#play.editing .card-edit-rolls .card-field input{font-size:11px;padding:4px}
+#play.editing .spell-card.card-edit-action{display:grid;grid-template-columns:minmax(0,1fr) auto;
+ gap:5px;align-items:end}
+#play.editing .spell-card.card-edit-action>.card-field{grid-column:1}
+#play.editing .card-spell-ready{display:flex;gap:4px;align-items:center;
+ font-size:10px;color:#e8cc96}
+#play.editing .card-spell-ready input{width:15px;height:15px}
+#play.editing .card-remove{min-width:22px;min-height:34px;padding:4px;
+ background:#6e3c42;border:1px solid #a27678;border-radius:7px}
+#play.editing .card-add{min-height:31px;font-size:11px;background:#244050;
+ border:1px dashed #7390a4;text-align:left}
+#play.editing .card-edit-extra{grid-column:1/-1;color:#e4c695;font-size:11px}
+#play.editing .card-edit-extra summary{cursor:pointer}
+#play.editing .card-extra-fields{padding-top:6px;display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+#play.editing .card-edit-level{display:flex;justify-content:space-between;align-items:center;
+ gap:6px;margin-top:7px}
+#play.editing .card-edit-level>.card-field{flex:0 0 75px}
+#play.editing .card-edit-level .card-field input{min-height:29px;text-align:center;padding:2px}
+#play.editing .spell-button-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+#play.editing .card-advanced{border:1px solid #4e697d;border-radius:9px;
+ background:#122637;padding:10px;margin:11px 0}
+#play.editing .card-advanced summary{cursor:pointer;font-size:12px;color:#f3cb91;font-weight:850}
+#play.editing .card-advanced-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+ gap:7px;margin-top:9px}
+@media(max-width:1000px){
+ #play.editing #actions .quick-grid{grid-template-columns:1fr}
+ #play.editing .spell-button-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #play.editing .card-advanced-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
-@media(max-width:760px){
- #editor .quick-grid{grid-template-columns:1fr}
- #editor .edit-spell-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
- #editor .edit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
- #editor .stats.portrait-stats{grid-template-columns:repeat(3,minmax(0,1fr));padding-top:47px}
- #editor .edit-portrait{min-height:230px}
- #editor .edit-identity{min-width:0;flex-wrap:wrap}
- #editor .edit-identity>.edit-field{flex:1 0 120px}
+@media(max-width:600px){
+ #play.editing #actions .quick-grid{grid-template-columns:1fr}
+ #play.editing .spell-button-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #play.editing .card-advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #play.editing .portrait-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #play.editing .portrait-hero{min-height:225px}
+ #play.editing .card-edit-extra .card-extra-fields{grid-template-columns:1fr}
+ #play.editing .weapon-card.card-edit-action{grid-template-columns:minmax(90px,1fr) minmax(105px,1fr) 22px}
+ #play.editing #who>.card-field input{font-size:18px}
 }
-@media(max-width:480px){
- #editor .edit-spell-grid{grid-template-columns:1fr}
- #editor .edit-effect-grid{grid-template-columns:1fr}
- #editor .edit-weapon{grid-template-columns:minmax(85px,1fr) 50px minmax(75px,1fr) 22px}
- #editor .edit-header{align-items:start}
- #editor .edit-identity input{font-size:15px!important}
+@media(max-width:410px){
+ #play.editing .spell-button-grid{grid-template-columns:1fr}
+ #play.editing .card-edit-rolls{grid-template-columns:35px minmax(55px,1fr)}
 }
