@@ -15,12 +15,14 @@ try{
  const inline=html.match(/<script>\s*([\s\S]*?)<\/script>/);
  assert.ok(inline,"Browser character code exists");
  new vm.Script(inline[1],{filename:"character-builder inline"});
- for(const id of ["editor","editorFields","createBtn","editCharacterBtn","saveCharacterBtn",
-  "cancelCharacterBtn","portraitImage","portraitInitials","portraitUpload",
+ for(const id of ["play","who","identity","stats","actions","createBtn","editCharacterBtn","saveCharacterBtn",
+  "cancelCharacterBtn","saveCharacterBottom","portraitImage","portraitInitials","portraitUpload",
   "saveSelect","abilitySelect","rollSaveBtn","rollAbilityBtn"]){
   assert.ok(html.includes('id="'+id+'"'),"Missing "+id);
  }
  assert.match(html,/CharacterEditor\.initialize\(/,"Form must be wired to play card");
+ assert.ok(!html.includes('id="editor"'),"There must not be a second editor card");
+ assert.match(html,/draft=>loadCard\(draft,false\)/,"Unsaved manual drafts must not persist");
  assert.match(html,/CharacterFormModel\.parsedSpeed/,"Movement import must be attempted");
  assert.match(html,/CharacterFormModel\.safePortrait/,"Portrait must be validated");
  assert.match(html,/h\.addEventListener\("click",\(\)=>doAttack\(w,"normal"\)\)/);
