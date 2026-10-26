@@ -17,6 +17,9 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;touch-action:man
 .section{grid-column:1/-1;color:var(--gold);font-size:11px;letter-spacing:.08em;margin:9px 0 0;border-bottom:1px solid #4a5b6f;padding-bottom:5px}
 .setup-details summary{cursor:pointer;font-weight:850;color:var(--gold);padding:5px 0}.setup-details h2{margin-top:12px}
 .inset{padding:10px;border-radius:10px;background:#112234;border:1px solid #405a70}.inset label{font-size:11px;color:var(--gold);font-weight:800}
+
+.action-economy{margin-top:11px;gap:6px}.action-economy .turnchip,.action-economy button{padding:6px 9px;font-size:11px;font-weight:900;border:1px solid #6c8b79;border-radius:7px;background:#1c4639;color:#d1ffe5}
+.action-economy .used,.action-economy button.used{background:#593637;border-color:#bc7978;color:#ffded2}
 .counter{display:flex;gap:7px;flex-wrap:wrap}.counter button.active{background:#b28b53;color:#172332}.note{font-size:12px;color:#b9c7d5}
 textarea{width:100%;min-height:125px;resize:vertical;padding:10px;color:var(--ink);background:#0e1d2c;border:1px solid #5c7489;border-radius:9px}
 footer{font-size:12px;color:var(--mute);padding:12px 0}
@@ -49,6 +52,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <div id="stats" class="stats"></div>
 <div class="resources"><div class="resource"><label>HIT POINTS</label><strong id="hpLabel">—</strong><div class="row"><button data-hp="-5">−5</button><button data-hp="5">+5</button><input id="hpChange" aria-label="Damage or healing amount" type="number" min="1" value="10"><button id="damageBtn">Damage</button><button id="healBtn">Heal</button></div></div>
 <div class="resource"><label>SPELL SLOTS REMAINING</label><strong id="slotsLabel">—</strong><div class="row"><span class="note">Use level:</span><select id="castLevel" aria-label="Spell slot level"><option value="auto">Auto</option></select></div></div></div>
+<div id="turnTrack" class="row action-economy" aria-label="Turn action economy"><span id="actionUsed" class="turnchip">ACTION READY</span><span id="bonusUsed" class="turnchip">BONUS READY</span><button id="reactionBtn" type="button">REACTION READY</button><span id="slotUsed" class="turnchip">SLOTTED SPELL READY</span></div>
 <div class="inset" style="margin-top:9px"><div class="row"><label>Roll type:</label><div class="counter" id="modes"><button data-mode="normal" class="active">Normal</button><button data-mode="adv">ADV</button><button data-mode="dis">DIS</button></div><label>Heal targets:</label><select id="healTargets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><label for="healWho">Include self:</label><select id="healWho"><option value="others">Allies only</option><option value="self">Donovan / Self first</option></select><label for="wounded">Target wounded:</label><input id="wounded" type="checkbox" aria-label="Target is wounded for Toll the Dead"><label for="fiend">Fiend or Undead:</label><input id="fiend" type="checkbox" aria-label="Target is Fiend or Undead for Mace of Disruption"></div></div>
 </section>
 <section class="panel"><div class="tabs" id="tabs"><button data-tab="fight" class="active">Fight</button><button data-tab="spells">Spells</button><button data-tab="checks">Saves &amp; Skills</button><button data-tab="features">Features</button><button data-tab="sheet">Sheet</button></div><div id="actions" class="buttons"></div></section>
@@ -147,7 +151,7 @@ function parseCharacter(fields){
  const char={id:(name+"|"+classes).toLowerCase().replace(/[^a-z0-9|]/g,"-").slice(0,120),name,classes,level,rules,life,blessedHealer,background:value("BACKGROUND"),species:value("RACE"),
    equipment,initiativeAdvantage,ac:toNum(value("AC"),10),hpMax:toNum(value("MaxHP"),1),hp:toNum(value("CurrentHP"),toNum(value("MaxHP"),1)),initiative:toNum(value("Init"),0),
    ability,saves,skills,weapons,features,spells:[...spellMap.values()].sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)),slots,remaining:{...slots},
-   spellAttack:toNum(value("spellAtkBonus0"),0),spellDC:toNum(value("spellSaveDC0"),0),turn:1,notes:"",concentration:"",concentrationSlot:0,result:{name:"TURN 1",total:"ROLL INITIATIVE",detail:"Ready for one-click combat."}};
+   spellAttack:toNum(value("spellAtkBonus0"),0),spellDC:toNum(value("spellSaveDC0"),0),turn:1,actionUsed:false,bonusUsed:false,reactionUsed:false,slotUsed:false,notes:"",concentration:"",concentrationSlot:0,result:{name:"TURN 1",total:"ROLL INITIATIVE",detail:"Ready for one-click combat."}};
  return char;
 }
 function persist(){
@@ -166,6 +170,7 @@ function useSlot(level){if(!level)return {level:0};let target=selectedSlot==="au
  character.remaining[target]--;return {level:target};
 }
 function doAttack(w){
+ character.actionUsed=true;
  const r=d20(),crit=r.value===20;
  const base=w.formula?.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
  const formula=base&&crit?Number(base[1])*2+"d"+base[2]+(base[3]||""):w.formula;
@@ -204,6 +209,12 @@ function cast(sp){
  const spent=ongoing?{level:character.concentrationSlot||sp.level}:free?{level:sp.level,free:true}:useSlot(sp.level);
  if(!spent)return;
  if(free)sp.freeCastRemaining--;
+ if(!ongoing){
+  if(/(?:^|\W)(?:1BA|Bonus Action)(?:\W|$)/i.test(sp.time||""))character.bonusUsed=true;
+  else if(/(?:^|\W)(?:1R|Reaction)(?:\W|$)/i.test(sp.time||""))character.reactionUsed=true;
+  else character.actionUsed=true;
+  if(sp.level>0&&!spent.free)character.slotUsed=true;
+ }
  const slot=spent.level,m=sp.custom||(character.rules==="2024"?KNOWN_2024[sp.name]:null);
  let text=sp.name+": "+(sp.notes||sp.range||sp.duration||"Consult the full spell description.")+". ";
  let total="CAST";
@@ -248,6 +259,9 @@ function feature(f){
  if(f.usesMax){
    if(f.remainingUses<=0){show(f.name,"NO USES LEFT","This ability has no uses remaining until its listed rest. No charge spent.");return;}
    f.remainingUses--;
+   if(/\b1\s+Bonus Action\b/i.test(f.text||""))character.bonusUsed=true;
+   else if(/\b1\s+Reaction\b/i.test(f.text||""))character.reactionUsed=true;
+   else if(/\b1\s+Action\b/i.test(f.text||""))character.actionUsed=true;
    show(f.name,"USE ACTIVATED · "+f.remainingUses+"/"+f.usesMax+" LEFT",(f.text||"Review class ability.")+" Remaining uses are tracked on this card.");
  }else show(f.name,"FEATURE / RULES",f.text||"Review feature in your source material.");
 }
@@ -309,6 +323,10 @@ function renderAll(){
   const d=document.createElement("div");d.className="stat";const small=document.createElement("small");small.textContent=label;const strong=document.createElement("b");strong.textContent=n;d.append(small,strong);stats.append(d);
  }
  $("hpLabel").textContent=character.hp+" / "+character.hpMax;
+ for(const [id,used,label] of [["actionUsed",character.actionUsed,"ACTION"],["bonusUsed",character.bonusUsed,"BONUS"],["slotUsed",character.slotUsed,"SLOTTED SPELL"]]){
+  const node=$(id);node.textContent=label+(used?" USED":" READY");node.classList.toggle("used",!!used);
+ }
+ const react=$("reactionBtn");react.textContent="REACTION "+(character.reactionUsed?"USED":"READY");react.classList.toggle("used",!!character.reactionUsed);
  $("slotsLabel").textContent=Object.keys(character.remaining).sort((a,b)=>a-b).map(k=>"L"+k+" "+character.remaining[k]+"/"+character.slots[k]).join(" · ")||"No spell slots";
  $("castLevel").replaceChildren(new Option("Auto","auto"),...Object.keys(character.slots).sort((a,b)=>a-b).map(k=>new Option("Level "+k,k)));
  $("castLevel").value=selectedSlot;
@@ -406,11 +424,12 @@ function initialize(){
  $("jsonFile").addEventListener("change",e=>importBackup(e.target.files[0]));
  $("loadBtn").addEventListener("click",()=>{try{const id=$("roster").value;const c=JSON.parse(localStorage.getItem(STORAGE)||"{}")[id];if(c)loadCard(c);else $("message").textContent="Choose a saved character first.";}catch(e){$("message").textContent="Saved character could not be loaded."; }});
  $("initiativeBtn").addEventListener("click",()=>doCheck("INITIATIVE",character.initiative,character.initiativeAdvantage));
- $("nextBtn").addEventListener("click",()=>{character.turn++;show("TURN "+character.turn,"READY","Actions and reactions available.");});
- $("fightBtn").addEventListener("click",()=>{character.turn=1;character.concentration="";character.concentrationSlot=0;show("TURN 1","ROLL INITIATIVE","New fight. HP and spent slots preserved.");});
- $("restBtn").addEventListener("click",()=>{character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;character.concentration="";character.concentrationSlot=0;for(const sp of character.spells)if(sp.freeCastMax)sp.freeCastRemaining=sp.freeCastMax;for(const f of character.features)if(f.usesMax)f.remainingUses=f.usesMax;show("LONG REST","READY FOR INITIATIVE","HP, spell slots, and tracked feature uses restored.");});
+ $("nextBtn").addEventListener("click",()=>{character.turn++;character.actionUsed=false;character.bonusUsed=false;character.reactionUsed=false;character.slotUsed=false;show("TURN "+character.turn,"READY","Actions, bonus actions, reactions and slotted-spell tracker reset.");});
+ $("reactionBtn").addEventListener("click",()=>{character.reactionUsed=!character.reactionUsed;show("REACTION",character.reactionUsed?"USED":"READY","Reaction tracker updated.");});
+ $("fightBtn").addEventListener("click",()=>{character.turn=1;character.concentration="";character.concentrationSlot=0;character.actionUsed=false;character.bonusUsed=false;character.reactionUsed=false;character.slotUsed=false;show("TURN 1","ROLL INITIATIVE","New fight. HP and spent slots preserved.");});
+ $("restBtn").addEventListener("click",()=>{character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;character.concentration="";character.concentrationSlot=0;character.actionUsed=false;character.bonusUsed=false;character.reactionUsed=false;character.slotUsed=false;for(const sp of character.spells)if(sp.freeCastMax)sp.freeCastRemaining=sp.freeCastMax;for(const f of character.features)if(f.usesMax)f.remainingUses=f.usesMax;show("LONG REST","READY FOR INITIATIVE","HP, spell slots, and tracked feature uses restored.");});
  $("shortRestBtn").addEventListener("click",()=>{for(const f of character.features)if(f.usesMax&&f.recovers==="short")f.remainingUses=f.usesMax;show("SHORT REST","RESOURCES UPDATED","Tracked short-rest abilities restored. HP and spell slots unchanged unless your rules say otherwise.");});
- $("resetBtn").addEventListener("click",()=>{if(!confirm("Reset HP, spell slots and turn to starting values? Notes remain."))return;character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;character.concentration="";character.concentrationSlot=0;for(const sp of character.spells)if(sp.freeCastMax)sp.freeCastRemaining=sp.freeCastMax;for(const f of character.features)if(f.usesMax)f.remainingUses=f.usesMax;show("RESET ALL","ROLL INITIATIVE","HP, slots and tracked feature uses reset. Notes preserved.");});
+ $("resetBtn").addEventListener("click",()=>{if(!confirm("Reset HP, spell slots and turn to starting values? Notes remain."))return;character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;character.concentration="";character.concentrationSlot=0;character.actionUsed=false;character.bonusUsed=false;character.reactionUsed=false;character.slotUsed=false;for(const sp of character.spells)if(sp.freeCastMax)sp.freeCastRemaining=sp.freeCastMax;for(const f of character.features)if(f.usesMax)f.remainingUses=f.usesMax;show("RESET ALL","ROLL INITIATIVE","HP, slots and tracked feature uses reset. Notes preserved.");});
  document.querySelectorAll("[data-hp]").forEach(b=>b.addEventListener("click",()=>{character.hp=Math.max(0,Math.min(character.hpMax,character.hp+Number(b.dataset.hp)));show("HIT POINTS",character.hp+" / "+character.hpMax,"HP tracker updated.");}));
  for(const [id,mult] of [["damageBtn",-1],["healBtn",1]])$(id).addEventListener("click",()=>{const n=Number($("hpChange").value);if(!Number.isInteger(n)||n<1)return;character.hp=Math.max(0,Math.min(character.hpMax,character.hp+mult*n));show("HIT POINTS",character.hp+" / "+character.hpMax,(mult<0?"Damage":"Healing")+" "+n+".");});
  $("modes").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{mode=b.dataset.mode;renderAll();}));
