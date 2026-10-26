@@ -297,34 +297,85 @@ function weaponCard(parent,w){
 }
 
 function spellBtn(root,sp){
- const ready=sp.prepared||sp.level===0;
- const mechanic=sp.custom||(character.rules==="2024"?KNOWN_2024[sp.name]:null);
- const targetNote=mechanic?.type==="heal"?(mechanic.targets>1?"HEALS UP TO "+mechanic.targets:"HEALS 1"):mechanic?.targets>1?"TARGETS "+mechanic.targets:"";
- const text=sp.freeCastRemaining>0?"FREE FEAT CAST AVAILABLE":sp.custom?"CUSTOM "+(sp.custom.type||"ROLL").toUpperCase()+" · LEVEL "+sp.level:sp.level===0?"CANTRIP · AT WILL":ready?"LEVEL "+sp.level+" · READY":"LEVEL "+sp.level+" · NOT PREPARED";
- btn(root,sp.name,text,(targetNote?targetNote+" · ":"")+(sp.custom?("Configured "+sp.custom.dice+" · "+sp.custom.targets+" target(s)"):((sp.range||sp.time||"")+" · "+(sp.notes||sp.duration||"").slice(0,80))),()=>cast(sp),!ready?"uncertain":sp.custom?"featured":"");
+ const rule=CharacterSpellLogic.profile(sp,character.rules);
+ const save=CharacterSpellLogic.saveAbility(sp,rule);
+ const attack=CharacterSpellLogic.needsAttack(sp,rule);
+ const card=document.createElement("article");
+ card.className="spell-card"+(!sp.prepared&&sp.level>0?" uncertain":"");
+ const head=document.createElement("div");head.className="spell-head";
+ const name=document.createElement("strong");name.textContent=sp.name;
+ const desc=document.createElement("small");
+ desc.textContent=sp.level===0?"CANTRIP · AT WILL":
+  (!sp.prepared?"NOT PREPARED · ":"")+
+  (attack?"SPELL ATTACK "+signed(Number(character.spellAttack)||0):
+   save?save+" SAVE · DC "+character.spellDC:rule?.type==="heal"?"HEALING":"SPELL EFFECT");
+ head.append(name,desc);card.append(head);
+ if(sp.level>0){
+  const line=document.createElement("label");line.className="spell-upcast";
+  const title=document.createElement("span");title.textContent="UPCAST";
+  const select=document.createElement("select");select.setAttribute("aria-label","Upcast "+sp.name);
+  const levels=CharacterSpellLogic.slotOptions(character,sp);
+  for(const level of levels){
+   const option=document.createElement("option");option.value=String(level);
+   option.textContent="Level "+level+(level===sp.level?" (base)":" (upcast)")+
+    " · "+(character.remaining[level]||0)+" left";
+   select.append(option);
+  }
+  if(levels.length){
+   const key=sp.name+"|"+sp.level;
+   const stored=Number(character.castChoices?.[key]??sp.level);
+   select.value=String(levels.includes(stored)?stored:levels[0]);
+   select.addEventListener("change",()=>{
+    character.castChoices=character.castChoices||{};
+    character.castChoices[key]=Number(select.value);
+    persist();
+   });
+  }else{
+   select.add(new Option("No available slot level","0"));select.disabled=true;
+  }
+  line.append(title,select);card.append(line);
+ }
+ const rolls=document.createElement("div");rolls.className="spell-rolls";
+ for(const [chosen,label] of (attack?[["adv","ADV"],["normal","CAST"],["dis","DIS"]]:[["normal","CAST SPELL"]])){
+  const button=document.createElement("button");button.type="button";button.textContent=label;
+  button.setAttribute("aria-label",sp.name+" · "+(chosen==="adv"?"advantage":chosen==="dis"?"disadvantage":"cast"));
+  button.addEventListener("click",()=>cast(sp,chosen));rolls.append(button);
+ }
+ card.append(rolls);root.append(card);
+}
+function orderedSpells(spells){
+ return [...spells].sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
+}
+function groupedSpells(root,spells){
+ let previous=-1;
+ for(const sp of orderedSpells(spells)){
+  if(previous!==sp.level){
+   previous=sp.level;
+   heading(root,"LEVEL "+previous+" SPELLS · "+(character.remaining[previous]??0)+" SLOTS LEFT");
+  }
+  spellBtn(root,sp);
+ }
 }
 function renderActions(){
  if(!character)return;
  const root=$("actions");root.replaceChildren();
  if(tab==="fight"){
-   heading(root,"Weapons and attacks");
-   for(const w of character.weapons.slice(0,8))weaponCard(root,w);
-   const cantrips=character.spells.filter(x=>x.level===0&&/Produce Flame|Toll the Dead|Fire Bolt|Eldritch Blast|Sacred Flame|Ray of Frost/i.test(x.name)).slice(0,4);
-   cantrips.forEach(sp=>spellBtn(root,sp));
-   heading(root,"Prepared combat spells · one tap");
-   const targets=character.spells.filter(x=>x.prepared&&x.level>0);
-   targets.slice(0,10).forEach(sp=>spellBtn(root,sp));
-   if(!targets.length)btn(root,"Review spell preparation","SETUP NEEDED","No spells marked prepared in the PDF",()=>$("editBtn").click());
-   heading(root,"Quick checks");
-   for(const k of ["STR","DEX","CON","WIS"])btn(root,k+" SAVE","SAVE "+signed(character.saves[k]),"Roll d20 with current roll mode",()=>doCheck(k+" Save",character.saves[k]));
- }else if(tab==="spells"){
-   for(const level of [...new Set(character.spells.map(x=>x.level))]){
-     heading(root,level===0?"Cantrips · at will":"Level "+level+" · "+(character.remaining[level]??0)+" slots remaining");
-     for(const sp of character.spells.filter(x=>x.level===level&&sp.prepared))spellBtn(root,sp);
-   }
-   heading(root,"Other listed spells · review preparation");
-   for(const sp of character.spells.filter(x=>!x.prepared))spellBtn(root,sp);
- }else if(tab==="checks"){
+    heading(root,"WEAPONS & CANTRIPS · AT WILL");
+    for(const weapon of character.weapons)weaponCard(root,weapon);
+    for(const sp of orderedSpells(character.spells.filter(x=>x.level===0)))spellBtn(root,sp);
+    groupedSpells(root,character.spells.filter(x=>x.level>0&&x.prepared));
+    heading(root,"Quick checks");
+    for(const stat of ["STR","DEX","CON","WIS"])
+     btn(root,stat+" SAVE","SAVE "+signed(character.saves[stat]),
+      "Roll d20 with current roll mode",()=>doCheck(stat+" Save",character.saves[stat]));
+  }else if(tab==="spells"){
+    const cantrips=character.spells.filter(x=>x.level===0);
+    if(cantrips.length){
+     heading(root,"CANTRIPS · UNLIMITED");
+     for(const sp of orderedSpells(cantrips))spellBtn(root,sp);
+    }
+    groupedSpells(root,character.spells.filter(x=>x.level>0));
+  }else if(tab==="checks"){
    heading(root,"Saving throws");
    ABBR.forEach((k,i)=>btn(root,ABILITIES[i],"SAVE "+signed(character.saves[k]),"d20 "+signed(character.saves[k]),()=>doCheck(ABILITIES[i]+" Save",character.saves[k])));
    heading(root,"Ability checks");
@@ -411,7 +462,7 @@ function setupCustomActions(){
  choose.onchange=()=>{
   const sp=character.spells[Number(choose.value)];
   if(!sp){status.textContent="Choose a spell first.";return;}
-  const c=sp.custom||KNOWN_2024[sp.name]||{};
+  const c=CharacterSpellLogic.profile(sp,character.rules)||{};
   $("customKind").value=c.type==="heal"?"heal":"damage";
   $("customDice").value=c.dice||"";
   $("customScale").value=Number(c.per)||0;
