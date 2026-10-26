@@ -2,6 +2,8 @@
 (function(root){
 "use strict";
 function typeOfWeapon(w){
+ if(w?.category==="melee")return "MELEE";
+ if(w?.category==="ranged")return "RANGED";
  const name=String(w?.name||"").toLowerCase();
  const notes=String(w?.notes||"").toLowerCase();
  return /bow|crossbow|sling|dart|blowgun|javelin|thrown/.test(name+" "+notes)?"RANGED":"MELEE";

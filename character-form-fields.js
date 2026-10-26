@@ -1,141 +1,177 @@
-/* Build an editable form without exposing configuration controls on the play card. */
+/* Edit the character in the same order and shape as its playable card. */
 (function(root){
 "use strict";
-function input(label,value,kind="text",extra={}){
- const wrap=document.createElement("label");wrap.className="edit-field";
- const text=document.createElement("span");text.textContent=label;
- const node=document.createElement(kind==="choice"?"select":"input");
- if(kind!=="choice"){node.type=kind;node.value=String(value??"");}
- else{
-  for(const [key,name] of extra.options||[]){
-   const opt=document.createElement("option");opt.value=String(key);opt.textContent=name;node.add(opt);
-  }
-  const desired=String(value??"");
-  node.value=Array.from(node.options).some(o=>o.value===desired)?desired:(node.options[0]?.value||"");
- }
- if(extra.min!==undefined)node.min=extra.min;
- if(extra.max!==undefined)node.max=extra.max;
- if(extra.step!==undefined)node.step=extra.step;
- wrap.append(text,node);
- return {wrap,node};
+const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
+function field(label,value,type="text",options=[]){
+ const wrap=el("label","edit-field"),name=el("span","",label),node=el(type==="choice"?"select":"input");
+ if(type==="choice"){
+  for(const [value,text] of options){const opt=el("option","",text);opt.value=String(value);node.add(opt);}
+  const wanted=String(value??"");
+  node.value=Array.from(node.options).some(o=>o.value===wanted)?wanted:node.options[0]?.value||"";
+ }else{node.type=type;node.value=String(value??"");}
+ wrap.append(name,node);return {wrap,node};
 }
-function section(root,title){
- const section=document.createElement("section");section.className="edit-section";
- const heading=document.createElement("h3");heading.textContent=title;section.append(heading);
- root.append(section);return section;
+function add(parent,key,label,value,type="text",opts=[]){
+ const result=field(label,value,type,opts);parent.append(result.wrap);return [key,result.node];
 }
-function addFields(container,specs){
- const nodes={};
- for(const [key,label,value,type,config] of specs){
-  const field=input(label,value,type||"text",config||{});
-  container.append(field.wrap);nodes[key]=field.node;
- }
- return nodes;
+function section(parent,title,cls=""){
+ const sec=el("section","edit-section "+cls);
+ sec.append(el("h3","section",title));parent.append(sec);return sec;
 }
-function listEditor(container,title,source,fields,addTitle){
- const sectionEl=section(container,title),rows=document.createElement("div");
- rows.className="edit-rows";sectionEl.append(rows);
- const data=[];
- function add(record={}){
-  const row=document.createElement("div");row.className="edit-row";
-  const values=addFields(row,fields.map(([k,label,type,config])=>[
-   k,label,record[k]??"",type,config
-  ]));
-  const remove=document.createElement("button");remove.type="button";remove.textContent="Remove";
-  remove.className="danger";remove.addEventListener("click",()=>{
-   row.remove();const at=data.findIndex(d=>d.row===row);if(at!==-1)data.splice(at,1);
-  });
-  row.append(remove);rows.append(row);data.push({row,values,original:record});
+function inputs(parent,items){
+ const map={};for(const item of items){const [k,node]=add(parent,...item);map[k]=node;}return map;
+}
+function actionList(parent,title,source,create,render,addLabel){
+ const body=el("section","quick-section edit-action-section"),head=el("h3","",title);
+ const rows=el("div","edit-action-rows"),button=el("button","edit-add","+ "+addLabel);
+ button.type="button";body.append(head,rows,button);parent.append(body);
+ const list=[];
+ function append(record={}){
+  const entry=render(rows,record);list.push(entry);
+  entry.remove.addEventListener("click",()=>{entry.row.remove();list.splice(list.indexOf(entry),1);});
  }
- for(const record of source)add(record);
- const button=document.createElement("button");button.type="button";
- button.textContent=addTitle;button.addEventListener("click",()=>add());
- sectionEl.append(button);
- return ()=>data.map(item=>{
-  const values=Object.fromEntries(Object.entries(item.values).map(([k,v])=>[
-   k,v.type==="checkbox"?v.checked:v.value
-  ]));
-  return {...item.original,...values};
- });
+ for(const item of source)append(item);
+ button.addEventListener("click",()=>append(create()));
+ return ()=>list.map(item=>item.read());
+}
+function weaponRow(root,record){
+ const row=el("div","weapon-card edit-action-row edit-weapon");
+ const name=field("Weapon",record.name||""),bonus=field("Hit",record.bonus??0,"number");
+ const damage=field("Damage",record.formula||"");
+ const remove=el("button","edit-remove","×");remove.type="button";remove.title="Remove weapon";
+ row.append(name.wrap,bonus.wrap,damage.wrap,remove);root.append(row);
+ return {row,remove,read:()=>({
+  ...record,name:name.node.value,bonus:bonus.node.value,formula:damage.node.value,
+  damage:damage.node.value===String(record.formula||"")?(record.damage||damage.node.value):damage.node.value
+ })};
+}
+function spellRow(root,record,level,rules){
+ const row=el("div","spell-card edit-action-row edit-spell");
+ const top=el("div","edit-spell-top"),name=field(level===0?"Cantrip":"Spell",record.name||"");
+ const remove=el("button","edit-remove","×");remove.type="button";remove.title="Remove spell";
+ top.append(name.wrap);
+ let prepared=null;
+ if(level>0){
+  const prep=el("label","edit-prepared"),cb=el("input");cb.type="checkbox";
+  cb.checked=record.prepared!==false;prepared=cb;
+  prep.append(cb,el("span","","Ready"));top.append(prep);
+ }
+ top.append(remove);row.append(top);
+ const opts=el("details","edit-effect");
+ opts.append(el("summary","","Dice, save & effect"));
+ const extra=el("div","edit-effect-grid");
+ const rule=CharacterSpellLogic.profile(record,rules);
+ const attack=CharacterSpellLogic.needsAttack(record,rule);
+ const save=CharacterSpellLogic.saveAbility(record,rule);
+ const roll=record.custom?.attack||attack?"ATTACK":save||"";
+ const settings=inputs(extra,[
+  ["dice","Dice (if custom)",record.custom?.dice||""],
+  ["type","Result",record.custom?.type||rule?.type||"damage","choice",
+   [["damage","Damage"],["heal","Healing"],["effect","Other"]]],
+  ["roll","Roll type",roll,"choice",
+   [["","Effect only"],["ATTACK","Spell attack"],...CharacterFormModel.ABILITIES.map(a=>[a,a+" save"])]]
+ ]);
+ opts.append(extra);row.append(opts);root.append(row);
+ return {row,remove,read:()=>{
+  const next={...record,name:name.node.value,level,prepared:level===0||prepared.checked};
+  const dice=settings.dice.value.trim();
+  if(dice){
+   next.custom={...record.custom,dice,type:settings.type.value,
+    per:Number(record.custom?.per)||0,targets:Number(record.custom?.targets)||1,
+    attack:settings.roll.value==="ATTACK"};
+  }else if(settings.roll.value==="ATTACK"){
+   next.custom={type:rule?.type||"damage",attack:true};
+  }else delete next.custom;
+  next.save=settings.roll.value==="ATTACK"?"":settings.roll.value;
+  return next;
+ }};
 }
 function build(rootEl,card){
  rootEl.replaceChildren();
- const basics=section(rootEl,"Character information");
- basics.classList.add("edit-grid");
- const stats=addFields(basics,[
-  ["name","Name",card.name],
-  ["classes","Class",card.classes],
+ const identity=document.getElementById("editorIdentity");
+ const hero=document.getElementById("editorHeroStats");
+ identity.replaceChildren();hero.replaceChildren();
+ const basic=inputs(identity,[["name","Name",card.name],["classes","Class",card.classes]]);
+ const stats=inputs(hero,[
+  ["hpMax","Max HP",card.hpMax,"number"],
+  ["ac","AC",card.ac,"number"],
+  ["speed","Speed (ft)",card.speed??"","number"],
+  ["initiative","Initiative",card.initiative,"number"],
+  ["level","Level",card.level,"number"],
+  ["spellDC","Spell DC",card.spellDC,"number"]
+ ]);
+ const actions=section(rootEl,"ATTACKS & AT-WILL CANTRIPS","edit-play-actions");
+ const quick=el("div","quick-grid");actions.append(quick);
+ const groups={};for(const type of ["melee","ranged"]){
+  const weapons=(card.weapons||[]).filter(w=>CharacterCompactCard.typeOfWeapon(w)===type.toUpperCase());
+  groups[type]=actionList(quick,type.toUpperCase(),weapons,()=>({category:type}),
+   (container,item)=>{
+    const entry=weaponRow(container,item);
+    const read=entry.read;entry.read=()=>({...read(),category:type});
+    return entry;
+   },"weapon");
+ }
+ groups.cantrip=actionList(quick,"CANTRIPS",(card.spells||[]).filter(s=>s.level===0),
+  ()=>({name:"",level:0,prepared:true}), (container,item)=>spellRow(container,item,0,card.rules),"cantrip");
+ const levels=section(rootEl,"SPELLS","edit-spell-levels");
+ const levelGroups=[];
+ let highest=Math.max(3,...Object.keys(card.slots||{}).map(Number),
+  ...(card.spells||[]).map(sp=>Number(sp.level)||0));
+ highest=Math.min(9,highest);
+ function addLevel(level){
+  const wrap=el("section","edit-level-block"),heading=el("div","edit-level-heading");
+  heading.append(el("h3","","LEVEL "+level));
+  const slots=field("Slots (max)",card.slots?.[level]??0,"number");
+  heading.append(slots.wrap);wrap.append(heading);
+  const grid=el("div","spell-button-grid edit-spell-grid");
+  wrap.append(grid);levels.append(wrap);
+  const readSpells=actionList(grid,"Level "+level,(card.spells||[]).filter(sp=>sp.level===level),
+   ()=>({name:"",level,prepared:true}),(container,item)=>spellRow(container,item,level,card.rules),"spell");
+  levelGroups.push({level,slots:slots.node,readSpells});
+ }
+ for(let level=1;level<=highest;level++)addLevel(level);
+ const addLevelBtn=el("button","edit-add","+ Add spell level");
+ addLevelBtn.type="button";addLevelBtn.disabled=highest===9;
+ addLevelBtn.addEventListener("click",()=>{
+  if(highest>=9)return;highest++;addLevel(highest);addLevelBtn.disabled=highest===9;
+  levels.append(addLevelBtn);
+ });
+ levels.append(addLevelBtn);
+ const advanced=el("details","edit-advanced");
+ advanced.append(el("summary","","More character details · abilities, saves & skills"));
+ const advancedInner=el("div","edit-advanced-inner edit-grid");
+ const info=inputs(advancedInner,[
   ["species","Species",card.species],
   ["background","Background",card.background],
-  ["level","Level",card.level,"number",{min:1,max:20}],
-  ["rules","Edition",card.rules,"choice",{options:[["2014","2014"],["2024","2024"],["unspecified","Not specified"]]}],
-  ["hpMax","Maximum HP",card.hpMax,"number",{min:1,max:9999}],
-  ["ac","Armor Class",card.ac,"number",{min:0,max:50}],
-  ["speed","Walking speed (ft)",card.speed??"","number",{min:0,max:500}],
-  ["initiative","Initiative bonus",card.initiative,"number",{min:-30,max:30}],
-  ["spellAttack","Spell attack bonus",card.spellAttack,"number",{min:-30,max:30}],
-  ["spellDC","Spell save DC",card.spellDC,"number",{min:0,max:40}]
+  ["rules","Rules",card.rules,"choice",[["2014","2014"],["2024","2024"],["unspecified","Not specified"]]],
+  ["spellAttack","Spell attack bonus",card.spellAttack,"number"]
  ]);
- const abilitySection=section(rootEl,"Ability scores and saving throws");
- abilitySection.classList.add("edit-grid");
- const ability={},saves={};
+ const ability={},saves={},skills={};
  for(const key of CharacterFormModel.ABILITIES){
-  ability[key]=input(key+" score",card.ability?.[key]?.score??10,"number",{min:1,max:30});
-  saves[key]=input(key+" save bonus",card.saves?.[key]??0,"number",{min:-30,max:40});
-  abilitySection.append(ability[key].wrap,saves[key].wrap);
+  ability[key]=field(key+" score",card.ability?.[key]?.score??10,"number");
+  saves[key]=field(key+" save",card.saves?.[key]??0,"number");
+  advancedInner.append(ability[key].wrap,saves[key].wrap);
  }
- const slotSection=section(rootEl,"Spell slots (maximum)");
- slotSection.classList.add("edit-grid");
- const slots={};
- for(let level=1;level<=9;level++){
-  slots[level]=input("Level "+level,card.slots?.[level]??0,"number",{min:0,max:20});
-  slotSection.append(slots[level].wrap);
+ for(const key of CharacterFormModel.SKILLS){
+  skills[key]=field(key,card.skills?.[key]??0,"number");advancedInner.append(skills[key].wrap);
  }
- const weapons=listEditor(rootEl,"Weapons",card.weapons||[],[
-  ["name","Weapon name","text"],["category","Type","choice",{options:[["melee","Melee"],["ranged","Ranged"]]}],
-  ["bonus","Attack bonus","number",{min:-30,max:40}],["formula","Damage dice","text"]
- ],"Add weapon");
- const spellRecords=(card.spells||[]).map(sp=>{
-  const roll=CharacterSpellLogic.saveAbility(sp,CharacterSpellLogic.profile(sp,card.rules));
-  return {...sp,diceEdit:sp.custom?.dice||"",kindEdit:sp.custom?.type||"damage",
-   rollEdit:sp.custom?.attack?"ATTACK":roll||""};
- });
- const spells=listEditor(rootEl,"Spells and cantrips",spellRecords,[
-  ["name","Spell name","text"],["level","Level (0 = cantrip)","number",{min:0,max:9}],
-  ["prepared","Prepared?","choice",{options:[["true","Yes"],["false","No"]]}],
-  ["diceEdit","Damage/heal dice (optional)","text"],
-  ["kindEdit","Effect","choice",{options:[["damage","Damage"],["heal","Healing"],["effect","Other"]]}],
-  ["rollEdit","Roll","choice",{options:[["","No roll"],["ATTACK","Spell attack"],
-   ["STR","STR save"],["DEX","DEX save"],["CON","CON save"],
-   ["INT","INT save"],["WIS","WIS save"],["CHA","CHA save"]]}]
- ],"Add spell / cantrip");
+ advanced.append(advancedInner);rootEl.append(advanced);
  function collect(){
-  const values=Object.fromEntries(Object.entries(stats).map(([k,node])=>[k,node.value]));
-  values.ability={};values.saves={};values.slots={};
+  const result={...Object.fromEntries(Object.entries(basic).map(([k,n])=>[k,n.value])),
+   ...Object.fromEntries(Object.entries(stats).map(([k,n])=>[k,n.value])),
+   ...Object.fromEntries(Object.entries(info).map(([k,n])=>[k,n.value]))};
+  result.ability={};result.saves={};result.skills={};
   for(const key of CharacterFormModel.ABILITIES){
-   values.ability[key]={score:ability[key].node.value};
-   values.saves[key]=saves[key].node.value;
+   result.ability[key]={score:ability[key].node.value};
+   result.saves[key]=saves[key].node.value;
   }
-  for(let level=1;level<=9;level++)values.slots[level]=slots[level].node.value;
-  values.weapons=weapons().map(w=>({
-   ...w,bonus:Number(w.bonus),damage:w.formula,category:w.category
-  }));
-  values.spells=spells().map(sp=>{
-   const next={...sp,level:Number(sp.level),prepared:sp.prepared==="true"||sp.level==="0"};
-   const dice=String(sp.diceEdit||"").trim();
-   const existing=CharacterSpellLogic.profile(sp,card.rules);
-   if(dice&&/^([1-9]|[12]\d|30)d(4|6|8|10|12|20)$/i.test(dice)){
-    next.custom={...sp.custom,type:sp.kindEdit==="heal"?"heal":"damage",dice,
-     per:Number(sp.custom?.per)||0,targets:Number(sp.custom?.targets)||1,
-     attack:sp.rollEdit==="ATTACK"};
-   }else if(!sp.custom)delete next.custom;
-   if(sp.rollEdit&&sp.rollEdit!=="ATTACK")next.save=sp.rollEdit;
-   if(sp.rollEdit==="ATTACK"){next.save="";next.custom={...next.custom,
-    type:next.custom?.type||existing?.type||"effect",attack:true};}
-   for(const key of ["diceEdit","kindEdit","rollEdit"])delete next[key];
-   return next;
-  });
-  return values;
+  for(const key of CharacterFormModel.SKILLS)result.skills[key]=skills[key].node.value;
+  result.weapons=[...groups.melee(),...groups.ranged()];
+  result.slots={};result.spells=groups.cantrip();
+  for(const {level,slots,readSpells} of levelGroups){
+   result.slots[level]=slots.value;result.spells.push(...readSpells());
+  }
+  return result;
  }
  return {collect,stats};
 }

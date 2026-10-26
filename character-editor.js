@@ -8,12 +8,13 @@ function open(card,isNew=false){
  form=CharacterFormFields.build($("editorFields"),card);
  $("editorMessage").textContent=isNew?
   "Fill out the character, then choose Save & Play.":"Changes take effect only when you save.";
- $("editorHeading").textContent=isNew?"Create a character":"Edit "+card.name;
+ $("editorMessage").textContent=isNew?"Create your character on the card.":"Edit this card in place; Save & Play returns to the buttons.";
  $("editor").hidden=false;$("play").classList.add("hidden");
  $("importPanel").open=false;
  const portrait=$("portraitPreview");
  const photo=CharacterFormModel.safePortrait(card.portrait);
  portrait.src=photo||"";portrait.hidden=!photo;
+ $("editPortraitPlaceholder").hidden=!!photo;
  $("portraitUpload").value="";portrait.dataset.ready="";
  $("editor").scrollIntoView({block:"start",behavior:"instant"});
 }
@@ -61,6 +62,7 @@ function updatePortrait(file){
    $("portraitPreview").src=encoded;
    $("portraitPreview").dataset.ready=encoded;
    $("portraitPreview").hidden=false;
+   $("editPortraitPlaceholder").hidden=true;
    $("editorMessage").textContent="Portrait selected. Save & Play to apply it.";
   }catch(error){
    console.warn("Could not prepare portrait",error);
@@ -75,6 +77,7 @@ function initialize(onSave,current){
  $("createBtn").addEventListener("click",()=>open(CharacterFormModel.blank(),true));
  $("editCharacterBtn").addEventListener("click",()=>{const current=getCurrent?.();if(current)open(current,false);});
  $("saveCharacterBtn").addEventListener("click",save);
+ $("saveCharacterBottom").addEventListener("click",save);
  $("cancelCharacterBtn").addEventListener("click",cancel);
  $("portraitUpload").addEventListener("change",e=>updatePortrait(e.target.files?.[0]));
 }

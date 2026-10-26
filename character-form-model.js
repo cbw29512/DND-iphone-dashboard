@@ -55,6 +55,8 @@ function apply(base,values){
   next.ability[key]={...old,score,mod:Math.floor((score-10)/2)};
   next.saves[key]=clamp(values.saves?.[key]??base.saves?.[key]??0,-30,40);
  }
+ next.skills={...base.skills};
+ for(const skill of SKILLS)next.skills[skill]=clamp(values.skills?.[skill]??base.skills?.[skill]??0,-30,40);
  next.slots={};next.remaining={};
  for(let level=1;level<=9;level++){
   const newMax=clamp(values.slots?.[level]??0,0,20);
