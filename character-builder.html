@@ -53,22 +53,41 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 .phone-sheet .phone-note{font-size:10px;font-weight:850;color:#f4c77c;text-align:center;letter-spacing:.07em}
 @media(max-width:850px){.layout{grid-template-columns:1fr}.sticky{position:static}.wrap{padding:10px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:380px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.buttons{grid-template-columns:1fr}.resources{grid-template-columns:1fr}}
-</style><link rel="stylesheet" href="character-card.css?v=one-sheet-20261026"></head><body><div class="wrap">
+</style><link rel="stylesheet" href="character-card.css?v=one-sheet-20261026"><link rel="stylesheet" href="character-form.css?v=form-play-20261026"></head><body><div class="wrap">
 <div class="header"><div><h1>D&D One-Touch Character Sheet</h1><p class="subtitle">One full-screen card: choose an action, press once, get the result.</p></div><a href="./index.html">Donovan’s existing card</a></div>
 <details class="panel import-drawer" id="importPanel" open><summary>Import / switch character</summary>
-<div class="row"><input type="file" id="pdfFile" accept="application/pdf,.pdf" aria-label="Choose a D&D Beyond exported character PDF"><button id="importBtn" class="primary">Build Character Card</button><button id="demoBtn" class="good" type="button">Try Playable Demo</button><select id="roster" aria-label="Previously imported characters"><option value="">Saved characters…</option></select><button id="loadBtn">Load Saved</button><label class="linkbtn" for="jsonFile" style="cursor:pointer">Restore Card JSON</label><input id="jsonFile" type="file" accept=".json,application/json" aria-label="Restore previously exported character card JSON" style="max-width:175px"></div>
+<div class="row"><button id="createBtn" class="primary" type="button">Create Character Manually</button><input type="file" id="pdfFile" accept="application/pdf,.pdf" aria-label="Choose a D&D Beyond exported character PDF"><button id="importBtn" class="primary">Build Character Card</button><button id="demoBtn" class="good" type="button">Try Playable Demo</button><select id="roster" aria-label="Previously imported characters"><option value="">Saved characters…</option></select><button id="loadBtn">Load Saved</button><label class="linkbtn" for="jsonFile" style="cursor:pointer">Restore Card JSON</label><input id="jsonFile" type="file" accept=".json,application/json" aria-label="Restore previously exported character card JSON" style="max-width:175px"></div>
 <p class="hint">D&D Beyond → open character → Manage → Export to PDF. Your PDF is read locally in this browser; it is not uploaded to a server. Needs an internet connection to load the PDF reader library the first time.</p>
 <p id="message" role="status">Choose an exported PDF to begin.</p>
 </details>
+<section id="editor" class="panel character-editor" hidden aria-label="Character creation and editing form">
+ <div class="edit-header"><div><h2 id="editorHeading">Edit character</h2><p id="editorMessage" role="status">Edit the data that creates the play card.</p></div><div class="row"><button id="saveCharacterBtn" class="good" type="button">Save &amp; Play</button><button id="cancelCharacterBtn" type="button">Cancel</button></div></div>
+ <section class="edit-section">
+  <h3>Character picture</h3>
+  <div class="row"><img id="portraitPreview" alt="Selected character picture" hidden width="100" height="120"><label>Upload picture <input type="file" id="portraitUpload" accept="image/png,image/jpeg,image/webp"></label></div>
+  <p class="hint">The picture stays in this browser. A PDF may not contain an extractable character image.</p>
+ </section>
+ <div id="editorFields"></div>
+ <div class="edit-footer"><button type="button" class="good" id="saveCharacterBottom" onclick="document.getElementById('saveCharacterBtn').click()">Save &amp; Play</button></div>
+</section>
 <div id="play" class="hidden" aria-label="One-screen character combat sheet">
-<div class="panel titlebar"><div><h2 id="who">Character</h2><div id="identity" class="subtitle"></div></div><div class="row"><button id="backupBtn">Export Card JSON</button><button id="deleteBtn" class="danger">Delete Saved Card</button></div></div>
+<div class="panel titlebar"><div><h2 id="who">Character</h2><div id="identity" class="subtitle"></div></div><div class="row"><button id="editCharacterBtn" class="primary">Edit Character</button><button id="backupBtn">Export Card JSON</button><button id="deleteBtn" class="danger">Delete Saved Card</button></div></div>
 <div class="layout">
 <div>
 <section class="panel">
 <div class="row"><button id="initiativeBtn" class="primary">Roll Initiative</button><button id="nextBtn">Next Turn</button><button id="fightBtn">New Fight</button><button id="shortRestBtn">Short Rest</button><button id="restBtn" class="good">Long Rest</button><button id="resetBtn" class="danger">Reset All</button></div>
-<div id="stats" class="stats"></div>
+<section class="portrait-hero" aria-label="Character picture and stats">
+ <div class="portrait-visual"><img id="portraitImage" alt="Character picture" hidden><div id="portraitInitials" aria-hidden="true"></div></div>
+ <div id="stats" class="stats portrait-stats"></div>
+</section>
 <div class="resources"><div class="resource"><label>HIT POINTS</label><strong id="hpLabel">—</strong><div class="row"><button data-hp="-5">−5</button><button data-hp="5">+5</button><input id="hpChange" aria-label="Damage or healing amount" type="number" min="1" value="10"><button id="damageBtn">Damage</button><button id="healBtn">Heal</button></div></div>
 <div class="resource"><label>SPELL SLOTS REMAINING</label><strong id="slotsLabel">—</strong><div class="row"><span class="note">Select Upcast level on each spell card. Base level is used by default.</span></div></div></div>
+<div class="quick-checks">
+ <label for="saveSelect">Saving throw</label><select id="saveSelect" aria-label="Choose saving throw"></select>
+ <button id="rollSaveBtn" type="button">ROLL SAVE</button>
+ <label for="abilitySelect">Ability check</label><select id="abilitySelect" aria-label="Choose ability check"></select>
+ <button id="rollAbilityBtn" type="button">ROLL CHECK</button>
+</div>
 <div id="turnTrack" class="row action-economy" aria-label="Turn action economy"><span id="actionUsed" class="turnchip">ACTION READY</span><span id="bonusUsed" class="turnchip">BONUS READY</span><button id="reactionBtn" type="button">REACTION READY</button><span id="slotUsed" class="turnchip">SLOTTED SPELL READY</span></div>
 <div class="inset" style="margin-top:9px"><div class="row"><label>Other d20 rolls:</label><div class="counter" id="modes"><button data-mode="normal" class="active">Normal</button><button data-mode="adv">ADV</button><button data-mode="dis">DIS</button></div><label>Heal targets:</label><select id="healTargets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><label for="healWho">Include self:</label><select id="healWho"><option value="others">Allies only</option><option value="self">Donovan / Self first</option></select><label for="wounded">Target wounded:</label><input id="wounded" type="checkbox" aria-label="Target is wounded for Toll the Dead"></div></div>
 </section>
@@ -96,6 +115,9 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <script src="character-spell-logic.js?v=level-cards-20261026"></script>
 <script src="character-spell-runtime.js?v=level-cards-20261026"></script>
 <script src="character-compact-card.js?v=one-sheet-20261026"></script>
+<script src="character-form-model.js?v=form-play-20261026"></script>
+<script src="character-form-fields.js?v=form-play-20261026"></script>
+<script src="character-editor.js?v=form-play-20261026"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
