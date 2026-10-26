@@ -19,6 +19,16 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;touch-action:man
 .counter{display:flex;gap:7px;flex-wrap:wrap}.counter button.active{background:#b28b53;color:#172332}.note{font-size:12px;color:#b9c7d5}
 textarea{width:100%;min-height:125px;resize:vertical;padding:10px;color:var(--ink);background:#0e1d2c;border:1px solid #5c7489;border-radius:9px}
 footer{font-size:12px;color:var(--mute);padding:12px 0}
+
+.remote-panel{margin-bottom:15px}.remote-row{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.qr-paper{background:white;color:#102030;display:flex;justify-content:center;align-items:center;border-radius:10px;min-width:192px;min-height:192px;padding:6px}.remote-row>div:last-child{flex:1;min-width:205px}.remote-row a{font-weight:850;color:#f9d88c}.remote-row p{font-size:12px;color:#c9dfde}
+#phoneView[hidden]{display:none!important}body.phone-only .wrap{display:none!important}
+body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:linear-gradient(#172d42,#081420);padding:15px}
+.phone-sheet{width:100%;max-width:600px;margin:auto;min-height:90dvh;padding:16px;display:flex;flex-direction:column;background:#0d1b29;border:1px solid #52687d;border-radius:18px}
+.phone-top{display:flex;justify-content:space-between;gap:7px;color:#f8cc84;font-size:11px;font-weight:950;letter-spacing:.05em}
+.phone-sheet h1{font-family:Georgia,serif;font-size:clamp(26px,9vw,42px);line-height:1.1;margin:25px 0 5px}
+.phone-sheet>p{color:#cbd5e0}.phone-vitals{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.phone-vitals b{padding:9px;background:#1a3546;border:1px solid #5c728a;border-radius:9px;font-size:13px}
+.phone-result{margin-top:20px;flex:1;border-top:2px solid #c49e60;padding:20px 2px}.phone-result h2{font:26px Georgia,serif}.phone-result #phoneResultTotal{font-size:clamp(30px,10vw,58px);font-weight:950;line-height:1.16;color:#98eac4;overflow-wrap:anywhere}.phone-result p{font-size:clamp(16px,4.2vw,22px);line-height:1.55;color:#e5ebee;overflow-wrap:anywhere;white-space:pre-wrap}
+.phone-sheet .phone-note{font-size:10px;font-weight:850;color:#f4c77c;text-align:center;letter-spacing:.07em}
 @media(max-width:850px){.layout{grid-template-columns:1fr}.sticky{position:static}.wrap{padding:10px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:380px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.buttons{grid-template-columns:1fr}.resources{grid-template-columns:1fr}}
 </style></head><body><div class="wrap">
@@ -47,8 +57,12 @@ footer{font-size:12px;color:var(--mute);padding:12px 0}
 <section class="panel"><h2>Notes</h2><textarea id="notes" placeholder="Enemy AC, clues, tactics, loot, session notes…"></textarea><div class="hint" id="notesHint">Auto-saved for this character in this browser.</div></section>
 <section class="panel"><h2>Import review</h2><p class="hint" id="review">Review bonuses and spell preparation before play.</p><button id="editBtn">Review spell preparation</button><div id="spellReview" class="hidden"></div></section>
 </div></div></div>
+<section class="panel remote-panel" id="remotePanel" aria-label="QR pairing for a read-only phone display"><div><h2>Phone Display · QR Pairing</h2><p class="hint">Scan this code on your iPhone. The phone shows only the latest roll, HP and remaining spell slots; it cannot control the character. Phone and laptop may be on different networks.</p></div><div class="remote-row"><div id="remoteQR" class="qr-paper">Loading QR…</div><div><a id="remotePhoneLink" href="#" target="_blank" rel="noopener">Open paired phone display</a><p id="remoteStatus" role="status">Connecting…</p><button type="button" id="phoneRefresh">Refresh Phone Display</button></div></div></section>
 <footer>This is an importer for your exported character sheet, not an official D&D Beyond integration. Unknown or custom ability mechanics are shown for manual resolution instead of being invented. Saved cards are local to this browser.</footer>
 </div>
+<main id="phoneView" hidden aria-label="Read-only D&D character phone card">
+  <div class="phone-sheet"><div class="phone-top"><span id="phoneTurn">TURN 1</span><span id="phoneSignal">CONNECTING</span></div><h1 id="phoneName">ONE-CLICK CHARACTER</h1><p id="phoneClass">Scan the QR on the laptop to connect.</p><div class="phone-vitals"><b id="phoneHP">HP —</b><b id="phoneSlots">SLOTS —</b></div><div class="phone-result"><h2 id="phoneResultTitle">READY FOR INITIATIVE</h2><div id="phoneResultTotal">ROLL INITIATIVE</div><p id="phoneResultDetails">The laptop controls the character. Results appear here.</p></div><p class="phone-note">READ-ONLY DISPLAY · ROLLS COME FROM LAPTOP</p></div>
+</main>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script>
 "use strict";
@@ -124,7 +138,7 @@ function parseCharacter(fields){
 }
 function persist(){
  if(!character)return;
- try{const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");roster[character.id]=character;localStorage.setItem(STORAGE,JSON.stringify(roster));localStorage.setItem(ACTIVE,character.id);$("message").textContent="Card saved in this browser.";fillRoster();}catch(error){$("message").textContent="Storage could not save this card: "+error.message;}
+ try{const roster=JSON.parse(localStorage.getItem(STORAGE)||"{}");roster[character.id]=character;localStorage.setItem(STORAGE,JSON.stringify(roster));localStorage.setItem(ACTIVE,character.id);$("message").textContent="Card saved in this browser.";fillRoster();window.characterRemote?.publish?.();}catch(error){$("message").textContent="Storage could not save this card: "+error.message;}
 }
 function fillRoster(){
  const select=$("roster"),old=select.value;select.replaceChildren(new Option("Saved characters…",""));
@@ -309,4 +323,4 @@ function initialize(){
  try{const last=localStorage.getItem(ACTIVE),r=JSON.parse(localStorage.getItem(STORAGE)||"{}");if(last&&r[last])loadCard(r[last]);}catch(error){console.warn("Saved card not loaded",error);}
 }
 initialize();
-</script></body></html>
+</script><script src="character-remote.js?v=builder-v2"></script></body></html>
