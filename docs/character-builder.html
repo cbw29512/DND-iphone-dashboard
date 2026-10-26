@@ -128,19 +128,23 @@ function parseCharacter(fields){
   const rawName=f.value.trim(),spellName=rawName.replace(/\s+\[R\]$/,"");
   const candidates=headers.filter(h=>h.page<=f.page&&((h.page<f.page)||h.y>=Number(f.rect?.[1]||0)));
   const level=candidates.length?candidates[candidates.length-1].level:0;
-  const prepared=level===0||value("spellPrepared"+i).trim().toUpperCase()==="P";
+  const source=value("spellSource"+i);
+  const featCast=rules==="2024"&&level===1&&/Magic Initiate/i.test(source);
+  const prepared=level===0||value("spellPrepared"+i).trim().toUpperCase()==="P"||featCast;
   const key=level+"|"+spellName.toLowerCase();
   const old=spellMap.get(key);
-  if(old){old.prepared=old.prepared||prepared;continue;}
-  spellMap.set(key,{name:spellName,level,prepared,source:value("spellSource"+i),save:value("spellSaveHit"+i),time:value("spellCastingTime"+i),range:value("spellRange"+i),duration:value("spellDuration"+i),notes:value("spellNotes"+i)});
+  if(old){old.prepared=old.prepared||prepared;if(featCast){old.freeCastMax=1;old.freeCastRemaining=1;}continue;}
+  spellMap.set(key,{name:spellName,level,prepared,source,freeCastMax:featCast?1:0,freeCastRemaining:featCast?1:0,save:value("spellSaveHit"+i),time:value("spellCastingTime"+i),range:value("spellRange"+i),duration:value("spellDuration"+i),notes:value("spellNotes"+i)});
  }
  const slots={};
  for(let i=1;i<=9;i++){
   const txt=raw("spellSlotHeader"+i),m=txt.match(/(\d+)\s+Slots?/i);
   if(m)slots[i]=Number(m[1]);
  }
+ const equipment=Object.keys(fields).filter(key=>/^Eq Name\d+$/i.test(key)).map(key=>raw(key).trim()).filter(Boolean);
+ const initiativeAdvantage=equipment.some(item=>/Sentinel Shield/i.test(item));
  const char={id:(name+"|"+classes).toLowerCase().replace(/[^a-z0-9|]/g,"-").slice(0,120),name,classes,level,rules,life,blessedHealer,background:value("BACKGROUND"),species:value("RACE"),
-   ac:toNum(value("AC"),10),hpMax:toNum(value("MaxHP"),1),hp:toNum(value("CurrentHP"),toNum(value("MaxHP"),1)),initiative:toNum(value("Init"),0),
+   equipment,initiativeAdvantage,ac:toNum(value("AC"),10),hpMax:toNum(value("MaxHP"),1),hp:toNum(value("CurrentHP"),toNum(value("MaxHP"),1)),initiative:toNum(value("Init"),0),
    ability,saves,skills,weapons,features,spells:[...spellMap.values()].sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)),slots,remaining:{...slots},
    spellAttack:toNum(value("spellAtkBonus0"),0),spellDC:toNum(value("spellSaveDC0"),0),turn:1,notes:"",concentration:"",concentrationSlot:0,result:{name:"TURN 1",total:"ROLL INITIATIVE",detail:"Ready for one-click combat."}};
  return char;
@@ -164,7 +168,12 @@ function doAttack(w){
  const r=d20(),d=w.formula?dice(w.formula):null;
  show(w.name,"ATTACK "+(r.value+w.bonus)+(d?" · DMG "+d.total:""),r.text+" "+signed(w.bonus)+" = "+(r.value+w.bonus)+". "+(d?d.text+". ":"Damage dice not readable from the PDF. ")+(w.notes?"Other weapon effects (check conditions): "+w.notes:""));
 }
-function doCheck(label,mod){const r=d20();show(label,r.value+mod+" TOTAL",r.text+" "+signed(mod)+" = "+(r.value+mod)+". DM sets the DC.");}
+function doCheck(label,mod,forcedAdv=false){
+ const previous=mode;
+ if(forcedAdv)mode=mode==="dis"?"normal":"adv";
+ const r=d20();mode=previous;
+ show(label,r.value+mod+" TOTAL",r.text+" "+signed(mod)+" = "+(r.value+mod)+". DM sets the DC."+(forcedAdv?" Equipment grants advantage on this check.":""));
+}
 const KNOWN_2024={
  "Healing Word":{type:"heal",dice:"2d4",per:2,targets:1},
  "Cure Wounds":{type:"heal",dice:"2d8",per:2,targets:1},
@@ -178,7 +187,10 @@ function cast(sp){
  if(sp.level>0&&!sp.prepared){show("NOT PREPARED",sp.name,"The exported PDF does not mark this spell as prepared. Review spell preparation to enable it.");return;}
  // Ongoing Spirit Guardians damage is a repeat effect, not a new spell slot.
  const ongoing=sp.name==="Spirit Guardians"&&character.concentration===sp.name;
- const spent=ongoing?{level:character.concentrationSlot||sp.level}:useSlot(sp.level);if(!spent)return;
+ const free=!ongoing&&sp.freeCastRemaining>0;
+ const spent=ongoing?{level:character.concentrationSlot||sp.level}:free?{level:sp.level,free:true}:useSlot(sp.level);
+ if(!spent)return;
+ if(free)sp.freeCastRemaining--;
  const slot=spent.level,m=sp.custom||(character.rules==="2024"?KNOWN_2024[sp.name]:null);
  let text=sp.name+": "+(sp.notes||sp.range||sp.duration||"Consult the full spell description.")+". ";
  let total="CAST";
@@ -192,7 +204,7 @@ function cast(sp){
    const result=[];
    for(let i=0;i<targets;i++){
      const roll=dice(count+"d"+sides);
-     const life=m.type==="heal"&&character.life?(2+slot):0;
+     const life=m.type==="heal"&&character.life&&!spent.free?(2+slot):0;
      const wis=m.type==="heal"&&(!sp.custom||m.addAbility)?(character.ability.WIS?.mod||0):0;
      const amount=roll.total+(m.type==="heal"?wis+life:0);
      result.push(amount);
@@ -201,16 +213,16 @@ function cast(sp){
    total=(targets>1?result.reduce((a,b)=>a+b,0)+" HP TOTAL":result[0]+(m.type==="heal"?" HP HEALED":" DAMAGE"));
    if(m.type==="heal"){
      const self=healWho==="self",allies=targets-(self?1:0);
-     const restoredSelf=self?result[0]:0,blessed=character.blessedHealer&&allies>0?(2+slot):0;
+     const restoredSelf=self?result[0]:0,blessed=character.blessedHealer&&allies>0&&!spent.free?(2+slot):0;
      if(self||blessed){character.hp=Math.min(character.hpMax,character.hp+restoredSelf+blessed);text+="Self HP is now "+character.hp+"/"+character.hpMax+". ";}
-     if(character.life)text+="Disciple of Life applied. ";
+     if(character.life&&!spent.free)text+="Disciple of Life applied. ";
      if(blessed)text+="Blessed Healer +"+blessed+" self HP from healing another creature. ";
      if(self)text+="Target 1 was self. ";
    }
  }else if(sp.level===0){total="CANTRIP";text+="Effect details may require the rulebook. ";}
  else{text+="Dice/effects could not be safely derived from this PDF; consult the spell text. ";}
  if((sp.name==="Spirit Guardians"||/Concentration/i.test(sp.duration||""))&&!ongoing){character.concentration=sp.name;character.concentrationSlot=slot;}
- text+=(sp.level?(ongoing?"Concentration ongoing; no extra slot spent. ":"Level "+slot+" slot spent; "+character.remaining[slot]+" remain. "):"No spell slot used. ")+(sp.save||"")+" "+(sp.duration||"");
+ text+=(sp.level?(ongoing?"Concentration ongoing; no extra slot spent. ":spent.free?"FREE FEAT CAST used · "+sp.freeCastRemaining+" remain until Long Rest. ":"Level "+slot+" slot spent; "+character.remaining[slot]+" remain. "):"No spell slot used. ")+(sp.save||"")+" "+(sp.duration||"");
  show(sp.name,total,text);
 }
 function feature(f){
@@ -227,7 +239,7 @@ function spellBtn(root,sp){
  const ready=sp.prepared||sp.level===0;
  const mechanic=sp.custom||(character.rules==="2024"?KNOWN_2024[sp.name]:null);
  const targetNote=mechanic?.type==="heal"?(mechanic.targets>1?"HEALS UP TO "+mechanic.targets:"HEALS 1"):mechanic?.targets>1?"TARGETS "+mechanic.targets:"";
- const text=sp.custom?"CUSTOM "+(sp.custom.type||"ROLL").toUpperCase()+" · LEVEL "+sp.level:sp.level===0?"CANTRIP · AT WILL":ready?"LEVEL "+sp.level+" · READY":"LEVEL "+sp.level+" · NOT PREPARED";
+ const text=sp.freeCastRemaining>0?"FREE FEAT CAST AVAILABLE":sp.custom?"CUSTOM "+(sp.custom.type||"ROLL").toUpperCase()+" · LEVEL "+sp.level:sp.level===0?"CANTRIP · AT WILL":ready?"LEVEL "+sp.level+" · READY":"LEVEL "+sp.level+" · NOT PREPARED";
  btn(root,sp.name,text,(targetNote?targetNote+" · ":"")+(sp.custom?("Configured "+sp.custom.dice+" · "+sp.custom.targets+" target(s)"):((sp.range||sp.time||"")+" · "+(sp.notes||sp.duration||"").slice(0,80))),()=>cast(sp),!ready?"uncertain":sp.custom?"featured":"");
 }
 function renderActions(){
@@ -264,6 +276,8 @@ function renderActions(){
  }else{
    heading(root,"All weapon attacks from PDF");
    character.weapons.forEach(w=>btn(root,w.name,"ATTACK "+signed(w.bonus),w.damage+" "+w.notes,()=>doAttack(w)));
+   heading(root,"Equipment");
+   for(const item of character.equipment||[])btn(root,item,"INVENTORY","Imported item; consult item text for special rules.",()=>show("EQUIPMENT",item,"Inventory item from D&D Beyond PDF."));
    heading(root,"Character stats");
    ABBR.forEach(k=>btn(root,k+" "+character.ability[k].score,"MOD "+signed(character.ability[k].mod),"Use Checks tab to roll",()=>doCheck(k+" Check",character.ability[k].mod)));
  }
@@ -352,12 +366,12 @@ function initialize(){
  $("importBtn").addEventListener("click",() => importPDF($("pdfFile").files[0]));
  $("pdfFile").addEventListener("change",()=>{$("message").textContent=$("pdfFile").files[0]?.name||"Select a PDF."});
  $("loadBtn").addEventListener("click",()=>{try{const id=$("roster").value;const c=JSON.parse(localStorage.getItem(STORAGE)||"{}")[id];if(c)loadCard(c);else $("message").textContent="Choose a saved character first.";}catch(e){$("message").textContent="Saved character could not be loaded."; }});
- $("initiativeBtn").addEventListener("click",()=>doCheck("INITIATIVE",character.initiative));
+ $("initiativeBtn").addEventListener("click",()=>doCheck("INITIATIVE",character.initiative,character.initiativeAdvantage));
  $("nextBtn").addEventListener("click",()=>{character.turn++;show("TURN "+character.turn,"READY","Actions and reactions available.");});
  $("fightBtn").addEventListener("click",()=>{character.turn=1;character.concentration="";character.concentrationSlot=0;show("TURN 1","ROLL INITIATIVE","New fight. HP and spent slots preserved.");});
- $("restBtn").addEventListener("click",()=>{character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;character.concentration="";character.concentrationSlot=0;for(const f of character.features)if(f.usesMax)f.remainingUses=f.usesMax;show("LONG REST","READY FOR INITIATIVE","HP, spell slots, and tracked feature uses restored.");});
+ $("restBtn").addEventListener("click",()=>{character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;character.concentration="";character.concentrationSlot=0;for(const sp of character.spells)if(sp.freeCastMax)sp.freeCastRemaining=sp.freeCastMax;for(const f of character.features)if(f.usesMax)f.remainingUses=f.usesMax;show("LONG REST","READY FOR INITIATIVE","HP, spell slots, and tracked feature uses restored.");});
  $("shortRestBtn").addEventListener("click",()=>{for(const f of character.features)if(f.usesMax&&f.recovers==="short")f.remainingUses=f.usesMax;show("SHORT REST","RESOURCES UPDATED","Tracked short-rest abilities restored. HP and spell slots unchanged unless your rules say otherwise.");});
- $("resetBtn").addEventListener("click",()=>{if(!confirm("Reset HP, spell slots and turn to starting values? Notes remain."))return;character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;character.concentration="";character.concentrationSlot=0;for(const f of character.features)if(f.usesMax)f.remainingUses=f.usesMax;show("RESET ALL","ROLL INITIATIVE","HP, slots and tracked feature uses reset. Notes preserved.");});
+ $("resetBtn").addEventListener("click",()=>{if(!confirm("Reset HP, spell slots and turn to starting values? Notes remain."))return;character.hp=character.hpMax;character.remaining={...character.slots};character.turn=1;character.concentration="";character.concentrationSlot=0;for(const sp of character.spells)if(sp.freeCastMax)sp.freeCastRemaining=sp.freeCastMax;for(const f of character.features)if(f.usesMax)f.remainingUses=f.usesMax;show("RESET ALL","ROLL INITIATIVE","HP, slots and tracked feature uses reset. Notes preserved.");});
  document.querySelectorAll("[data-hp]").forEach(b=>b.addEventListener("click",()=>{character.hp=Math.max(0,Math.min(character.hpMax,character.hp+Number(b.dataset.hp)));show("HIT POINTS",character.hp+" / "+character.hpMax,"HP tracker updated.");}));
  for(const [id,mult] of [["damageBtn",-1],["healBtn",1]])$(id).addEventListener("click",()=>{const n=Number($("hpChange").value);if(!Number.isInteger(n)||n<1)return;character.hp=Math.max(0,Math.min(character.hpMax,character.hp+mult*n));show("HIT POINTS",character.hp+" / "+character.hpMax,(mult<0?"Damage":"Healing")+" "+n+".");});
  $("modes").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{mode=b.dataset.mode;renderAll();}));
