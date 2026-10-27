@@ -43,8 +43,9 @@ function load(storage,template,catalog){
 }
 function save(storage,state,template,catalog){
  try{
+  if(!storage||typeof storage.setItem!=="function")throw Error("No local storage");
   const clean=normalize(state,template,catalog);
-  storage?.setItem?.(KEY,JSON.stringify({version:VERSION,state:clean}));
+  storage.setItem(KEY,JSON.stringify({version:VERSION,state:clean}));
   return {saved:true};
  }catch(error){return {saved:false,message:"Local browser storage unavailable. Your changes may not survive a refresh."};}
 }
