@@ -41,7 +41,7 @@ try{
   classList:{add(x){this.classes?.add?.(x);}},
   append(...nodes){this.children.push(...nodes);}
  })};
- const context={document,console,window:{},globalThis:null};
+ const context={document,console,window:{}};
  vm.createContext(context);vm.runInContext(source,context,{filename:"character-table.js"});
  const render=context.TableActionDisplay.render;
  render({name:"Donovan",turn:2,result:{name:"Mace of Disruption",
