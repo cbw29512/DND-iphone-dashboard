@@ -1,0 +1,144 @@
+/* Faithful to the requested one-card sketch:
+   Name / picture / HP AC movement / action buttons / levelled spell buttons. */
+.wrap{padding:8px 12px;width:100%;max-width:none}
+.header{max-width:1340px;margin:0 auto 4px;padding:0 3px}
+.header h1{font:700 18px/1.2 system-ui,sans-serif;margin:0}
+.header .subtitle{font-size:11px;margin:2px 0}
+.import-drawer{max-width:1340px;margin:0 auto 7px;border-color:#3d5266}
+.import-drawer:not([open]){padding:4px 8px;background:transparent;border-color:#2e4253}
+.card-workspace{max-width:720px;margin:0 auto}
+.card-workspace.split-edit{max-width:1340px;margin:0 auto;
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:12px}
+.card-editor-pane{min-width:0;border:1px solid #5b7085;border-radius:14px;background:#162535}
+.card-editor-pane[hidden]{display:none!important}
+:is(#play,#editorCard){width:100%;max-width:none;min-height:0!important;padding:10px 12px 14px;
+ background:#162535;border:1px solid #536b80;border-radius:14px;box-shadow:none}
+#editorCard{padding-top:3px;border:0}
+.pane-heading{max-width:none;margin:4px 0 9px;padding:3px 2px 6px;
+ font-size:10px;letter-spacing:.08em;color:#b5c8d9;border-color:#344b60}
+.pane-heading span{font-size:10px;font-weight:450}
+.card-editor-pane>.pane-heading{margin:10px 12px 5px}
+#editorCard .pane-heading{display:none}
+:is(#play,#editorCard)>.titlebar{position:static!important;display:flex;
+ justify-content:space-between;gap:8px;align-items:center;margin:0 0 8px!important;
+ padding:0 2px 7px!important;border-bottom:1px solid #455a6e}
+:is(#play,#editorCard)>.titlebar h2{font:800 clamp(20px,2.3vw,28px)/1.14 system-ui,sans-serif;
+ margin:0 0 2px;overflow-wrap:anywhere}
+:is(#play,#editorCard)>.titlebar .subtitle{font-size:11px;color:#a6bbc9;margin:0}
+#play #editCharacterBtn{font-size:11px;min-height:31px;white-space:nowrap;padding:4px 8px}
+#play .card-management{position:relative}
+#play .card-management>summary{cursor:pointer;padding:4px 8px;color:#d6c4a4;
+ border:1px solid #526b80;border-radius:6px;list-style:none}
+#play .card-management[open]{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+#play .card-management button{font-size:10px;padding:4px 7px;min-height:28px}
+:is(#play,#editorCard) .layout{display:flex;flex-direction:column;gap:0}
+:is(#play,#editorCard) .layout>div:first-child,:is(#play,#editorCard) .sticky{display:contents}
+:is(#play,#editorCard) .panel{border:0;background:transparent;padding:0;margin:0}
+:is(#play,#editorCard) .portrait-hero{margin:0 0 10px;min-height:240px;
+ border:1px solid #576e80;border-radius:12px;overflow:hidden;background:#142d40}
+:is(#play,#editorCard) .portrait-visual img{object-fit:cover;object-position:center 24%}
+:is(#play,#editorCard) .stats.portrait-stats{display:grid!important;position:absolute;bottom:0;left:0;right:0;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px;margin:0;
+ padding:40px 8px 8px;background:linear-gradient(transparent,rgba(3,13,22,.95))}
+:is(#play,#editorCard) .portrait-stats .stat{padding:7px 3px;border:1px solid #72889a;
+ border-radius:9px;background:rgba(11,29,43,.92);text-align:center}
+:is(#play,#editorCard) .portrait-stats .stat small{font-size:11px;letter-spacing:.08em;color:#e0c291}
+:is(#play,#editorCard) .portrait-stats .stat b{font-size:clamp(19px,2vw,26px);
+ font-variant-numeric:tabular-nums;color:#fff6e6}
+:is(#play,#editorCard) #actions.buttons{display:flex;flex-direction:column;gap:7px;padding:0}
+:is(#play,#editorCard) #actions .section{margin:7px 0 0;padding:4px 0 5px;
+ font-size:11px;letter-spacing:.04em;color:#e6c58e;background:transparent;
+ border-bottom:1px solid #4c5e6d}
+:is(#play,#editorCard) #actions .quick-grid{display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px}
+:is(#play,#editorCard) #actions .quick-section{display:contents}
+:is(#play,#editorCard) #actions .quick-section>h3{display:none}
+:is(#play,#editorCard) #actions .quick-section>.empty{display:none}
+:is(#play,#editorCard) #actions .spell-button-grid{display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px}
+:is(#play,#editorCard) #actions .weapon-card,
+:is(#play,#editorCard) #actions .spell-card{position:relative;display:flex!important;
+ flex-direction:column;align-items:stretch;gap:0;min-width:0;
+ padding:3px;border:1px solid #476174;border-radius:9px;background:#203349}
+:is(#play,#editorCard) #actions .weapon-head,
+:is(#play,#editorCard) #actions .spell-head{display:block;flex:1;min-width:0;width:100%}
+:is(#play,#editorCard) #actions .weapon-head>div{width:100%;min-width:0}
+:is(#play,#editorCard) #actions .weapon-icon,
+:is(#play,#editorCard) #actions .weapon-sub,
+:is(#play,#editorCard) #actions .spell-head small{display:none!important}
+:is(#play,#editorCard) #actions button.weapon-name,
+:is(#play,#editorCard) #actions button.spell-primary{display:flex;align-items:center;
+ justify-content:center;text-align:center;width:100%;height:100%;min-height:46px;
+ margin:0;padding:8px 22px 8px 6px;font-size:clamp(11px,1.15vw,14px);
+ font-weight:750;line-height:1.15;white-space:normal;overflow-wrap:anywhere;
+ background:#8c6231;border:1px solid #bb8b50;border-radius:6px;color:#fff5e5}
+:is(#play,#editorCard) #actions button.weapon-name:hover,
+:is(#play,#editorCard) #actions button.spell-primary:hover{background:#9c703e}
+:is(#play,#editorCard) #actions .play-action-options{position:static;
+ display:block;width:100%;padding:0 3px;color:#e8d2b6}
+:is(#play,#editorCard) #actions .play-action-options>summary{position:absolute;
+ top:7px;right:6px;z-index:1;padding:0 3px;border-radius:4px;
+ font-size:13px;line-height:22px;cursor:pointer;list-style:none;
+ color:#f8e8d5;background:rgba(29,48,63,.5)}
+:is(#play,#editorCard) #actions .play-action-options>summary::-webkit-details-marker{display:none}
+:is(#play,#editorCard) #actions .play-action-options[open]{padding:6px 3px 4px}
+:is(#play,#editorCard) #actions .play-action-options .weapon-rolls,
+:is(#play,#editorCard) #actions .play-action-options .spell-rolls{display:flex!important;
+ grid-column:auto;grid-row:auto;gap:4px;flex-wrap:wrap;padding:3px 0}
+:is(#play,#editorCard) #actions .play-action-options button{flex:1;min-height:32px;
+ font-size:10px;padding:4px}
+:is(#play,#editorCard) #actions .play-action-options .spell-upcast{display:flex;
+ flex-direction:column;grid-column:auto;grid-row:auto;margin:4px 0 1px;
+ font-size:10px}
+:is(#play,#editorCard) #actions .play-action-options select{width:100%;max-width:100%;font-size:11px}
+:is(#play,#editorCard) #actions .play-action-options .weapon-special-row{font-size:10px;
+ grid-column:auto;line-height:1.25}
+:is(#play,#editorCard) #actions .play-action-options .weapon-editor{font-size:10px}
+:is(#play,#editorCard) #actions .inline-result{width:100%;grid-column:auto;
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;
+ padding:5px 1px 2px;border:0;background:#123136}
+:is(#play,#editorCard) #actions .inline-result .value small{font-size:8px}
+:is(#play,#editorCard) #actions .inline-result .value strong{font-size:16px}
+:is(#play,#editorCard) #actions .inline-result .event-note{font-size:9px}
+#play .card-tools{border:1px solid #394e60;border-radius:7px;
+ background:#132537;margin:7px 0;padding:5px 8px}
+#play .card-tools>summary{cursor:pointer;font-size:11px;color:#b9c8d6}
+#play .card-tools .row{gap:5px}
+#play .card-tools button{font-size:11px;min-height:32px;padding:4px 7px}
+#play .card-tools .resources{margin-top:6px}
+#play #latestPanel{margin:8px 0;border:1px solid #3b5869;border-radius:8px;padding:8px}
+#play #latestPanel h2{font-size:11px;color:#dac195}
+#play .support-details,#play .setup-details{margin-top:8px}
+#remotePanel{max-width:720px;margin:10px auto!important}
+#remotePanel>summary{cursor:pointer;color:#e7cd9f;font-size:12px}
+#play .card-tools.card-other-tabs{margin-top:10px}
+#editorCard .card-edit-action{min-width:0}
+#editorCard .card-edit-action .card-field{min-width:0}
+#editorCard .card-edit-action .card-field input{width:100%;min-width:0;font-size:12px}
+#editorCard #actions .card-add{min-height:42px;border:1px dashed #6d8697;
+ background:#17293b;border-radius:8px;text-align:center;font-size:11px}
+#editorCard #actions .card-remove{position:absolute;right:2px;top:2px;
+ min-width:22px;min-height:24px;padding:1px;background:#643e40;z-index:2}
+#editorCard #actions .card-edit-action{min-height:51px;padding:5px 26px 5px 5px}
+#editorCard #actions .card-edit-action .card-edit-extra{font-size:10px;margin-top:3px}
+#editorCard #actions .card-edit-action .card-edit-extra>summary{font-size:10px;color:#bbd0d9}
+#editorCard #actions .card-edit-level{display:flex;justify-content:space-between;
+ align-items:center;gap:7px;border-bottom:1px solid #4c5e6d}
+#editorCard #actions .card-edit-level>.card-field{max-width:84px}
+#editorCard .card-advanced{margin-top:10px}
+#editorCard .card-advanced-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+#editorCard .portrait-stats .stat .card-field{display:flex}
+#editorCard .portrait-stats .stat input{font-size:18px;text-align:center}
+#editorCard .card-portrait-upload{right:9px;top:9px}
+@media(max-width:1050px){
+ .card-workspace.split-edit{grid-template-columns:1fr;max-width:720px}
+}
+@media(max-width:520px){
+ :is(#play,#editorCard) .portrait-hero{min-height:205px}
+ :is(#play,#editorCard) #actions .quick-grid,
+ :is(#play,#editorCard) #actions .spell-button-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ #editorCard .card-advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #play .titlebar .row{gap:3px}
+ :is(#play,#editorCard) #actions button.weapon-name,
+ :is(#play,#editorCard) #actions button.spell-primary{min-height:44px;font-size:12px}
+}
