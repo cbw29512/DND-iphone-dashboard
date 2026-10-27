@@ -45,7 +45,8 @@ const spellStat=(c,sub)=>c.casting||(["eldritch-knight","arcane-trickster"].incl
 function derive(s){
  const lv=clamp(s.level,1,20),c=CATALOG.byClass(s.classId),scores=s.scores||START_SCORES;
  const selected=CATALOG.bySubclass(s.subclass),homebrew=!!(selected&&selected.classId!==c.id);
- const activeSubclass=selected&&lv>=c.archetypeLevel?selected:null;
+ const subclassUnlock=selected?Math.max(c.archetypeLevel,CATALOG.byClass(selected.classId).archetypeLevel):c.archetypeLevel;
+ const activeSubclass=selected&&lv>=subclassUnlock?selected:null;
  const mods=Object.fromEntries(ABILITIES.map(k=>[k,mod(clamp(scores[k],1,30))]));
  const prof=Math.min(6,2+Math.floor((lv-1)/4));
  const average=Math.floor(c.die/2)+1;
@@ -76,7 +77,7 @@ function derive(s){
  });
  const alerts=[];
  if(homebrew)alerts.push("HOMEBREW: "+selected.name+" belongs to "+CATALOG.byClass(selected.classId).name+", not "+c.name+". DM approval needed; gaining this subclass does not grant levels or base features of its original class.");
- if(selected&&lv<c.archetypeLevel)alerts.push(c.name+" gains its subclass at level "+c.archetypeLevel+"; "+selected.name+" features are inactive until then.");
+ if(selected&&lv<subclassUnlock)alerts.push(selected.name+" unlocks at level "+subclassUnlock+" in this workshop; its features are inactive until then.");
  if(s.armor==="chain"&&scores.STR<13)alerts.push("Chain mail requires STR 13 to avoid a 10 ft speed penalty (subject to race/feature exceptions).");
  const armorRank={none:0,leather:1,scale:2,chain:3},limit={none:0,light:1,medium:2,heavy:3};
  const subclassHeavy=c.id==="cleric"&&activeSubclass&&["life","nature","tempest","war"].includes(activeSubclass.id);
@@ -89,7 +90,7 @@ function derive(s){
  if(s.shield&&characterWeapons.some(w=>w.blocked))alerts.push("Two-handed weapons require both hands. Doff the shield first.");
  if(characterWeapons.some(w=>!w.proficient))alerts.push("A nonproficient weapon does not receive the proficiency bonus to its attack roll.");
  if(c.id==="druid"&&s.armor==="scale")alerts.push("Check the armor material: 2014 Druids do not wear metal armor.");
- const casting=spellStat(c,activeSubclass?.id);
+ const casting=c.casting==="half"&&lv<2?null:spellStat(c,activeSubclass?.id);
  const slots=CATALOG.spellSlots(c.id,activeSubclass?.id,lv);
  const spellDC=casting?8+prof+mods[casting]:null;
  const spellAttack=casting?prof+mods[casting]:null;
