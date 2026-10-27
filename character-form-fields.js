@@ -33,10 +33,10 @@ function weapon(w){
  const rolls=el("div","weapon-rolls card-edit-rolls");
  const bonus=field(rolls,"HIT",w.bonus??0,"number"),dice=field(rolls,"DAMAGE",w.formula||"");
  const remove=button("×",()=>{},"card-remove");
- art.append(rolls,remove);
+ art.append(remove);
  const details=el("details","card-edit-extra"),head=el("summary","","Notes");
  const notes=field(details,"Weapon notes",w.notes||"");
- details.prepend(head);art.append(details);
+ details.prepend(head,rolls);art.append(details);
  return {element:art,remove,read:o=>{
   const formula=dice.value.trim().replace(/\s/g,""),unchanged=formula===String(o.formula||"");
   return {...o,name:name.value.trim(),bonus:Number(bonus.value),formula,
@@ -87,8 +87,7 @@ function build(card,targets){
  const statFields={};
  for(const [key,label,value] of [
   ["hpMax","HP",card.hpMax],["ac","AC",card.ac],
-  ["speed","MOVE ft",card.speed??""],["initiative","INIT",card.initiative],
-  ["level","LEVEL",card.level],["spellDC","SPELL DC",card.spellDC]]){
+  ["speed","MOVE ft",card.speed??""]]){
   const tile=el("div","stat");statFields[key]=field(tile,label,value,"number");stats.append(tile);
  }
  section(actions,"ATTACKS & AT-WILL CANTRIPS");
@@ -132,7 +131,10 @@ function build(card,targets){
   background:field(groupEl,"Background",card.background),
   rules:field(groupEl,"Edition",card.rules,"text",
    [["2014","2014"],["2024","2024"],["unspecified","Unspecified"]]),
-  spellAttack:field(groupEl,"Spell attack",card.spellAttack,"number")
+  spellAttack:field(groupEl,"Spell attack",card.spellAttack,"number"),
+  initiative:field(groupEl,"Initiative",card.initiative,"number"),
+  level:field(groupEl,"Level",card.level,"number"),
+  spellDC:field(groupEl,"Spell DC",card.spellDC,"number")
  };
  const scores={},saves={},skills={};
  for(const key of CharacterFormModel.ABILITIES){
