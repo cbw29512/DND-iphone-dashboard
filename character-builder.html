@@ -53,7 +53,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 .phone-sheet .phone-note{font-size:10px;font-weight:850;color:#f4c77c;text-align:center;letter-spacing:.07em}
 @media(max-width:850px){.layout{grid-template-columns:1fr}.sticky{position:static}.wrap{padding:10px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:380px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.buttons{grid-template-columns:1fr}.resources{grid-template-columns:1fr}}
-</style><link rel="stylesheet" href="character-card.css?v=twopane-20261026"><link rel="stylesheet" href="character-form.css?v=twopane-20261026"><link rel="stylesheet" href="character-sketch.css?v=sketch-20261026"><link rel="stylesheet" href="character-quick-build.css?v=quick-build-20261027"></head><body><div class="wrap">
+</style><link rel="stylesheet" href="character-card.css?v=twopane-20261026"><link rel="stylesheet" href="character-form.css?v=twopane-20261026"><link rel="stylesheet" href="character-sketch.css?v=sketch-20261026"><link rel="stylesheet" href="character-quick-build.css?v=quick-build-20261027"><link rel="stylesheet" href="character-table.css?v=table-stage-20261027"></head><body><div class="wrap">
 <div class="header"><div><h1>Character Card Builder</h1><p class="subtitle">Edit the card on the left. Play from the card on the right.</p></div><a href="./index.html">Donovan’s existing card</a></div>
 <section class="panel quick-builder" id="quickBuilder" aria-label="Fast character card creation">
  <div class="quick-builder-heading">
@@ -93,7 +93,7 @@ Level 4: Ice Storm"></textarea>
  <p id="cardEditMessage" role="status" class="hint"></p>
 </section>
 <div id="play" class="hidden" aria-label="Playable character card preview"><div class="pane-heading preview-heading">PLAY CARD <span>Tap a button to use it</span></div>
-<div class="panel titlebar"><div><h2 id="who">Character</h2><div id="identity" class="subtitle"></div></div><div class="row"><button id="editCharacterBtn" class="primary">Edit Card</button><details class="card-management"><summary aria-label="Card management">⋯</summary><button id="backupBtn">Export JSON</button><button id="deleteBtn" class="danger">Delete Card</button></details></div></div>
+<div class="panel titlebar"><div><h2 id="who">Character</h2><div id="identity" class="subtitle"></div></div><div class="row"><button id="editCharacterBtn" class="primary">Edit Card</button><a id="tableDisplayLink" class="linkbtn table-launch" href="#" target="_blank" rel="noopener" aria-disabled="true" title="Open the table display on a second screen">Show Table</a><details class="card-management"><summary aria-label="Card management">⋯</summary><button id="backupBtn">Export JSON</button><button id="deleteBtn" class="danger">Delete Card</button></details></div></div>
 <div class="layout">
 <div>
 <section class="panel">
@@ -130,11 +130,29 @@ Level 4: Ice Storm"></textarea>
 <details class="panel support-details"><summary>Import review / spell preparation</summary><p class="hint" id="review">Review bonuses and spell preparation before play.</p><button id="editBtn">Review spell preparation</button><div id="spellReview" class="hidden"></div></details>
 </div></div></div></div>
 <details class="panel roll-log"><summary>Roll Log · detailed dice and rules</summary><div id="rollLog"></div></details>
-<details class="panel remote-panel" id="remotePanel" aria-label="QR pairing for a read-only phone display"><summary>Phone · QR pairing</summary><div><h2>Phone Display · QR Pairing</h2><p class="hint">Scan this code on your iPhone. The phone mirrors the compact character card, remaining slots and latest roll. It is read-only; rolls are controlled on the laptop. Phone and laptop may be on different networks. Small result snapshots travel through the ntfy.sh relay (not end-to-end encrypted); your PDF and notes are not uploaded.</p></div><div class="remote-row"><div id="remoteQR" class="qr-paper">Loading QR…</div><div><a id="remotePhoneLink" href="#" target="_blank" rel="noopener">Open paired phone display</a><p id="remoteStatus" role="status">Connecting…</p><button type="button" id="phoneRefresh">Refresh Phone Display</button></div></div></details>
+<details class="panel remote-panel" id="remotePanel" aria-label="QR pairing for a read-only phone display"><summary>Share with table / phone · QR pairing</summary><div><h2>Live Table &amp; Phone Displays</h2><p class="hint">Scan this code on your iPhone. The phone mirrors the compact character card, remaining slots and latest roll. It is read-only; rolls are controlled on the laptop. Phone and laptop may be on different networks. Small result snapshots travel through the ntfy.sh relay (not end-to-end encrypted); your PDF and notes are not uploaded.</p></div><div class="remote-row"><div id="remoteQR" class="qr-paper">Loading QR…</div><div><a id="remotePhoneLink" href="#" target="_blank" rel="noopener">Open paired phone display</a><a id="remoteTableLink" href="#" target="_blank" rel="noopener">Open shared table display</a><p id="remoteStatus" role="status">Connecting…</p><button type="button" id="phoneRefresh">Refresh Phone Display</button></div></div></details>
 <footer>This is an importer for your exported character sheet, not an official D&D Beyond integration. Unknown or custom ability mechanics are shown for manual resolution instead of being invented. Saved cards are local to this browser.</footer>
 </div>
 <main id="phoneView" hidden aria-label="Read-only D&D character phone card">
   <div class="phone-sheet"><div class="phone-top"><span id="phoneTurn">TURN 1</span><span id="phoneSignal">CONNECTING</span></div><h1 id="phoneName">ONE-CLICK CHARACTER</h1><p id="phoneClass">Scan the QR on the laptop to connect.</p><div class="phone-portrait"><div id="phoneAvatar">PC</div><div class="phone-vitals"><b id="phoneHP">HP —</b><b id="phoneAC">AC —</b><b id="phoneSpeed">MOVE —</b><b id="phoneSlots">SLOTS —</b></div></div><div id="phoneActions" class="phone-actions" aria-label="Character buttons mirrored from laptop"></div><div class="phone-result"><h2 id="phoneResultTitle">READY FOR INITIATIVE</h2><div id="phoneResultTotal">ROLL INITIATIVE</div><div id="phoneWeaponStats" class="weapon-roll-summary" hidden></div><p id="phoneResultDetails">The laptop controls the character. Results appear here.</p></div><p class="phone-note">READ-ONLY DISPLAY · ROLLS COME FROM LAPTOP</p></div>
+</main>
+<main id="tableView" hidden aria-label="Shared table display showing the latest character action">
+ <section class="table-stage" id="tableStage">
+  <header class="table-stage-header">
+   <div><span class="table-stage-kicker">LIVE CHARACTER ACTION</span><div id="tableActor">Waiting for character…</div></div>
+   <div class="table-stage-controls"><span id="tableSignal" role="status">CONNECTING</span><button id="tableFullscreen" type="button" aria-label="Fullscreen table display">Fullscreen</button></div>
+  </header>
+  <div class="table-action" id="tableAction">
+   <div class="table-action-glyph" id="tableGlyph" aria-hidden="true">⚔</div>
+   <h1 id="tableActionName">READY FOR ADVENTURE</h1>
+   <div class="table-action-type" id="tableActionType">Press a character action to begin</div>
+   <div class="table-rolls" id="tableRolls" aria-live="polite" aria-atomic="true">
+    <div class="table-roll"><span>ACTION</span><strong>Waiting for player</strong></div>
+   </div>
+   <p class="table-rule-note" id="tableRuleNote">Rolls appear automatically when a character acts.</p>
+  </div>
+  <footer class="table-stage-footer"><span id="tableRound">TURN —</span><span>DISPLAY ONLY · CONTROL ACTIONS FROM THE CHARACTER CARD</span></footer>
+ </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="character-spell-logic.js?v=level-cards-20261026"></script>
@@ -709,4 +727,5 @@ function initialize(){
  try{const last=localStorage.getItem(ACTIVE),r=JSON.parse(localStorage.getItem(STORAGE)||"{}");if(last&&r[last])loadCard(r[last]);}catch(error){console.warn("Saved card not loaded",error);}
 }
 initialize();
-</script><script src="character-remote.js?v=sketch-20261026"></script></body></html>
+</script><script src="character-table.js?v=table-stage-20261027"></script>
+<script src="character-remote.js?v=table-stage-20261027"></script></body></html>

@@ -5,10 +5,12 @@ const BASE="https://ntfy.sh/";
 const STORE="oneclick_remote_v1";
 const args=new URLSearchParams(location.search);
 const phone=args.get("view")==="phone";
+const table=args.get("view")==="table";
+const viewer=phone||table;
 const encoder=new TextEncoder();
 const to64=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");
 const from64=str=>Uint8Array.from(atob(str.replace(/-/g,"+").replace(/_/g,"/").padEnd(Math.ceil(str.length/4)*4,"=")),v=>v.charCodeAt(0));
-const status=message=>{const el=document.getElementById(phone?"phoneSignal":"remoteStatus");if(el)el.textContent=message;};
+const status=message=>{const el=document.getElementById(table?"tableSignal":phone?"phoneSignal":"remoteStatus");if(el)el.textContent=message;};
 let session=null,latestIssued=0,latestSeen=0,lastPayload="",source=null;
 function copySnapshot(){
  if(typeof character==="undefined"||!character)return null;
@@ -33,11 +35,11 @@ function copySnapshot(){
   slots:c.remaining||{},result,
   sent:Date.now()};
 }
-function phoneUrl(pair){
+function pairedUrl(pair,view){
  const u=new URL(location.href);
  u.search="";
- u.searchParams.set("view","phone");
- u.searchParams.set("v","twopane-20261026");
+ u.searchParams.set("view",view);
+ u.searchParams.set("v","table-stage-20261027");
  u.searchParams.set("room",pair.room);
  u.searchParams.set("pub",pair.public);
  return u.href;
@@ -60,7 +62,7 @@ async function getPair(){
  return {...data,privateKey:keypair.privateKey};
 }
 async function publish(refresh=false){
- if(phone||!session)return;
+ if(viewer||!session)return;
  const snap=copySnapshot();if(!snap)return;
  try{
   const ts=Math.max(Date.now(),latestIssued+1);latestIssued=ts;
@@ -93,25 +95,31 @@ async function startController(){
  try{
   if(!crypto?.subtle)throw Error("HTTPS is required for secure pairing");
   session=await getPair();
-  const url=phoneUrl(session);
+  const url=pairedUrl(session,"phone"),tableUrl=pairedUrl(session,"table");
   const link=document.getElementById("remotePhoneLink");
   if(link){link.href=url;link.textContent="Open paired phone display";}
+  const tableLink=document.getElementById("remoteTableLink");
+  if(tableLink)tableLink.href=tableUrl;
+  const launch=document.getElementById("tableDisplayLink");
+  if(launch){launch.href=tableUrl;launch.setAttribute("aria-disabled","false");}
   showQR(url);
   document.getElementById("phoneRefresh")?.addEventListener("click",()=>publish(true));
-  status("Scan QR code. Phone works on different Wi-Fi or mobile data.");
+  status("Ready: open Show Table on a TV or second monitor, or scan for phone. Display links work on other networks.");
   window.characterRemote={publish};
   if(typeof character!=="undefined"&&character)publish();
  }catch(error){status("Pairing error: "+error.message);console.error(error);}
 }
 async function startPhone(){
- document.body.classList.add("phone-only");
- const panel=document.getElementById("phoneView");
+ document.body.classList.add(table?"table-only":"phone-only");
+ const panel=document.getElementById(table?"tableView":"phoneView");
  if(panel)panel.hidden=false;
+ if(table)window.TableActionDisplay?.initializeFullscreen?.();
  try{
   const room=args.get("room")||"",pub=args.get("pub")||"";
   if(!/^oneclick-[0-9a-f]{32}$/.test(room)||!/^[A-Za-z0-9_-]{80,200}$/.test(pub))throw Error("Scan the QR on the laptop to pair this phone.");
   const publicKey=await crypto.subtle.importKey("spki",from64(pub),{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
   const render=snap=>{
+   if(table){window.TableActionDisplay?.render?.(snap);return;}
    const set=(id,value)=>{const e=document.getElementById(id);if(e)e.textContent=String(value??"");};
    set("phoneName",snap.name);set("phoneClass",snap.classes);
    set("phoneAvatar",snap.portraitInitials||"PC");
@@ -214,5 +222,5 @@ async function startPhone(){
   refresh();
  }catch(error){status(error.message);console.error("Phone setup",error);}
 }
-if(phone)startPhone();else startController();
+if(viewer)startPhone();else startController();
 })();
