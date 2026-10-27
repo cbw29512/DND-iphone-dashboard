@@ -142,3 +142,31 @@
  :is(#play,#editorCard) #actions button.weapon-name,
  :is(#play,#editorCard) #actions button.spell-primary{min-height:44px;font-size:12px}
 }
+
+/* The paired phone uses the same visual hierarchy, without pretending to be an input controller. */
+.phone-sheet{max-width:640px;margin:auto;min-height:100dvh;padding:12px;border-radius:0;background:#162535}
+.phone-sheet h1{font:800 24px/1.2 system-ui,sans-serif;margin:6px 0 3px}
+.phone-sheet>p{font-size:11px;margin:0 0 7px}
+.phone-portrait{min-height:206px;display:flex;align-items:center;justify-content:center;
+ position:relative;margin:0 0 10px;padding:10px;border:1px solid #536b80;
+ border-radius:12px;background:#142d40}
+#phoneAvatar{background:none;border:none;width:auto;height:auto;
+ font:700 78px/1 Georgia,serif;color:#dbc092;opacity:.6}
+.phone-portrait .phone-vitals{display:grid;position:absolute;left:0;right:0;bottom:0;
+ grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0;
+ padding:38px 8px 8px;background:linear-gradient(transparent,rgba(3,13,22,.95))}
+.phone-portrait .phone-vitals b{font-size:12px;text-align:center;padding:9px 2px;
+ border:1px solid #72889a;border-radius:9px;background:rgba(11,29,43,.92)}
+.phone-portrait #phoneSlots{display:none}
+.phone-actions .phone-quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.phone-actions .phone-action-column{display:contents}
+.phone-actions .phone-action-column>h3{display:none}
+.phone-actions button{font-size:12px;min-height:46px;line-height:1.2;padding:6px 5px;
+ border:1px solid #bb8b50;border-radius:7px;background:#8c6231}
+.phone-actions .phone-spell-level{padding:3px 0 0;margin:11px 0 0;border-top:1px solid #4c5e6d}
+.phone-actions .phone-spell-level h3{font-size:11px;color:#e6c58e}
+.phone-actions .phone-spell-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.phone-sheet .phone-result{margin-top:9px}
+@media(max-width:520px){
+ .phone-actions .phone-quick-grid,.phone-actions .phone-spell-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
