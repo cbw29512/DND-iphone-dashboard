@@ -272,6 +272,7 @@ function renderResult(){
   cells.push({label:"ATTACK "+(i+1),value:roll.attack});
   cells.push({label:"DAMAGE "+(i+1),value:roll.damage,tip:roll.crit?"CRITICAL":r.adv?"ADV":"POTENTIAL"});
  });
+ else if(r?.type==="allocated"){cells.push({label:"HEALING POOL ALLOCATED",value:r.heal});}
  else if(r?.type==="heal"){cells.push({label:"HEALED",value:r.heal});cells.push({label:"CURRENT HP",value:r.to});}
  else if(r?.type==="feature"){cells.push({label:"EXTRA ACTION",value:"+1"});}
  else if(r?.type==="notice"){cells.push({label:"CHECK",value:"!"});}
