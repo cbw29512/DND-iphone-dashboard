@@ -1,0 +1,81 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
+try{
+ const root=path.resolve(__dirname,"..");
+ const read=p=>fs.readFileSync(path.join(root,p),"utf8");
+ for(const name of ["workshop.html","character-workshop.js","character-workshop.css"])
+  assert.equal(read(name),read("docs/"+name),"Root/docs deployment parity: "+name);
+ const html=read("workshop.html"),js=read("character-workshop.js"),css=read("character-workshop.css");
+ const ctx={console,Math,Date};vm.createContext(ctx);
+ new vm.Script(js,{filename:"character-workshop.js"}).runInContext(ctx);
+ const e=ctx.CharacterWorkshopEngine;
+ assert.ok(e,"Exposes calculation engine");
+ const blank=e.fresh();let d=e.derive(blank);
+ assert.equal(d.maxHP,44,"2014 Fighter HP using fixed 6 after level one");
+ assert.equal(d.ac,18,"chain mail and shield");
+ assert.equal(d.speed,30);
+ assert.equal(d.prof,3);
+ assert.equal(d.initiative,1);
+ assert.equal(d.trainedAthletics,6);
+ assert.equal(d.attacks,2,"Fighter level 5 gets Extra Attack");
+ assert.equal(d.weaponList[0].bonus,"+6");
+ assert.equal(d.weaponList[0].damageLabel,"1d8+3");
+ assert.equal(d.mode,"RAW");
+ let stronger={...blank,scores:{...blank.scores,STR:18}};
+ let d2=e.derive(stronger);
+ assert.equal(d2.weaponList[0].bonus,"+7");
+ assert.equal(d2.weaponList[0].damageLabel,"1d8+4");
+ assert.equal(d2.trainedAthletics,7);
+ assert.equal(d2.maxHP,44,"Strength does not change HP");
+ const hardy=e.derive({...blank,scores:{...blank.scores,CON:16}});
+ assert.equal(hardy.maxHP,49,"CON +1 mod per fighter level");
+ assert.equal(e.derive({...blank,shield:false}).ac,16);
+ assert.equal(e.derive({...blank,armor:"none",shield:false}).ac,11);
+ assert.equal(e.derive({...blank,scores:{...blank.scores,STR:12}}).speed,20,
+  "2014 chain mail strength requirement");
+ assert.equal(e.derive({...blank,level:1}).prof,2);
+ assert.equal(e.derive({...blank,level:1}).attacks,1);
+ assert.equal(e.derive({...blank,level:11}).attacks,3);
+ assert.equal(e.derive({...blank,level:20}).attacks,4);
+ assert.equal(e.derive({...blank,subclass:"champion"}).critMin,19);
+ assert.equal(e.derive({...blank,level:15,subclass:"champion"}).critMin,18);
+ assert.equal(e.derive({...blank,level:2,subclass:"champion"}).critMin,20);
+ const assassin=e.derive({...blank,subclass:"assassin"});
+ assert.equal(assassin.mode,"HOMEBREW");
+ assert.ok(assassin.alerts.join(" ").includes("Rogue"));
+ assert.ok(assassin.alerts.join(" ").includes("No Rogue levels or Sneak Attack"));
+ let critRoll=e.seededRoll({...blank,subclass:"champion"},"longsword",()=>.91);
+ assert.equal(critRoll.rows.length,2);
+ assert.equal(critRoll.rows[0].natural,19);
+ assert.equal(critRoll.rows[0].crit,true);
+ assert.equal(critRoll.rows[0].rolls,2);
+ const normal=e.seededRoll(blank,"longsword",()=>.91);
+ assert.equal(normal.rows[0].crit,false);
+ assert.equal(normal.rows[0].attack,25,"19 on die +6 to hit");
+ const homebrew=e.seededRoll({...blank,subclass:"assassin",foeNotActed:true,foeSurprised:true},"longsword",()=>.4);
+ assert.equal(homebrew.adv,true);
+ assert.equal(homebrew.homebrew,true);
+ assert.ok(homebrew.note.includes("DM confirms a hit"));
+ const shieldedBow=e.derive({...blank,weapons:["longbow"],shield:true});
+ assert.equal(shieldedBow.weaponList[0].blocked,true);
+ assert.match(e.seededRoll({...blank,weapons:["longbow"]},"longbow").error,/Doff/);
+ const bow=e.derive({...blank,weapons:["longbow"],shield:false});
+ assert.equal(bow.weaponList[0].attack,4,"Dex 12 + proficiency 3");
+ assert.equal(bow.weaponList[0].damageLabel,"1d8+1");
+ const rapier=e.derive({...blank,weapons:["rapier"],shield:false,scores:{...blank.scores,STR:10,DEX:18}});
+ assert.equal(rapier.weaponList[0].bonus,"+7","Finesse uses selected larger modifier in prototype");
+ for(const id of ["classDrop","subclassDrop","equipmentDrop","abilityGrid","cardHp","cardAc","cardProf","cardInit","cardExtra",
+  "actionButtons","playCard","resultNumbers","tablePreview","tableOverlay","closeTable","rulesNotice"])
+  assert.ok(html.includes('id="'+id+'"'),"Missing prototype component: "+id);
+ for(const source of ['data-kind="class" data-id="fighter"','data-kind="subclass" data-id="champion"',
+  'data-kind="subclass" data-id="assassin"','data-kind="weapon" data-id="longsword"'])
+  assert.ok(html.includes(source),"Missing draggable library block: "+source);
+ assert.ok(js.includes('addEventListener("dragstart"'));
+ assert.ok(js.includes('addEventListener("drop"'));
+ assert.ok(js.includes('addEventListener("click",()=>pick('));
+ assert.ok(js.includes('button.addEventListener')||js.includes('b.addEventListener("click",()=>rollWeapon'));
+ assert.ok(js.includes("prefers-reduced-motion")||css.includes("prefers-reduced-motion"));
+ assert.ok(html.includes("character-workshop.js?v=workshop-20261027"));
+ assert.ok(html.includes("character-workshop.css?v=workshop-20261027"));
+ console.log("Character workshop passed: drag/tap structure, Fighter 2014 calculations, Champions, homebrew Assassin alerts, reactive scores, combat buttons, table preview and root/docs parity.");
+}catch(error){console.error("Workshop regression failure:",error);process.exitCode=1;}
