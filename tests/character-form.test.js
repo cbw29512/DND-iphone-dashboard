@@ -22,7 +22,7 @@ try{
  }
  assert.match(html,/CharacterEditor\.initialize\(/,"Form must be wired to play card");
  assert.ok(!html.includes('id="editor"'),"No detached old editor remains");
- assert.match(get("character-editor.js"),/upload\.id="portraitUpload"/,"Picture upload is created on editor card");
+ assert.match(read("character-editor.js"),/upload\.id="portraitUpload"/,"Picture upload is created on editor card");
  assert.match(html,/draft=>loadCard\(draft,false\)/,"Unsaved manual drafts must not persist");
  assert.match(html,/CharacterFormModel\.parsedSpeed/,"Movement import must be attempted");
  assert.match(html,/CharacterFormModel\.safePortrait/,"Portrait must be validated");
