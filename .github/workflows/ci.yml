@@ -25,3 +25,4 @@ jobs:
       - run: node tests/character-live-preview.test.js
       - run: node tests/character-sketch-layout.test.js
       - run: node tests/character-quick-build.test.js
+      - run: node tests/character-table-display.test.js
