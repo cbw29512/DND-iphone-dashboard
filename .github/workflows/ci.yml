@@ -22,3 +22,4 @@ jobs:
       - run: node tests/character-compact.test.js
       - run: node tests/character-form.test.js
       - run: node tests/character-editor-layout.test.js
+      - run: node tests/character-live-preview.test.js
