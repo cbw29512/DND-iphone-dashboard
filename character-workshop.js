@@ -4,7 +4,8 @@
 "use strict";
 const CATALOG=root.CharacterWorkshopCatalog;
 const FEATURES=root.CharacterWorkshopFeatures;
-if(!CATALOG||!FEATURES)throw Error("Workshop class catalog or features failed to load.");
+const STORE=root.CharacterWorkshopStorage;
+if(!CATALOG||!FEATURES||!STORE)throw Error("Workshop class catalog, features or storage failed to load.");
 const ABILITIES=["STR","DEX","CON","INT","WIS","CHA"];
 const WEAPONS={
  longsword:{label:"Longsword",damage:"1d8",stat:"STR",twoHanded:false,martial:true},
@@ -33,7 +34,8 @@ const fresh=()=>({name:"Kael Voss",classId:"fighter",subclass:null,level:5,
  scores:{...START_SCORES},weapons:["longsword"],shield:true,armor:"chain",
  foeNotActed:false,foeSurprised:false,currentHP:null,secondWindUsed:false,surgeUsed:false,
  featureSpent:{},rageActive:false,result:null});
-let state=fresh();
+const storage=typeof localStorage==="undefined"?null:localStorage;
+let state=STORE.load(storage,fresh(),CATALOG);
 const mod=n=>Math.floor((n-10)/2);
 const sign=n=>(n>=0?"+":"")+n;
 const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(n))?Math.trunc(Number(n)):lo));
@@ -408,6 +410,8 @@ function render(){
  $("assassinOptions").hidden=state.subclass!=="assassin"||!d.subclassActive;
  $("foeNotActed").checked=state.foeNotActed;$("foeSurprised").checked=state.foeSurprised;
  renderResult();
+ const saved=STORE.save(storage,state,fresh(),CATALOG);
+ $("saveStatus").textContent=saved.saved?"Auto-saved on this device · nothing to submit":saved.message;
 }
 function initialize(){
  for(let lv=1;lv<=20;lv++){const opt=document.createElement("option");opt.value=lv;opt.textContent=lv;$("levelSelect").append(opt);}
@@ -460,7 +464,8 @@ function initialize(){
  $("resetGear").addEventListener("click",()=>{const c=CATALOG.byClass(state.classId);state.weapons=[c.defaultWeapon];state.shield=c.shield&&c.id!=="ranger";state.armor=defaultArmor(c);state.result=null;render();});
  $("resetScores").addEventListener("click",()=>{state.scores={...START_SCORES};state.result=null;render();});
  $("resetAll").addEventListener("click",()=>{state=fresh();render();});
- $("characterName").addEventListener("input",e=>{state.name=e.target.value; $("cardName").textContent=state.name.trim()||"Your character"; $("overlayActor").textContent=state.name||"Adventurer";});
+ $("characterName").addEventListener("input",e=>{state.name=e.target.value; $("cardName").textContent=state.name.trim()||"Your character"; $("overlayActor").textContent=state.name||"Adventurer";
+  const saved=STORE.save(storage,state,fresh(),CATALOG);$("saveStatus").textContent=saved.saved?"Auto-saved on this device":saved.message;});
  $("levelSelect").addEventListener("change",e=>{state.level=clamp(e.target.value,1,20);state.secondWindUsed=false;state.surgeUsed=false;state.currentHP=null;state.result=null;
   state.featureSpent={};state.rageActive=false;render();});
  $("armorSelect").addEventListener("change",e=>{state.armor=e.target.value;state.result=null;render();});

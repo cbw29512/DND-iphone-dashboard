@@ -2,7 +2,7 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
 try{
  const dir=path.resolve(__dirname,".."),read=p=>fs.readFileSync(path.join(dir,p),"utf8");
- const files=["character-workshop-features.js","character-workshop.js","workshop.html"];
+ const files=["character-workshop-features.js","character-workshop-storage.js","character-workshop.js","workshop.html"];
  for(const f of files)assert.equal(read(f),read("docs/"+f),"GitHub Pages parity "+f);
  const html=read("workshop.html"),engine=read("character-workshop.js");
  for(const id of ["featureRow","featureHelp","restButton","longRestButton","resultNumbers"])
@@ -13,7 +13,7 @@ try{
  assert.match(engine,/FEATURES\.sneakAttack\(state\)/);
  assert.match(engine,/FEATURES\.rageBonus\(s\.level\)/);
  const ctx={console,Math,Date};vm.createContext(ctx);
- for(const file of ["character-workshop-catalog.js","character-workshop-features.js","character-workshop.js"])
+ for(const file of ["character-workshop-catalog.js","character-workshop-features.js","character-workshop-storage.js","character-workshop.js"])
   new vm.Script(read(file),{filename:file}).runInContext(ctx);
  const e=ctx.CharacterWorkshopEngine,f=ctx.CharacterWorkshopFeatures;
  const s=()=>e.fresh(),d=x=>e.derive(x),get=(x,id)=>f.descriptors(x,d(x)).find(x=>x.id===id);
