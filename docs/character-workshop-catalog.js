@@ -78,7 +78,7 @@ function spellSlots(classId,subclassId,level){
  const c=byClass(classId),lv=Math.max(1,Math.min(20,Math.floor(Number(level)||1)));
  let raw=[];
  if(c.casting==="full")raw=FULL_SLOTS[lv-1];
- else if(c.casting==="half")raw=lv>=2?FULL_SLOTS[Math.floor(lv/2)-1]:[];
+ else if(c.casting==="half")raw=lv>=2?FULL_SLOTS[Math.ceil(lv/2)-1]:[];
  else if((classId==="fighter"&&subclassId==="eldritch-knight")||(classId==="rogue"&&subclassId==="arcane-trickster"))raw=THIRD_SLOTS[lv-1];
  else if(c.casting==="pact"){
   const slotLevel=lv<=2?1:lv<=4?2:lv<=6?3:lv<=8?4:5;
