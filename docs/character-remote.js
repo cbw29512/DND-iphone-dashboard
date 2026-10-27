@@ -16,7 +16,20 @@ function copySnapshot(){
  const result={...(c.result||{name:"READY",total:"ROLL INITIATIVE",detail:""})};
  // Phone needs compact numbers, not the private detailed dice log.
  if(result.weapon||result.spell)result.detail="";
+ const short=name=>String(name||"").slice(0,42);
+ const melee=[],ranged=[],cantrips=[],spells=[];
+ for(const w of (c.weapons||[]).slice(0,12)){
+  const name=short(w.name);
+  const category=w.category==="ranged"||(!w.category&&/bow|crossbow|sling|dart|blowgun|javelin|thrown/i.test(name))?ranged:melee;
+  category.push(name);
+ }
+ for(const sp of (c.spells||[])){
+  if(sp.level===0&&cantrips.length<10)cantrips.push(short(sp.name));
+  else if(sp.level>0&&sp.prepared&&spells.length<26)spells.push([sp.level,short(sp.name)]);
+ }
  return {name:c.name,classes:c.classes,ac:c.ac,hp:c.hp,hpMax:c.hpMax,turn:c.turn,
+  speed:c.speed??null,spellDC:c.spellDC,portraitInitials:String(c.name||"PC").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase(),
+  actions:{melee,ranged,cantrips,spells},
   slots:c.remaining||{},result,
   sent:Date.now()};
 }
@@ -24,7 +37,7 @@ function phoneUrl(pair){
  const u=new URL(location.href);
  u.search="";
  u.searchParams.set("view","phone");
- u.searchParams.set("v","spells-20261026");
+ u.searchParams.set("v","twopane-20261026");
  u.searchParams.set("room",pair.room);
  u.searchParams.set("pub",pair.public);
  return u.href;
@@ -101,7 +114,39 @@ async function startPhone(){
   const render=snap=>{
    const set=(id,value)=>{const e=document.getElementById(id);if(e)e.textContent=String(value??"");};
    set("phoneName",snap.name);set("phoneClass",snap.classes);
-   set("phoneHP","HP "+snap.hp+"/"+snap.hpMax+" · AC "+snap.ac);
+   set("phoneAvatar",snap.portraitInitials||"PC");
+   set("phoneAC","AC "+snap.ac);set("phoneSpeed","MOVE "+(snap.speed==null?"—":snap.speed+" ft"));
+   const actionRoot=document.getElementById("phoneActions");
+   if(actionRoot){
+    actionRoot.replaceChildren();
+    const sections=[["MELEE",snap.actions?.melee||[]],
+     ["RANGED",snap.actions?.ranged||[]],["CANTRIPS",snap.actions?.cantrips||[]]];
+    const group=document.createElement("div");group.className="phone-quick-grid";
+    for(const [label,names] of sections){
+     const col=document.createElement("section");col.className="phone-action-column";
+     const heading=document.createElement("h3");heading.textContent=label;col.append(heading);
+     for(const name of names){
+      const action=document.createElement("button");action.type="button";action.disabled=true;
+      action.textContent=name;action.title="Read-only phone mirror";col.append(action);
+     }
+     group.append(col);
+    }
+    actionRoot.append(group);
+    const spells=snap.actions?.spells||[];
+    for(const level of [...new Set(spells.map(([level])=>level))].sort((a,b)=>a-b)){
+     const section=document.createElement("section");section.className="phone-spell-level";
+     const heading=document.createElement("h3");
+     heading.textContent="LEVEL "+level+" SPELLS · "+(snap.slots?.[level]??0)+" LEFT";
+     section.append(heading);
+     const grid=document.createElement("div");grid.className="phone-spell-grid";
+     for(const [,name] of spells.filter(([n])=>n===level)){
+      const action=document.createElement("button");action.type="button";action.disabled=true;
+      action.textContent=name;action.title="Read-only phone mirror";grid.append(action);
+     }
+     section.append(grid);actionRoot.append(section);
+    }
+   }
+   set("phoneHP","HP "+snap.hp+"/"+snap.hpMax);
    set("phoneSlots",Object.keys(snap.slots||{}).sort((a,b)=>a-b).map(k=>"L"+k+" "+snap.slots[k]).join(" · "));
    set("phoneTurn","TURN "+snap.turn);
    set("phoneResultTitle",snap.result?.name||"READY");
