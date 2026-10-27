@@ -55,7 +55,7 @@ function activate(state,derived,id,random=Math.random,options={}){
  }else if(id==="ki"){
   note="1 Ki point spent. Choose and resolve the actual Monk technique manually; no attack or effect was assumed.";
  }else if(id==="layhands"){
-  result={type:"heal",name:"Lay on Hands · allocated",heal:spentNow,from:null,to:null};
+  result={type:"allocated",name:"Lay on Hands · allocated",heal:spentNow,from:null,to:null};
   note="Allocated "+spentNow+" point"+(spentNow===1?"":"s")+" from your healing pool. Apply up to this much healing to the touched target (or use the pool for a supported cleansing effect). This does not automatically change your own HP.";
  }else if(id==="sorcery"){
   note="1 Sorcery Point spent. Choose a legal Metamagic or Font of Magic option manually; no conversion or spell casting was assumed.";
