@@ -40,7 +40,8 @@ function weapon(w){
  return {element:art,remove,read:o=>{
   const formula=dice.value.trim().replace(/\s/g,""),unchanged=formula===String(o.formula||"");
   return {...o,name:name.value.trim(),bonus:Number(bonus.value),formula,
-   damage:unchanged?(o.damage||formula):formula,notes:notes.value};
+   damage:unchanged?(o.damage||formula):formula,notes:notes.value,
+   needsSetup:!formula};
  }};
 }
 function spell(sp,level,rules){

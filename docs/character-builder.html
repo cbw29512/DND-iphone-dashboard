@@ -53,10 +53,35 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 .phone-sheet .phone-note{font-size:10px;font-weight:850;color:#f4c77c;text-align:center;letter-spacing:.07em}
 @media(max-width:850px){.layout{grid-template-columns:1fr}.sticky{position:static}.wrap{padding:10px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:380px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.buttons{grid-template-columns:1fr}.resources{grid-template-columns:1fr}}
-</style><link rel="stylesheet" href="character-card.css?v=twopane-20261026"><link rel="stylesheet" href="character-form.css?v=twopane-20261026"><link rel="stylesheet" href="character-sketch.css?v=sketch-20261026"></head><body><div class="wrap">
+</style><link rel="stylesheet" href="character-card.css?v=twopane-20261026"><link rel="stylesheet" href="character-form.css?v=twopane-20261026"><link rel="stylesheet" href="character-sketch.css?v=sketch-20261026"><link rel="stylesheet" href="character-quick-build.css?v=quick-build-20261027"></head><body><div class="wrap">
 <div class="header"><div><h1>Character Card Builder</h1><p class="subtitle">Edit the card on the left. Play from the card on the right.</p></div><a href="./index.html">Donovan’s existing card</a></div>
-<details class="panel import-drawer" id="importPanel" open><summary>Import / switch character</summary>
-<div class="row"><button id="createBtn" class="primary" type="button">Create Character Manually</button><input type="file" id="pdfFile" accept="application/pdf,.pdf" aria-label="Choose a D&D Beyond exported character PDF"><button id="importBtn" class="primary">Build Character Card</button><button id="demoBtn" class="good" type="button">Try Playable Demo</button><select id="roster" aria-label="Previously imported characters"><option value="">Saved characters…</option></select><button id="loadBtn">Load Saved</button><label class="linkbtn" for="jsonFile" style="cursor:pointer">Restore Card JSON</label><input id="jsonFile" type="file" accept=".json,application/json" aria-label="Restore previously exported character card JSON" style="max-width:175px"></div>
+<section class="panel quick-builder" id="quickBuilder" aria-label="Fast character card creation">
+ <div class="quick-builder-heading">
+  <div><h2>Create a card by pasting a list</h2><p>Type a character name, HP, AC and movement. Then list weapons, cantrips and spells. No lengthy form.</p></div>
+  <button id="quickExample" type="button">Use Example</button>
+ </div>
+ <label for="quickText" class="quick-builder-label">Character outline</label>
+ <textarea id="quickText" rows="9" maxlength="8000" spellcheck="false" placeholder="Kael Voss
+HP 44  AC 15  Move 30
+Mace of Disruption | +5 | 1d6+2
+Crossbow | +4 | 1d8+2
+Cantrips: Light, Fire Bolt
+Slots: 5/4/3/3
+Level 1: Magic Missile, Alarm
+Level 2: Alter Self
+Level 3: Fireball
+Level 4: Ice Storm"></textarea>
+ <div class="quick-builder-bottom">
+  <p id="quickStatus" role="status">Paste a character outline or choose Use Example.</p>
+  <div class="row">
+   <button id="quickBuild" type="button" class="good">Build My Card</button>
+   <button id="quickImport" type="button">Import D&amp;D Beyond PDF</button>
+  </div>
+ </div>
+ <p class="hint">Weapon detail is optional: use <code>Mace | +5 | 1d6+2</code> for automatic attack rolls. Unknown attack bonuses or dice can be edited later. Spells with supported rules use the existing spell engine.</p>
+</section>
+<details class="panel import-drawer" id="importPanel"><summary>PDF import · Blank character · Saved cards</summary>
+<div class="row"><button id="createBtn" type="button">Start with Blank Card</button><input type="file" id="pdfFile" accept="application/pdf,.pdf" aria-label="Choose a D&D Beyond exported character PDF"><button id="importBtn" class="primary">Build Character Card</button><button id="demoBtn" class="good" type="button">Try Playable Demo</button><select id="roster" aria-label="Previously imported characters"><option value="">Saved characters…</option></select><button id="loadBtn">Load Saved</button><label class="linkbtn" for="jsonFile" style="cursor:pointer">Restore Card JSON</label><input id="jsonFile" type="file" accept=".json,application/json" aria-label="Restore previously exported character card JSON" style="max-width:175px"></div>
 <p class="hint">D&D Beyond → open character → Manage → Export to PDF. Your PDF is read locally in this browser; it is not uploaded to a server. Needs an internet connection to load the PDF reader library the first time.</p>
 <p id="message" role="status">Choose an exported PDF to begin.</p>
 </details>
@@ -118,6 +143,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <script src="character-form-model.js?v=inplace-20261026"></script>
 <script src="character-form-fields.js?v=twopane-20261026"></script>
 <script src="character-editor.js?v=twopane-20261026"></script>
+<script src="character-quick-build.js?v=quick-build-20261027"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -224,6 +250,10 @@ function useSlot(level,selected=level){
  return {level:slot};
 }
 function doAttack(w,chosenMode="normal"){
+ if(w.needsSetup){
+  show(w.name,"ADD WEAPON DICE","This attack was created from a name alone. Edit the weapon to set its attack bonus and damage dice before rolling.");
+  return;
+ }
  character.actionUsed=true;
  const r=d20(chosenMode),critical=r.value===20;
  const ordinary=String(w.formula||"");
@@ -637,6 +667,7 @@ function initialize(){
   ()=>{tab="fight";renderAll();},
   draft=>{character=draft;renderAll();window.characterRemote?.publish?.();}
  );
+ QuickCharacterBuilder.initialize(card=>CharacterEditor.open(card,true));
  for(const key of ABBR){$("saveSelect").add(new Option(key,key));$("abilitySelect").add(new Option(key,key));}
  $("rollSaveBtn").addEventListener("click",()=>{if(character){const key=$("saveSelect").value;doCheck(key+" SAVE",character.saves[key]??0);}});
  $("rollAbilityBtn").addEventListener("click",()=>{if(character){const key=$("abilitySelect").value;doCheck(key+" CHECK",character.ability[key]?.mod??0);}});

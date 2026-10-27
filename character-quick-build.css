@@ -1,0 +1,31 @@
+/* Paste-to-build is deliberately one input rather than a multi-page character wizard. */
+.quick-builder{max-width:1340px;margin:0 auto 9px!important;padding:13px 16px!important;
+ background:#1b3041!important;border:1px solid #637e91!important;border-radius:12px!important}
+.quick-builder-heading{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:8px}
+.quick-builder-heading h2{font-size:19px;color:#f0d49f;margin:0 0 3px}
+.quick-builder-heading p{font-size:12px;color:#c4d2de;margin:0}
+.quick-builder-heading>button{min-height:32px;padding:5px 10px;white-space:nowrap}
+.quick-builder-label{display:block;font-size:11px;color:#f1d49e;
+ font-weight:800;margin:5px 0}
+#quickText{display:block;width:100%;height:auto;min-height:168px;resize:vertical;
+ background:#0e2131;color:#f7f3e9;border:1px solid #7390a4;border-radius:9px;
+ padding:12px 14px;font:13px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;
+ letter-spacing:0;white-space:pre-wrap}
+#quickText::placeholder{color:#899eaf;opacity:1}
+#quickText:focus-visible{outline:2px solid #e6bd7e;outline-offset:2px}
+.quick-builder-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:9px 0 3px}
+#quickStatus{font-size:12px;color:#e4c58b;margin:0;flex:1 1 320px;line-height:1.4}
+.quick-builder-bottom .row{gap:7px}
+#quickBuild{font-size:13px;font-weight:850;min-height:39px;padding:8px 15px}
+#quickImport{font-size:12px;min-height:37px;padding:7px 12px}
+.quick-builder .hint{font-size:10px;color:#a4b7c4;margin:7px 0 0;line-height:1.4}
+.quick-builder .hint code{color:#e2c592;white-space:nowrap}
+@media(max-width:620px){
+ .quick-builder{padding:10px!important}
+ .quick-builder-heading h2{font-size:16px}
+ .quick-builder-heading p{font-size:11px}
+ .quick-builder-bottom{align-items:stretch}
+ .quick-builder-bottom .row{width:100%}
+ .quick-builder-bottom .row button{flex:1}
+ #quickText{min-height:230px;font-size:12px;padding:10px}
+}
