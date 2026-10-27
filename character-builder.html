@@ -250,6 +250,10 @@ function useSlot(level,selected=level){
  return {level:slot};
 }
 function doAttack(w,chosenMode="normal"){
+ if(w.needsSetup){
+  show(w.name,"ADD WEAPON DICE","This attack was created from a name alone. Edit the weapon to set its attack bonus and damage dice before rolling.");
+  return;
+ }
  character.actionUsed=true;
  const r=d20(chosenMode),critical=r.value===20;
  const ordinary=String(w.formula||"");
