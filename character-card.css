@@ -141,3 +141,30 @@
  .card-workspace.split-edit #editorCard .stats.portrait-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
  .pane-heading span{display:block;margin-left:0}
 }
+
+/* Phone reflects the usable right-hand card's organization, without remote editing. */
+.phone-portrait{background:#10263a;border:1px solid #536b7d;border-radius:12px;
+ min-height:115px;display:flex;align-items:center;gap:12px;padding:12px;margin:8px 0}
+#phoneAvatar{width:75px;height:87px;flex-shrink:0;display:grid;place-items:center;
+ font:700 34px Georgia,serif;color:#f2d49a;background:linear-gradient(145deg,#234359,#112a3d);
+ border-radius:10px;border:1px solid #72879a}
+.phone-portrait .phone-vitals{display:flex;gap:5px;flex-wrap:wrap;margin:0}
+.phone-portrait .phone-vitals b{font-size:11px;padding:6px}
+.phone-quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.phone-action-column{display:flex;flex-direction:column;gap:5px;padding:5px;background:#12283b;
+ border:1px solid #3f5b72;border-radius:9px;min-width:0}
+.phone-action-column h3,.phone-spell-level h3{font-size:10px;letter-spacing:.05em;
+ color:#f0cb91;margin:3px 0}
+.phone-actions button{min-width:0;min-height:35px;padding:5px;font-size:11px;border:1px solid #b88e60;
+ background:#876337;color:#fff4e6;border-radius:7px;text-align:center;overflow-wrap:anywhere}
+.phone-actions button:disabled{opacity:1;cursor:default}
+.phone-spell-level{margin:10px 0 0;padding:6px;border-top:1px solid #526475}
+.phone-spell-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.phone-sheet .phone-result{margin-top:13px;padding:10px 2px}
+.phone-sheet .phone-result h2{font-size:20px;margin:5px 0}
+@media(max-width:420px){
+ .phone-spell-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .phone-quick-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+ .phone-portrait{padding:8px;gap:7px}
+ #phoneAvatar{width:56px;height:75px}
+}
