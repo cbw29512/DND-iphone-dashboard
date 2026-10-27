@@ -2,11 +2,30 @@
    Derived stats are computed from build state; no independent form totals. */
 (function(root){
 "use strict";
+const CATALOG=root.CharacterWorkshopCatalog;
+if(!CATALOG)throw Error("Character workshop class catalog failed to load.");
 const ABILITIES=["STR","DEX","CON","INT","WIS","CHA"];
 const WEAPONS={
- longsword:{label:"Longsword",damage:"1d8",stat:"STR",twoHanded:false},
- rapier:{label:"Rapier",damage:"1d8",stat:"FINESSE",twoHanded:false},
- longbow:{label:"Longbow",damage:"1d8",stat:"DEX",twoHanded:true}
+ longsword:{label:"Longsword",damage:"1d8",stat:"STR",twoHanded:false,martial:true},
+ rapier:{label:"Rapier",damage:"1d8",stat:"FINESSE",twoHanded:false,martial:true},
+ longbow:{label:"Longbow",damage:"1d8",stat:"DEX",twoHanded:true,martial:true},
+ greataxe:{label:"Greataxe",damage:"1d12",stat:"STR",twoHanded:true,martial:true},
+ greatsword:{label:"Greatsword",damage:"2d6",stat:"STR",twoHanded:true,martial:true},
+ shortsword:{label:"Shortsword",damage:"1d6",stat:"FINESSE",twoHanded:false,martial:true},
+ scimitar:{label:"Scimitar",damage:"1d6",stat:"FINESSE",twoHanded:false,martial:true},
+ dagger:{label:"Dagger",damage:"1d4",stat:"FINESSE",twoHanded:false,martial:false},
+ quarterstaff:{label:"Quarterstaff",damage:"1d6",stat:"STR",twoHanded:false,martial:false},
+ mace:{label:"Mace",damage:"1d6",stat:"STR",twoHanded:false,martial:false},
+ handaxe:{label:"Handaxe",damage:"1d6",stat:"STR",twoHanded:false,martial:false},
+ shortbow:{label:"Shortbow",damage:"1d6",stat:"DEX",twoHanded:true,martial:false},
+ lightcrossbow:{label:"Light crossbow",damage:"1d8",stat:"DEX",twoHanded:true,martial:false}
+};
+const PROFICIENCIES={
+ barbarian:"all",bard:["longsword","rapier","shortsword"],cleric:"simple",
+ druid:["scimitar","dagger","quarterstaff","mace","shortsword","handaxe"],
+ fighter:"all",monk:["shortsword"],paladin:"all",ranger:"all",
+ rogue:["longsword","rapier","shortsword"],sorcerer:["dagger","quarterstaff","lightcrossbow"],
+ warlock:"simple",wizard:["dagger","quarterstaff","lightcrossbow"]
 };
 const START_SCORES={STR:16,DEX:12,CON:14,INT:10,WIS:10,CHA:8};
 const fresh=()=>({name:"Kael Voss",classId:"fighter",subclass:null,level:5,
@@ -16,34 +35,60 @@ let state=fresh();
 const mod=n=>Math.floor((n-10)/2);
 const sign=n=>(n>=0?"+":"")+n;
 const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(n))?Math.trunc(Number(n)):lo));
+const defaultArmor=c=>c.armor==="heavy"?"chain":c.armor==="medium"?(c.id==="druid"?"leather":"scale"):c.armor==="light"?"leather":"none";
+const proficient=(classId,id)=>{
+ const policy=PROFICIENCIES[classId],w=WEAPONS[id];
+ return policy==="all"||!!(w&&!w.martial&&policy==="simple")||(Array.isArray(policy)&&(policy.includes(id)||(!w?.martial&&["bard","monk","rogue","druid"].includes(classId))));
+};
+const spellStat=(c,sub)=>c.casting||(["eldritch-knight","arcane-trickster"].includes(sub)&&["fighter","rogue"].includes(c.id))?
+ (sub==="eldritch-knight"||sub==="arcane-trickster"?"INT":c.primary):null;
 function derive(s){
- const lv=clamp(s.level,1,20),scores=s.scores||START_SCORES;
+ const lv=clamp(s.level,1,20),c=CATALOG.byClass(s.classId),scores=s.scores||START_SCORES;
+ const selected=CATALOG.bySubclass(s.subclass),homebrew=!!(selected&&selected.classId!==c.id);
+ const activeSubclass=selected&&lv>=c.archetypeLevel?selected:null;
  const mods=Object.fromEntries(ABILITIES.map(k=>[k,mod(clamp(scores[k],1,30))]));
  const prof=Math.min(6,2+Math.floor((lv-1)/4));
- const maxHP=Math.max(1,10+mods.CON)+(lv-1)*Math.max(1,6+mods.CON);
- const armor=s.armor==="none"?10+mods.DEX:16;
- const ac=armor+(s.shield?2:0);
+ const average=Math.floor(c.die/2)+1;
+ const maxHP=Math.max(1,c.die+mods.CON)+(lv-1)*Math.max(1,average+mods.CON);
+ let baseAC=s.armor==="leather"?11+mods.DEX:s.armor==="scale"?14+Math.min(2,mods.DEX):s.armor==="chain"?16:10+mods.DEX;
+ if(s.armor==="none"){
+  if(c.id==="barbarian")baseAC=10+mods.DEX+mods.CON;
+  if(c.id==="monk"&&!s.shield)baseAC=10+mods.DEX+mods.WIS;
+  if(c.id==="sorcerer"&&activeSubclass?.id==="draconic")baseAC=13+mods.DEX;
+ }
+ const ac=baseAC+(s.shield?2:0);
  const speed=s.armor==="chain"&&scores.STR<13?20:30;
- const attacks=lv>=20?4:lv>=11?3:lv>=5?2:1;
- const critMin=s.subclass==="champion"&&lv>=3?(lv>=15?18:19):20;
+ const attacks=c.id==="fighter"?(lv>=20?4:lv>=11?3:lv>=5?2:1):
+ ["barbarian","monk","paladin","ranger"].includes(c.id)&&lv>=5?2:
+ c.id==="bard"&&activeSubclass?.id==="valor"&&lv>=6?2:1;
+ const critMin=activeSubclass?.id==="champion"?(lv>=15?18:19):20;
  const characterWeapons=(s.weapons||[]).filter(k=>WEAPONS[k]).map(k=>{
   const w=WEAPONS[k],attackMod=w.stat==="FINESSE"?Math.max(mods.STR,mods.DEX):mods[w.stat];
-  return {id:k,label:w.label,damage:w.damage,attack:attackMod+prof,
-   modifier:attackMod,bonus:sign(attackMod+prof),damageLabel:w.damage+sign(attackMod),
-   ability:w.stat==="FINESSE"?(mods.DEX>mods.STR?"DEX":"STR"):w.stat,
+  const profWeapon=proficient(c.id,k);
+  return {id:k,label:w.label,damage:w.damage,attack:attackMod+(profWeapon?prof:0),
+   modifier:attackMod,bonus:sign(attackMod+(profWeapon?prof:0)),damageLabel:w.damage+sign(attackMod),
+   ability:w.stat==="FINESSE"?(mods.DEX>mods.STR?"DEX":"STR"):w.stat,proficient:profWeapon,
    blocked:!!(w.twoHanded&&s.shield)};
  });
  const alerts=[];
- if(s.subclass==="assassin"){
-  alerts.push("HOMEBREW: Rogue Assassin attached to a Fighter. This is not a legal 2014 RAW subclass choice; DM approval required. No Rogue levels or Sneak Attack added.");
- }else if(s.subclass==="champion"&&lv<3){
-  alerts.push("Champion features start at Fighter level 3. No subclass benefits yet.");
- }
- if(s.armor==="chain"&&scores.STR<13)alerts.push("Chain mail needs STR 13. Speed is reduced by 10 ft (unless a separate rule removes that penalty).");
- if(s.shield&&s.weapons.includes("longbow"))alerts.push("A longbow needs two hands. Doff the shield before using it.");
+ if(homebrew)alerts.push("HOMEBREW: "+selected.name+" belongs to "+CATALOG.byClass(selected.classId).name+", not "+c.name+". DM approval needed; gaining this subclass does not grant levels or base features of its original class.");
+ if(selected&&lv<c.archetypeLevel)alerts.push(c.name+" gains its subclass at level "+c.archetypeLevel+"; "+selected.name+" features are inactive until then.");
+ if(s.armor==="chain"&&scores.STR<13)alerts.push("Chain mail requires STR 13 to avoid a 10 ft speed penalty (subject to race/feature exceptions).");
+ const armorRank={none:0,leather:1,scale:2,chain:3},limit={none:0,light:1,medium:2,heavy:3};
+ if(armorRank[s.armor]>(limit[c.armor]||0))alerts.push(c.name+" lacks proficiency in "+s.armor+" armor. RAW imposes penalties; that armor is not a recommended default.");
+ if(s.shield&&!c.shield&&!(c.id==="bard"&&activeSubclass?.id==="valor"))alerts.push(c.name+" lacks shield proficiency. RAW penalties apply while using it.");
+ if(c.id==="monk"&&(s.shield||s.armor!=="none"))alerts.push("Monk Unarmored Defense and Martial Arts require no armor and no shield; these features are not automated with this equipment.");
+ if(s.armor==="scale"&&c.id==="druid")alerts.push("Druids normally do not wear metal armor; check equipment materials.");
+ if(s.shield&&characterWeapons.some(w=>w.blocked))alerts.push("Two-handed weapons require both hands. Doff the shield first.");
+ if(characterWeapons.some(w=>!w.proficient))alerts.push("A nonproficient weapon does not receive the proficiency bonus to its attack roll.");
+ const casting=spellStat(c,activeSubclass?.id);
+ const slots=CATALOG.spellSlots(c.id,activeSubclass?.id,lv);
+ const spellDC=casting?8+prof+mods[casting]:null;
+ const spellAttack=casting?prof+mods[casting]:null;
  return {prof,maxHP,ac,speed,attacks,mods,critMin,weaponList:characterWeapons,alerts,
-  trainedAthletics:mods.STR+prof,initiative:mods.DEX,
-  mode:s.subclass==="assassin"?"HOMEBREW":"RAW"};
+  trainedAthletics:mods.STR+prof,initiative:mods.DEX,mode:homebrew?"HOMEBREW":"RAW",
+  classData:c,subclassData:selected,subclassActive:!!activeSubclass,
+  spellDC,spellAttack,spellStat:casting,slots};
 }
 function seededRoll(s,weapon,random=Math.random){
  const d=derive(s),w=d.weaponList.find(x=>x.id===weapon);
