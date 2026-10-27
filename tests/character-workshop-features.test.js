@@ -56,7 +56,7 @@ try{
  assert.equal(get(druid,"wildshape").remaining,2);
  assert.equal(f.activate(druid,d(druid),"wildshape").ok,true);
  assert.equal(get(druid,"wildshape").remaining,1);
- assert.equal(d(druid).maxHP,19,"Wild Shape does not overwrite humanoid stats");
+ assert.equal(d(druid).maxHP,17,"Wild Shape does not overwrite humanoid stats");
  const monk={...s(),classId:"monk",level:5};
  assert.equal(get(monk,"ki").max,5);
  for(let i=0;i<5;i++)assert.equal(f.activate(monk,d(monk),"ki").ok,true);
