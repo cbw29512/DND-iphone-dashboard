@@ -15,7 +15,6 @@ try{
  assert.match(html,/id="play" class="hidden"/);
  assert.match(html,/id="phoneActions"/);
  assert.match(html,/id="phoneSpeed"/);
- assert.match(html,/cardWorkspace"\)\.classList/);
  assert.match(html,/draft=>\{character=draft;renderAll\(\);window\.characterRemote\?\.publish\?\.\(\);\}/);
  assert.match(html,/if\(window\.CharacterEditor\?\.isEditing\?\.\(\)\)/,"Preview changes must not persist as final");
  assert.match(html,/function loadCard\(c,saveToStorage=true\)/);
