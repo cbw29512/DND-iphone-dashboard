@@ -1,88 +1,101 @@
 /* One DOM: play buttons become fields in exactly the same character-card slots. */
-#play.editing #editCharacterBtn,#play.editing #backupBtn,#play.editing #deleteBtn,
-#play.editing #tabs,#play.editing #latestPanel,#play.editing #turnTrack,
-#play.editing .resources,#play.editing .quick-checks,#play.editing .inset,
-#play.editing #notes,#play.editing .support-details,#play.editing .setup-details,
-#play.editing .roll-log,#play.editing #remotePanel,
-#play.editing #initiativeBtn,#play.editing #nextBtn,#play.editing #fightBtn,
-#play.editing #shortRestBtn,#play.editing #restBtn,#play.editing #resetBtn{display:none!important}
+#editorCard.editing #editCharacterBtn,#editorCard.editing #backupBtn,#editorCard.editing #deleteBtn,
+#editorCard.editing #tabs,#editorCard.editing #latestPanel,#editorCard.editing #turnTrack,
+#editorCard.editing .resources,#editorCard.editing .quick-checks,#editorCard.editing .inset,
+#editorCard.editing #notes,#editorCard.editing .support-details,#editorCard.editing .setup-details,
+#editorCard.editing .roll-log,#editorCard.editing #remotePanel,
+#editorCard.editing #initiativeBtn,#editorCard.editing #nextBtn,#editorCard.editing #fightBtn,
+#editorCard.editing #shortRestBtn,#editorCard.editing #restBtn,#editorCard.editing #resetBtn{display:none!important}
 #saveCharacterBtn[hidden],#cancelCharacterBtn[hidden],#saveCharacterBottom[hidden]{display:none!important}
-#play.editing .titlebar{align-items:flex-end}
-#play.editing .titlebar>div:first-child{flex:1;min-width:200px}
-#play.editing .titlebar h2{margin:0}
-#play.editing #who>.card-field input{font-size:21px;font-weight:800;min-height:37px}
-#play.editing #identity>.card-field input{font-size:12px;min-height:30px}
-#play.editing #who .card-field>span,#play.editing #identity .card-field>span{display:none}
-#play.editing .titlebar>.row{align-self:center}
-#play.editing #saveCharacterBtn,#play.editing #cancelCharacterBtn{min-height:38px;font-size:12px;padding:6px 9px}
-#play .card-edit-message{display:none}
-#play.editing .card-edit-message{display:block;font-size:11px;margin:1px 0 5px;color:#f0d195}
-#play .card-save-bottom{display:none}
-#play.editing .card-save-bottom{display:block;min-height:39px;margin:12px 0 4px auto}
+#editorCard.editing .titlebar{align-items:flex-end}
+#editorCard.editing .titlebar>div:first-child{flex:1;min-width:200px}
+#editorCard.editing .titlebar h2{margin:0}
+#editorCard.editing #who>.card-field input{font-size:21px;font-weight:800;min-height:37px}
+#editorCard.editing #identity>.card-field input{font-size:12px;min-height:30px}
+#editorCard.editing #who .card-field>span,#editorCard.editing #identity .card-field>span{display:none}
+#editorCard.editing .titlebar>.row{align-self:center}
+#editorCard.editing #saveCharacterBtn,#editorCard.editing #cancelCharacterBtn{min-height:38px;font-size:12px;padding:6px 9px}
+#editorCard .card-edit-message{display:none}
+#editorCard.editing .card-edit-message{display:block;font-size:11px;margin:1px 0 5px;color:#f0d195}
+#editorCard .card-save-bottom{display:none}
+#editorCard.editing .card-save-bottom{display:block;min-height:39px;margin:12px 0 4px auto}
 .card-portrait-upload{display:none;position:absolute;z-index:3;right:7px;top:7px;
  padding:5px;border:1px solid #b6956b;background:#152d42;border-radius:8px;
  font-size:11px;font-weight:800;color:#f8ddb1}
-#play.editing .card-portrait-upload{display:block}
+#editorCard.editing .card-portrait-upload{display:block}
 .card-portrait-upload input{display:block;font-size:10px;max-width:175px}
-#play .card-field{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
-#play .card-field>span{font-size:9px;font-weight:800;letter-spacing:.025em;color:#ebca90}
-#play .card-field input,#play .card-field select{width:100%;min-width:0;max-width:100%;
+#editorCard .card-field{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+#editorCard .card-field>span{font-size:9px;font-weight:800;letter-spacing:.025em;color:#ebca90}
+#editorCard .card-field input,#editorCard .card-field select{width:100%;min-width:0;max-width:100%;
  min-height:35px;font-size:13px;font-weight:700;padding:5px 6px;
  background:#112d40;color:#fff6eb;border:1px solid #7893a7;border-radius:7px}
-#play .card-field input:focus-visible,#play .card-field select:focus-visible{outline:2px solid #f1c883}
-#play.editing .portrait-stats .stat{padding:5px 3px}
-#play.editing .portrait-stats .stat .card-field>span{text-align:center;font-size:9px;color:#dbceba}
-#play.editing .portrait-stats .stat input{text-align:center;font-size:16px;min-height:30px;
+#editorCard .card-field input:focus-visible,#editorCard .card-field select:focus-visible{outline:2px solid #f1c883}
+#editorCard.editing .portrait-stats .stat{padding:5px 3px}
+#editorCard.editing .portrait-stats .stat .card-field>span{text-align:center;font-size:9px;color:#dbceba}
+#editorCard.editing .portrait-stats .stat input{text-align:center;font-size:16px;min-height:30px;
  padding:2px;border:0;background:rgba(11,34,48,.72);color:#fff2d5}
-#play.editing #actions.buttons{display:flex;flex-direction:column;gap:5px}
-#play.editing #actions .quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-#play.editing .quick-section{display:flex;flex-direction:column;gap:5px}
-#play.editing .card-edit-action{margin:0;border:1px solid #455e74;
+#editorCard.editing #actions.buttons{display:flex;flex-direction:column;gap:5px}
+#editorCard.editing #actions .quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#editorCard.editing .quick-section{display:flex;flex-direction:column;gap:5px}
+#editorCard.editing .card-edit-action{margin:0;border:1px solid #455e74;
  border-radius:8px;background:#1a3042;padding:6px;min-width:0}
-#play.editing .weapon-card.card-edit-action{display:grid;
+#editorCard.editing .weapon-card.card-edit-action{display:grid;
  grid-template-columns:minmax(100px,1fr) minmax(115px,1fr) 24px;align-items:end;gap:5px}
-#play.editing .card-edit-rolls{display:grid;grid-template-columns:45px minmax(64px,1fr);gap:5px}
-#play.editing .card-edit-rolls .card-field input{font-size:11px;padding:4px}
-#play.editing .spell-card.card-edit-action{display:grid;grid-template-columns:minmax(0,1fr) auto;
+#editorCard.editing .card-edit-rolls{display:grid;grid-template-columns:45px minmax(64px,1fr);gap:5px}
+#editorCard.editing .card-edit-rolls .card-field input{font-size:11px;padding:4px}
+#editorCard.editing .spell-card.card-edit-action{display:grid;grid-template-columns:minmax(0,1fr) auto;
  gap:5px;align-items:end}
-#play.editing .spell-card.card-edit-action>.card-field{grid-column:1}
-#play.editing .card-spell-ready{display:flex;gap:4px;align-items:center;
+#editorCard.editing .spell-card.card-edit-action>.card-field{grid-column:1}
+#editorCard.editing .card-spell-ready{display:flex;gap:4px;align-items:center;
  font-size:10px;color:#e8cc96}
-#play.editing .card-spell-ready input{width:15px;height:15px}
-#play.editing .card-remove{min-width:22px;min-height:34px;padding:4px;
+#editorCard.editing .card-spell-ready input{width:15px;height:15px}
+#editorCard.editing .card-remove{min-width:22px;min-height:34px;padding:4px;
  background:#6e3c42;border:1px solid #a27678;border-radius:7px}
-#play.editing .card-add{min-height:31px;font-size:11px;background:#244050;
+#editorCard.editing .card-add{min-height:31px;font-size:11px;background:#244050;
  border:1px dashed #7390a4;text-align:left}
-#play.editing .card-edit-extra{grid-column:1/-1;color:#e4c695;font-size:11px}
-#play.editing .card-edit-extra summary{cursor:pointer}
-#play.editing .card-extra-fields{padding-top:6px;display:grid;
+#editorCard.editing .card-edit-extra{grid-column:1/-1;color:#e4c695;font-size:11px}
+#editorCard.editing .card-edit-extra summary{cursor:pointer}
+#editorCard.editing .card-extra-fields{padding-top:6px;display:grid;
  grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
-#play.editing .card-edit-level{display:flex;justify-content:space-between;align-items:center;
+#editorCard.editing .card-edit-level{display:flex;justify-content:space-between;align-items:center;
  gap:6px;margin-top:7px}
-#play.editing .card-edit-level>.card-field{flex:0 0 75px}
-#play.editing .card-edit-level .card-field input{min-height:29px;text-align:center;padding:2px}
-#play.editing .spell-button-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-#play.editing .card-advanced{border:1px solid #4e697d;border-radius:9px;
+#editorCard.editing .card-edit-level>.card-field{flex:0 0 75px}
+#editorCard.editing .card-edit-level .card-field input{min-height:29px;text-align:center;padding:2px}
+#editorCard.editing .spell-button-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+#editorCard.editing .card-advanced{border:1px solid #4e697d;border-radius:9px;
  background:#122637;padding:10px;margin:11px 0}
-#play.editing .card-advanced summary{cursor:pointer;font-size:12px;color:#f3cb91;font-weight:850}
-#play.editing .card-advanced-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+#editorCard.editing .card-advanced summary{cursor:pointer;font-size:12px;color:#f3cb91;font-weight:850}
+#editorCard.editing .card-advanced-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
  gap:7px;margin-top:9px}
 @media(max-width:1000px){
- #play.editing #actions .quick-grid{grid-template-columns:1fr}
- #play.editing .spell-button-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
- #play.editing .card-advanced-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #editorCard.editing #actions .quick-grid{grid-template-columns:1fr}
+ #editorCard.editing .spell-button-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #editorCard.editing .card-advanced-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media(max-width:600px){
- #play.editing #actions .quick-grid{grid-template-columns:1fr}
- #play.editing .spell-button-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
- #play.editing .card-advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
- #play.editing .portrait-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
- #play.editing .portrait-hero{min-height:225px}
- #play.editing .card-edit-extra .card-extra-fields{grid-template-columns:1fr}
- #play.editing .weapon-card.card-edit-action{grid-template-columns:minmax(90px,1fr) minmax(105px,1fr) 22px}
- #play.editing #who>.card-field input{font-size:18px}
+ #editorCard.editing #actions .quick-grid{grid-template-columns:1fr}
+ #editorCard.editing .spell-button-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #editorCard.editing .card-advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #editorCard.editing .portrait-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #editorCard.editing .portrait-hero{min-height:225px}
+ #editorCard.editing .card-edit-extra .card-extra-fields{grid-template-columns:1fr}
+ #editorCard.editing .weapon-card.card-edit-action{grid-template-columns:minmax(90px,1fr) minmax(105px,1fr) 22px}
+ #editorCard.editing #who>.card-field input{font-size:18px}
 }
 @media(max-width:410px){
- #play.editing .spell-button-grid{grid-template-columns:1fr}
- #play.editing .card-edit-rolls{grid-template-columns:35px minmax(55px,1fr)}
+ #editorCard.editing .spell-button-grid{grid-template-columns:1fr}
+ #editorCard.editing .card-edit-rolls{grid-template-columns:35px minmax(55px,1fr)}
 }
+
+/* Editing is isolated to the left clone; it never disables play buttons on the right. */
+#editPane .card-editor-pane{overflow:hidden}
+#editorCard .titlebar .row{display:none}
+#editorCard .card-edit-message{display:none}
+#editorCard .card-save-bottom{display:none}
+#editPane #cardEditMessage{font-size:11px;margin:2px 12px 10px;color:#e6cfab}
+#editorCard .panel{border:0;background:transparent;padding:5px 2px;margin:0}
+#editorCard .weapon-card.card-edit-action{grid-template-columns:minmax(80px,1fr)}
+#editorCard .spell-card.card-edit-action{grid-template-columns:1fr}
+#editorCard .card-edit-action .card-field{grid-column:auto}
+#editorCard .card-edit-extra{grid-column:1/-1}
+#editorCard .card-portrait-upload{display:block}

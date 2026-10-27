@@ -79,8 +79,9 @@ function spell(sp,level,rules){
 function section(parent,text){
  parent.append(el("div","section",text));
 }
-function build(card){
- const who=$("who"),identity=$("identity"),stats=$("stats"),actions=$("actions");
+function build(card,targets){
+ const who=targets?.who||$("who"),identity=targets?.identity||$("identity"),
+  stats=targets?.stats||$("stats"),actions=targets?.actions||$("actions");
  who.replaceChildren();identity.replaceChildren();stats.replaceChildren();actions.replaceChildren();
  const name=field(who,"Name",card.name),classes=field(identity,"Class",card.classes);
  const statFields={};

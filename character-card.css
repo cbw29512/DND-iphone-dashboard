@@ -5,29 +5,29 @@
 .import-drawer{padding:5px 9px;margin-bottom:7px}
 .import-drawer>summary{cursor:pointer;color:var(--gold);font-size:12px;font-weight:850}
 .import-drawer[open]{padding:12px}
-#play{background:#172536;border:1px solid #566b80;border-radius:15px;
+:is(#play,#editorCard){background:#172536;border:1px solid #566b80;border-radius:15px;
  min-height:calc(100dvh - 95px);padding:8px clamp(8px,1.8vw,20px)}
-#play>.titlebar{position:sticky;top:0;z-index:5;margin:0;background:#172536;
+:is(#play,#editorCard)>.titlebar{position:sticky;top:0;z-index:5;margin:0;background:#172536;
  border-bottom:1px solid #475d6e;border-radius:0;padding:5px 3px}
-#play>.titlebar h2{font-size:23px}
-#play>.titlebar .subtitle{font-size:11px;margin:1px 0}
-#play>.titlebar .row button{min-height:30px;padding:3px 8px;font-size:10px}
-#play .layout{display:flex;flex-direction:column;gap:6px}
-#play .layout>div:first-child,#play .sticky{display:contents}
-#play .panel{background:transparent;border:none;border-radius:0;margin:0;padding:5px 2px}
-#play .stats{grid-template-columns:repeat(6,minmax(0,1fr));margin:6px 0;gap:5px}
-#play .stat{padding:5px 3px}
-#play .stat small{font-size:9px}
-#play .stat b{font-size:17px}
-#play .resources{gap:6px}
-#play .resource{padding:7px}
-#play .resource strong{font-size:17px}
-#play .resource .row{margin-top:3px}
-#play .action-economy{margin-top:5px}
-#play .action-economy .turnchip,#play .action-economy button{padding:3px 6px;font-size:10px}
-#play .inset{padding:6px;margin-top:5px!important}
-#play .tabs{padding:2px 0 5px}
-#play .tabs button{min-height:30px;padding:4px 8px;font-size:11px}
+:is(#play,#editorCard)>.titlebar h2{font-size:23px}
+:is(#play,#editorCard)>.titlebar .subtitle{font-size:11px;margin:1px 0}
+:is(#play,#editorCard)>.titlebar .row button{min-height:30px;padding:3px 8px;font-size:10px}
+:is(#play,#editorCard) .layout{display:flex;flex-direction:column;gap:6px}
+:is(#play,#editorCard) .layout>div:first-child,:is(#play,#editorCard) .sticky{display:contents}
+:is(#play,#editorCard) .panel{background:transparent;border:none;border-radius:0;margin:0;padding:5px 2px}
+:is(#play,#editorCard) .stats{grid-template-columns:repeat(6,minmax(0,1fr));margin:6px 0;gap:5px}
+:is(#play,#editorCard) .stat{padding:5px 3px}
+:is(#play,#editorCard) .stat small{font-size:9px}
+:is(#play,#editorCard) .stat b{font-size:17px}
+:is(#play,#editorCard) .resources{gap:6px}
+:is(#play,#editorCard) .resource{padding:7px}
+:is(#play,#editorCard) .resource strong{font-size:17px}
+:is(#play,#editorCard) .resource .row{margin-top:3px}
+:is(#play,#editorCard) .action-economy{margin-top:5px}
+:is(#play,#editorCard) .action-economy .turnchip,:is(#play,#editorCard) .action-economy button{padding:3px 6px;font-size:10px}
+:is(#play,#editorCard) .inset{padding:6px;margin-top:5px!important}
+:is(#play,#editorCard) .tabs{padding:2px 0 5px}
+:is(#play,#editorCard) .tabs button{min-height:30px;padding:4px 8px;font-size:11px}
 #actions.buttons{display:flex;flex-direction:column;gap:5px}
 .quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .quick-section{min-width:0;background:#112130;border:1px solid #425971;
@@ -35,34 +35,34 @@
 .quick-section>h3{font-size:12px;letter-spacing:.07em;color:#f5c877;
  margin:0;padding:2px 4px;border-bottom:1px solid #466078}
 .quick-section>.empty{font-size:11px;color:#9db0c0;margin:0;padding:7px}
-#play .weapon-card,#play .spell-card{border:1px solid #455e74;border-radius:8px;
+:is(#play,#editorCard) .weapon-card,:is(#play,#editorCard) .spell-card{border:1px solid #455e74;border-radius:8px;
  padding:6px;gap:6px;min-width:0;background:#1a3042}
-#play .weapon-card{display:grid;grid-template-columns:minmax(95px,1fr) minmax(132px,auto);
+:is(#play,#editorCard) .weapon-card{display:grid;grid-template-columns:minmax(95px,1fr) minmax(132px,auto);
  align-items:center}
-#play .weapon-head{gap:6px;min-width:0}
-#play .weapon-icon{width:30px;height:30px;font-size:16px;border-radius:6px}
-#play .weapon-icon svg{width:25px;height:25px}
-#play .weapon-name{font-size:13px;overflow-wrap:anywhere}
-#play .weapon-sub{font-size:10px}
-#play .weapon-rolls{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
-#play .weapon-rolls button{min-height:37px;padding:5px 4px;font-size:10px;border-radius:6px}
-#play .weapon-special-row{grid-column:1/-1;padding:0}
-#play .weapon-special-row label{font-size:10px}
-#play .weapon-special-row input[type=checkbox]{width:15px;height:15px}
-#play .weapon-editor{grid-column:1/-1;font-size:10px}
-#play .spell-card{display:grid;grid-template-columns:minmax(110px,1fr)
+:is(#play,#editorCard) .weapon-head{gap:6px;min-width:0}
+:is(#play,#editorCard) .weapon-icon{width:30px;height:30px;font-size:16px;border-radius:6px}
+:is(#play,#editorCard) .weapon-icon svg{width:25px;height:25px}
+:is(#play,#editorCard) .weapon-name{font-size:13px;overflow-wrap:anywhere}
+:is(#play,#editorCard) .weapon-sub{font-size:10px}
+:is(#play,#editorCard) .weapon-rolls{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
+:is(#play,#editorCard) .weapon-rolls button{min-height:37px;padding:5px 4px;font-size:10px;border-radius:6px}
+:is(#play,#editorCard) .weapon-special-row{grid-column:1/-1;padding:0}
+:is(#play,#editorCard) .weapon-special-row label{font-size:10px}
+:is(#play,#editorCard) .weapon-special-row input[type=checkbox]{width:15px;height:15px}
+:is(#play,#editorCard) .weapon-editor{grid-column:1/-1;font-size:10px}
+:is(#play,#editorCard) .spell-card{display:grid;grid-template-columns:minmax(110px,1fr)
  minmax(130px,auto) minmax(126px,auto);align-items:center}
-#play .spell-head{grid-column:1;grid-row:1}
-#play .spell-head strong{font-size:13px}
-#play .spell-head small{font-size:10px;color:#c2d0dd}
-#play .spell-rolls{grid-column:2;grid-row:1;gap:3px}
-#play .spell-rolls button{min-height:37px;padding:4px 7px;font-size:10px}
-#play .spell-upcast{grid-column:3;grid-row:1;gap:4px;font-size:10px}
-#play .spell-upcast select{max-width:100%;width:110px;font-size:10px;padding:6px 2px}
-#play .quick-section .spell-card{grid-template-columns:minmax(100px,1fr) minmax(124px,auto)}
-#play .quick-section .spell-upcast{display:none}
-#play .quick-section .spell-rolls{grid-column:2}
-#play .section{font-size:12px;margin:7px 0 2px;padding:5px 3px;background:#1b3347}
+:is(#play,#editorCard) .spell-head{grid-column:1;grid-row:1}
+:is(#play,#editorCard) .spell-head strong{font-size:13px}
+:is(#play,#editorCard) .spell-head small{font-size:10px;color:#c2d0dd}
+:is(#play,#editorCard) .spell-rolls{grid-column:2;grid-row:1;gap:3px}
+:is(#play,#editorCard) .spell-rolls button{min-height:37px;padding:4px 7px;font-size:10px}
+:is(#play,#editorCard) .spell-upcast{grid-column:3;grid-row:1;gap:4px;font-size:10px}
+:is(#play,#editorCard) .spell-upcast select{max-width:100%;width:110px;font-size:10px;padding:6px 2px}
+:is(#play,#editorCard) .quick-section .spell-card{grid-template-columns:minmax(100px,1fr) minmax(124px,auto)}
+:is(#play,#editorCard) .quick-section .spell-upcast{display:none}
+:is(#play,#editorCard) .quick-section .spell-rolls{grid-column:2}
+:is(#play,#editorCard) .section{font-size:12px;margin:7px 0 2px;padding:5px 3px;background:#1b3347}
 .inline-result{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
  gap:5px;background:#102d32;border:1px solid #568b7f;border-radius:7px;padding:5px}
 .inline-result .value{text-align:center;min-width:0}
@@ -76,24 +76,95 @@
 #result h3{font-size:14px}
 #result .compact-total{font-size:17px;margin:4px 0}
 #result .hint{font-size:10px}
-#play .setup-details,#play .support-details{border-top:1px solid #42596c;margin-top:5px;padding-top:9px}
-#play .support-details>summary{cursor:pointer;color:var(--gold);font-size:12px;font-weight:800}
-#play .support-details textarea{margin-top:10px}
-#play .roll-log{border-top:1px solid #42596c;padding-top:10px;margin-top:5px}
+:is(#play,#editorCard) .setup-details,:is(#play,#editorCard) .support-details{border-top:1px solid #42596c;margin-top:5px;padding-top:9px}
+:is(#play,#editorCard) .support-details>summary{cursor:pointer;color:var(--gold);font-size:12px;font-weight:800}
+:is(#play,#editorCard) .support-details textarea{margin-top:10px}
+:is(#play,#editorCard) .roll-log{border-top:1px solid #42596c;padding-top:10px;margin-top:5px}
 @media(max-width:1050px){
  .quick-grid{grid-template-columns:1fr}
- #play .quick-section{display:grid;grid-template-columns:1fr}
- #play .spell-card{grid-template-columns:minmax(105px,1fr) minmax(110px,auto) minmax(108px,auto)}
+ :is(#play,#editorCard) .quick-section{display:grid;grid-template-columns:1fr}
+ :is(#play,#editorCard) .spell-card{grid-template-columns:minmax(105px,1fr) minmax(110px,auto) minmax(108px,auto)}
 }
 @media(max-width:590px){
- #play .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
- #play .resources{grid-template-columns:1fr}
- #play .spell-card{grid-template-columns:minmax(105px,1fr) minmax(98px,auto)}
- #play .spell-head{grid-column:1}
- #play .spell-rolls{grid-column:2}
- #play .spell-upcast{grid-column:1/-1;grid-row:2;justify-content:flex-end}
- #play .spell-upcast select{width:140px}
- #play .titlebar{gap:4px}
- #play>.titlebar h2{font-size:18px}
- #play .weapon-card{grid-template-columns:minmax(90px,1fr) minmax(115px,auto)}
+ :is(#play,#editorCard) .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+ :is(#play,#editorCard) .resources{grid-template-columns:1fr}
+ :is(#play,#editorCard) .spell-card{grid-template-columns:minmax(105px,1fr) minmax(98px,auto)}
+ :is(#play,#editorCard) .spell-head{grid-column:1}
+ :is(#play,#editorCard) .spell-rolls{grid-column:2}
+ :is(#play,#editorCard) .spell-upcast{grid-column:1/-1;grid-row:2;justify-content:flex-end}
+ :is(#play,#editorCard) .spell-upcast select{width:140px}
+ :is(#play,#editorCard) .titlebar{gap:4px}
+ :is(#play,#editorCard)>.titlebar h2{font-size:18px}
+ :is(#play,#editorCard) .weapon-card{grid-template-columns:minmax(90px,1fr) minmax(115px,auto)}
+}
+
+/* Workbench: true edit card on left, same live play card on right. */
+.card-workspace{display:block;min-width:0}
+.card-workspace.split-edit{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+.card-editor-pane{min-width:0;background:#172536;border:1px solid #566b80;border-radius:15px}
+.card-editor-pane[hidden]{display:none!important}
+#editorCard{min-width:0;width:100%;padding:8px clamp(8px,1.8vw,20px);background:#172536;border:0;border-radius:15px}
+#play{min-width:0}
+.pane-heading{font-size:12px;color:#f6d69d;letter-spacing:.06em;
+ font-weight:900;margin:1px 0 8px;padding:6px 4px;border-bottom:1px solid #42596c}
+.pane-heading span{font-size:11px;letter-spacing:0;color:#b6c8d5;font-weight:550;margin-left:7px}
+.card-editor-pane .pane-heading{margin:8px 12px 1px}
+.editor-controls{display:flex;align-items:center;justify-content:flex-end;gap:7px;padding:5px 12px}
+.editor-controls button{min-height:36px}
+#editorCard .tabs{display:none}
+#editorCard .layout{display:block}
+#editorCard .portrait-hero{min-height:170px}
+.card-workspace.split-edit :is(#play,#editorCard) .quick-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.card-workspace.split-edit :is(#play,#editorCard) .spell-button-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.card-workspace.split-edit :is(#play,#editorCard) .weapon-card{grid-template-columns:1fr}
+.card-workspace.split-edit :is(#play,#editorCard) .weapon-rolls{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card-workspace.split-edit #editorCard .card-edit-rolls{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card-workspace.split-edit #play .resources{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card-workspace.split-edit #play .stats.portrait-stats{grid-template-columns:repeat(3,minmax(0,1fr));padding-top:34px}
+.card-workspace.split-edit #play .portrait-hero{min-height:205px}
+.card-workspace.split-edit #editorCard .stats.portrait-stats{grid-template-columns:repeat(3,minmax(0,1fr));padding-top:34px}
+.card-workspace.split-edit #editorCard .portrait-hero{min-height:205px}
+.card-workspace.split-edit .quick-section .spell-card{grid-template-columns:1fr}
+.card-workspace.split-edit .spell-card{grid-template-columns:minmax(0,1fr) 74px}
+.card-workspace.split-edit .spell-upcast select{width:74px}
+@media(max-width:1000px){
+ .card-workspace.split-edit{grid-template-columns:1fr}
+ .card-workspace.split-edit :is(#play,#editorCard) .spell-button-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .card-workspace.split-edit :is(#play,#editorCard) .weapon-card{grid-template-columns:minmax(90px,1fr) minmax(115px,auto)}
+ .card-workspace.split-edit #play .stats.portrait-stats,
+ .card-workspace.split-edit #editorCard .stats.portrait-stats{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+@media(max-width:590px){
+ .card-workspace.split-edit :is(#play,#editorCard) .quick-grid{grid-template-columns:1fr}
+ .card-workspace.split-edit :is(#play,#editorCard) .spell-button-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .card-workspace.split-edit #play .stats.portrait-stats,
+ .card-workspace.split-edit #editorCard .stats.portrait-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .pane-heading span{display:block;margin-left:0}
+}
+
+/* Phone reflects the usable right-hand card's organization, without remote editing. */
+.phone-portrait{background:#10263a;border:1px solid #536b7d;border-radius:12px;
+ min-height:115px;display:flex;align-items:center;gap:12px;padding:12px;margin:8px 0}
+#phoneAvatar{width:75px;height:87px;flex-shrink:0;display:grid;place-items:center;
+ font:700 34px Georgia,serif;color:#f2d49a;background:linear-gradient(145deg,#234359,#112a3d);
+ border-radius:10px;border:1px solid #72879a}
+.phone-portrait .phone-vitals{display:flex;gap:5px;flex-wrap:wrap;margin:0}
+.phone-portrait .phone-vitals b{font-size:11px;padding:6px}
+.phone-quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.phone-action-column{display:flex;flex-direction:column;gap:5px;padding:5px;background:#12283b;
+ border:1px solid #3f5b72;border-radius:9px;min-width:0}
+.phone-action-column h3,.phone-spell-level h3{font-size:10px;letter-spacing:.05em;
+ color:#f0cb91;margin:3px 0}
+.phone-actions button{min-width:0;min-height:35px;padding:5px;font-size:11px;border:1px solid #b88e60;
+ background:#876337;color:#fff4e6;border-radius:7px;text-align:center;overflow-wrap:anywhere}
+.phone-actions button:disabled{opacity:1;cursor:default}
+.phone-spell-level{margin:10px 0 0;padding:6px;border-top:1px solid #526475}
+.phone-spell-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.phone-sheet .phone-result{margin-top:13px;padding:10px 2px}
+.phone-sheet .phone-result h2{font-size:20px;margin:5px 0}
+@media(max-width:420px){
+ .phone-spell-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .phone-quick-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+ .phone-portrait{padding:8px;gap:7px}
+ #phoneAvatar{width:56px;height:75px}
 }
