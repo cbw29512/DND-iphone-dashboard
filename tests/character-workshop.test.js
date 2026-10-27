@@ -3,11 +3,12 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("nod
 try{
  const root=path.resolve(__dirname,"..");
  const read=p=>fs.readFileSync(path.join(root,p),"utf8");
- for(const name of ["workshop.html","character-workshop-catalog.js","character-workshop.js","character-workshop.css"])
+ for(const name of ["workshop.html","character-workshop-catalog.js","character-workshop.js","character-workshop-features.js","character-workshop.css"])
   assert.equal(read(name),read("docs/"+name),"Root/docs deployment parity: "+name);
  const html=read("workshop.html"),js=read("character-workshop.js"),css=read("character-workshop.css");
  const catalog=read("character-workshop-catalog.js");
  const ctx={console,Math,Date};vm.createContext(ctx);
+ new vm.Script(read("character-workshop-features.js"),{filename:"character-workshop-features.js"}).runInContext(ctx);
  new vm.Script(catalog,{filename:"character-workshop-catalog.js"}).runInContext(ctx);
  new vm.Script(js,{filename:"character-workshop.js"}).runInContext(ctx);
  const e=ctx.CharacterWorkshopEngine;
@@ -78,8 +79,9 @@ try{
  assert.ok(js.includes('addEventListener("click",()=>pick('));
  assert.ok(js.includes('button.addEventListener')||js.includes('b.addEventListener("click",()=>rollWeapon'));
  assert.ok(js.includes("prefers-reduced-motion")||css.includes("prefers-reduced-motion"));
- assert.ok(html.includes("character-workshop.js?v=classes-20261027"));
+ assert.ok(html.includes("character-workshop.js?v=features-20261027"));
+ assert.ok(html.includes("character-workshop-features.js?v=features-20261027"));
  assert.ok(html.includes("character-workshop-catalog.js?v=classes-20261027"));
- assert.ok(html.includes("character-workshop.css?v=classes-20261027"));
+ assert.ok(html.includes("character-workshop.css?v=features-20261027"));
  console.log("Character workshop passed: drag/tap structure, Fighter 2014 calculations, Champions, homebrew Assassin alerts, reactive scores, combat buttons, table preview and root/docs parity.");
 }catch(error){console.error("Workshop regression failure:",error);process.exitCode=1;}

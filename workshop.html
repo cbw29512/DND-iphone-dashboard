@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Character Workshop · Drag, Build, Play</title>
 <meta name="description" content="Interactive D&D 2014 twelve-class character workshop. Drag or tap classes, subclasses and equipment to build a live playable card.">
-<link rel="stylesheet" href="./character-workshop.css?v=classes-20261027"></head>
+<link rel="stylesheet" href="./character-workshop.css?v=features-20261027"></head>
 <body>
 <header class="site-header">
  <a class="brand" href="./character-builder.html"><span class="brand-emblem">⚔</span><span><strong>CHARACTER FORGE</strong><small>One-touch D&amp;D workshop</small></span></a>
@@ -63,19 +63,20 @@
     <div class="card-secondary"><span>PROFICIENCY <b id="cardProf">+3</b></span><span>INITIATIVE <b id="cardInit">+1</b></span><span>ATTACKS/ACTION <b id="cardExtra">2</b></span><span id="spellStatus" hidden>SPELL DC <b id="cardSpellDC">—</b></span></div>
     <div class="action-header"><b>ONE-TOUCH ACTIONS</b><span>Tap to roll</span></div>
     <div id="actionButtons" class="action-buttons"></div>
-    <div class="feature-row" id="featureRow"></div><div class="spell-summary" id="spellSummary" hidden></div>
+    <div class="feature-row" id="featureRow"></div><div class="feature-help" id="featureHelp" aria-live="polite"></div><div class="spell-summary" id="spellSummary" hidden></div>
     <div id="assassinOptions" class="assassin-options" hidden><label><input type="checkbox" id="foeNotActed"> Target has not acted yet</label><label><input type="checkbox" id="foeSurprised"> DM: target is surprised</label></div>
     <div class="roll-result" role="status" aria-live="polite" id="resultBox">
      <span class="result-label">LATEST ACTION</span><h3 id="resultTitle">Ready to play</h3><div id="resultNumbers" class="result-numbers"><div class="result-cell"><small>READY</small><strong>⚔</strong></div></div><p id="resultNote">Press a weapon to roll your Attack action.</p>
     </div>
-    <div class="action-footer"><button type="button" id="restButton">Short rest ↺</button><button type="button" id="tablePreview">Show table view <span>↗</span></button></div>
+    <div class="action-footer"><button type="button" id="restButton">Short rest ↺</button><button type="button" id="longRestButton">Long rest ↺</button><button type="button" id="tablePreview">Show table view <span>↗</span></button></div>
    </div>
-   <p class="preview-disclaimer">2014 PHB classes and subclasses are selectable. Shared stats, equipment, proficiency, spell DCs and slot progression are calculated. Most class-specific and subclass actions are not automated yet. The DM confirms hits, effects and any homebrew rule.</p>
+   <p class="preview-disclaimer">2014 PHB classes and subclasses are selectable. Shared stats, equipment, proficiency, spell DCs and slot progression are calculated. One-touch class resources are available for several classes; most subclass actions are not automated yet. The DM confirms hits, effects and any homebrew rule.</p>
   </section>
  </div>
  <div class="bottom-help"><div><b>What recalculates?</b> Each class’s Hit Die, modifiers, proficient weapon attack bonus, damage, AC, initiative, proficiency, base Extra Attack progression, spell save DC and known slot progressions.</div><div><b>What is not automated yet?</b> Spell selection/casting, most subclass abilities, ki, Wild Shape, rage effects, Sneak Attack and other class resources. <a href="https://www.dndbeyond.com/sources/dnd/phb-2014" target="_blank" rel="noopener">2014 Player’s Handbook ↗</a></div></div>
 </main>
 <div id="tableOverlay" class="table-overlay" hidden role="dialog" aria-modal="true" aria-label="Projected table action"><button type="button" id="closeTable" class="close-overlay" aria-label="Close table projection">✕</button><span class="overlay-kicker">AT THE TABLE</span><h2 id="overlayActor">KAEL VOSS</h2><div class="overlay-glyph">⚔</div><h1 id="overlayAction">READY FOR COMBAT</h1><div id="overlayNumbers" class="overlay-numbers"></div><p id="overlayNote">Press a weapon action on the card</p></div>
 <script defer src="./character-workshop-catalog.js?v=classes-20261027"></script>
-<script defer src="./character-workshop.js?v=classes-20261027"></script>
+<script defer src="./character-workshop-features.js?v=features-20261027"></script>
+<script defer src="./character-workshop.js?v=features-20261027"></script>
 </body></html>

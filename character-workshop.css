@@ -181,3 +181,15 @@ button:disabled{cursor:not-allowed;opacity:.55}
 @media(max-width:440px){
  .catalog-list{grid-template-columns:1fr}
 }
+
+/* Genuine class actions and rest tracking remain on the same one-touch card. */
+.feature-row{gap:7px}
+.feature-row .feature-button{min-height:42px;font-size:11px;font-weight:750;line-height:1.3;padding:8px 10px}
+.feature-row .feature-button:disabled{opacity:.48;cursor:not-allowed}
+.feature-help{font-size:10px;line-height:1.5;color:#b5c5d0;
+ margin:8px 2px;padding:8px 10px;border-left:2px solid #8b7a5c;
+ background:#182c3a;border-radius:0 6px 6px 0}
+.action-footer{flex-wrap:wrap}
+.action-footer button{min-height:38px;flex:1 1 auto}
+#longRestButton{background:#254738;border-color:#4e886c;color:#cff0d9}
+@media(max-width:450px){.feature-row .feature-button{flex:1 1 calc(50% - 6px)}}
