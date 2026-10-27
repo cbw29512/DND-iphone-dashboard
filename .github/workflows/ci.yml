@@ -29,3 +29,4 @@ jobs:
       - run: node tests/character-workshop.test.js
       - run: node tests/character-workshop-catalog.test.js
       - run: node tests/character-workshop-features.test.js
+      - run: node tests/character-workshop-storage.test.js
