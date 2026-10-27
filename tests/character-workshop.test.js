@@ -3,10 +3,12 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("nod
 try{
  const root=path.resolve(__dirname,"..");
  const read=p=>fs.readFileSync(path.join(root,p),"utf8");
- for(const name of ["workshop.html","character-workshop.js","character-workshop.css"])
+ for(const name of ["workshop.html","character-workshop-catalog.js","character-workshop.js","character-workshop.css"])
   assert.equal(read(name),read("docs/"+name),"Root/docs deployment parity: "+name);
  const html=read("workshop.html"),js=read("character-workshop.js"),css=read("character-workshop.css");
+ const catalog=read("character-workshop-catalog.js");
  const ctx={console,Math,Date};vm.createContext(ctx);
+ new vm.Script(catalog,{filename:"character-workshop-catalog.js"}).runInContext(ctx);
  new vm.Script(js,{filename:"character-workshop.js"}).runInContext(ctx);
  const e=ctx.CharacterWorkshopEngine;
  assert.ok(e,"Exposes calculation engine");
@@ -43,7 +45,7 @@ try{
  const assassin=e.derive({...blank,subclass:"assassin"});
  assert.equal(assassin.mode,"HOMEBREW");
  assert.ok(assassin.alerts.join(" ").includes("Rogue"));
- assert.ok(assassin.alerts.join(" ").includes("No Rogue levels or Sneak Attack"));
+ assert.match(assassin.alerts.join(" "),/does not grant levels or base features/);
  let critRoll=e.seededRoll({...blank,subclass:"champion"},"longsword",()=>.91);
  assert.equal(critRoll.rows.length,2);
  assert.equal(critRoll.rows[0].natural,19);
@@ -67,15 +69,17 @@ try{
  for(const id of ["classDrop","subclassDrop","equipmentDrop","abilityGrid","cardHp","cardAc","cardProf","cardInit","cardExtra",
   "actionButtons","playCard","resultNumbers","tablePreview","tableOverlay","closeTable","rulesNotice"])
   assert.ok(html.includes('id="'+id+'"'),"Missing prototype component: "+id);
- for(const source of ['data-kind="class" data-id="fighter"','data-kind="subclass" data-id="champion"',
-  'data-kind="subclass" data-id="assassin"','data-kind="weapon" data-id="longsword"'])
-  assert.ok(html.includes(source),"Missing draggable library block: "+source);
+ for(const id of ["classLibrary","subclassLibrary","subclassSearch","showAllSubclasses","spellSummary","spellStatus"])
+  assert.ok(html.includes('id="'+id+'"'),"Missing dynamic catalog element "+id);
+ assert.ok(js.includes('buildClassLibrary()'));
+ assert.ok(js.includes('renderSubclassLibrary()'));
  assert.ok(js.includes('addEventListener("dragstart"'));
  assert.ok(js.includes('addEventListener("drop"'));
  assert.ok(js.includes('addEventListener("click",()=>pick('));
  assert.ok(js.includes('button.addEventListener')||js.includes('b.addEventListener("click",()=>rollWeapon'));
  assert.ok(js.includes("prefers-reduced-motion")||css.includes("prefers-reduced-motion"));
- assert.ok(html.includes("character-workshop.js?v=workshop-20261027"));
- assert.ok(html.includes("character-workshop.css?v=workshop-20261027"));
+ assert.ok(html.includes("character-workshop.js?v=classes-20261027"));
+ assert.ok(html.includes("character-workshop-catalog.js?v=classes-20261027"));
+ assert.ok(html.includes("character-workshop.css?v=classes-20261027"));
  console.log("Character workshop passed: drag/tap structure, Fighter 2014 calculations, Champions, homebrew Assassin alerts, reactive scores, combat buttons, table preview and root/docs parity.");
 }catch(error){console.error("Workshop regression failure:",error);process.exitCode=1;}
