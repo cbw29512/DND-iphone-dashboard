@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Character Workshop · Drag, Build, Play</title>
+<meta name="description" content="Interactive D&D 2014 Fighter character workshop. Drag or tap classes, subclasses and equipment to build a live playable card.">
+<link rel="stylesheet" href="./character-workshop.css?v=workshop-20261027"></head>
+<body>
+<header class="site-header">
+ <a class="brand" href="./character-builder.html"><span class="brand-emblem">⚔</span><span><strong>CHARACTER FORGE</strong><small>One-touch D&amp;D workshop</small></span></a>
+ <nav><span class="edition">2014 RULES DEMO</span><a class="back-link" href="./character-builder.html">← Existing card builder</a></nav>
+</header>
+<main class="workshop">
+ <div class="intro"><div><p class="eyebrow">THE INTERACTIVE PROTOTYPE</p><h1>Drag your character together.</h1><p>Choose a class, mix an archetype, change scores. The card builds itself — then tap a weapon to see the roll.</p></div><div class="intro-tip"> <span>01</span> PICK A BLOCK <span>02</span> EDIT SCORES <span>03</span> PLAY</div></div>
+ <div class="three-lanes">
+  <aside class="library lane" aria-label="Character building blocks">
+   <div class="lane-title"><span class="lane-step">01</span><div><h2>Building blocks</h2><p>Drag onto a slot, or tap to add</p></div></div>
+   <div class="library-group"><div class="group-label">BASE CLASS</div>
+    <button type="button" draggable="true" class="block-tile" data-kind="class" data-id="fighter"><span class="tile-icon">🛡️</span><span><b>Fighter</b><small>Martial · d10 Hit Die</small></span><span class="tile-add">+</span></button>
+   </div>
+   <div class="library-group"><div class="group-label">ARCHETYPES <span class="small-indicator">level 3+</span></div>
+    <button type="button" draggable="true" class="block-tile" data-kind="subclass" data-id="champion"><span class="tile-icon">🏆</span><span><b>Champion</b><small>Fighter · RAW</small></span><span class="tile-add">+</span></button>
+    <button type="button" draggable="true" class="block-tile crossclass" data-kind="subclass" data-id="assassin"><span class="tile-icon">🗡️</span><span><b>Assassin</b><small>Rogue subclass · Homebrew</small></span><span class="tile-add">+</span></button>
+   </div>
+   <div class="library-group"><div class="group-label">EQUIPMENT</div>
+    <button type="button" draggable="true" class="block-tile" data-kind="weapon" data-id="longsword"><span class="tile-icon">⚔️</span><span><b>Longsword</b><small>Strength · 1d8</small></span><span class="tile-add">+</span></button>
+    <button type="button" draggable="true" class="block-tile" data-kind="weapon" data-id="rapier"><span class="tile-icon">🗡️</span><span><b>Rapier</b><small>Finesse · 1d8</small></span><span class="tile-add">+</span></button>
+    <button type="button" draggable="true" class="block-tile" data-kind="weapon" data-id="longbow"><span class="tile-icon">🏹</span><span><b>Longbow</b><small>Dexterity · 1d8</small></span><span class="tile-add">+</span></button>
+    <button type="button" draggable="true" class="block-tile" data-kind="shield" data-id="shield"><span class="tile-icon">🛡</span><span><b>Shield</b><small>+2 AC while equipped</small></span><span class="tile-add">+</span></button>
+   </div>
+   <p class="library-note">This first demo implements Fighter mechanics and two archetype choices. It does not claim to implement every class, subclass or feat.</p>
+  </aside>
+  <section class="builder lane" aria-label="Build your character">
+   <div class="lane-title"><span class="lane-step">02</span><div><h2>Character assembly</h2><p>Everything on the right updates live</p></div></div>
+   <div class="field-row">
+    <label class="name-field">CHARACTER NAME <input id="characterName" maxlength="52" value="Kael Voss" autocomplete="off"></label>
+    <label class="level-field">LEVEL <select id="levelSelect" aria-label="Fighter level"></select></label>
+   </div>
+   <div class="drop-group"><span class="group-label">YOUR CLASS</span><div id="classDrop" class="drop-slot" data-accept="class" tabindex="0" role="button" aria-label="Add base class">
+     <span class="slot-emblem">✦</span><span><strong id="className">Drop a class here</strong><small id="classMeta">Drag Fighter, or tap it in the library</small></span><span class="slot-caret">↓</span></div></div>
+   <div class="drop-group"><div class="slot-heading"><span class="group-label">YOUR ARCHETYPE</span><button id="clearSubclass" type="button" class="clear-link">Remove</button></div>
+    <div id="subclassDrop" class="drop-slot" data-accept="subclass" tabindex="0" role="button" aria-label="Add archetype">
+      <span class="slot-emblem">✧</span><span><strong id="subclassName">Drop an archetype</strong><small id="subclassMeta">Champion (RAW) or Assassin (homebrew)</small></span><span class="slot-caret">↓</span></div></div>
+   <div id="rulesNotice" class="rules-notice" role="status"></div>
+   <div class="ability-head"><div><span class="group-label">ABILITY SCORES</span><p>Change one. See the attack bonus, damage and HP change immediately.</p></div><button type="button" id="resetScores" class="clear-link">Reset</button></div>
+   <div id="abilityGrid" class="ability-grid" aria-label="Editable ability scores"></div>
+   <div class="drop-group gear-section"><div class="slot-heading"><span class="group-label">EQUIPPED GEAR</span><button class="clear-link" id="resetGear" type="button">Reset</button></div>
+     <div id="equipmentDrop" class="gear-drop" data-accept="weapon,shield" tabindex="0" role="button" aria-label="Add equipment">
+      <div id="gearChips" class="gear-chips"></div><div class="gear-hint">Drop a weapon or shield here, or tap an item on the left</div>
+     </div>
+     <label class="armor-label">ARMOR <select id="armorSelect"><option value="chain">Chain mail · base AC 16</option><option value="none">No armor · 10 + DEX modifier</option></select></label>
+   </div>
+   <button type="button" id="resetAll" class="reset-action">↺ Start over</button>
+  </section>
+  <section class="preview lane" aria-label="Live playable character card">
+   <div class="lane-title"><span class="lane-step">03</span><div><h2>Live play card</h2><p>Actual buttons, not a static mockup</p></div></div>
+   <div class="play-card" id="playCard">
+    <div class="play-card-head"><span class="card-kicker">CHARACTER CARD · 2014</span><span id="cardMode" class="mode-tag">RAW</span></div>
+    <div class="card-name" id="cardName">Kael Voss</div><div class="card-class" id="cardClass">Fighter 5</div>
+    <div class="portrait"><div class="portrait-figure">♜</div><div class="portrait-title">THE ADVENTURER</div>
+     <div class="portrait-stats"><div><small>HP MAX</small><strong id="cardHp">44</strong></div><div><small>AC</small><strong id="cardAc">18</strong></div><div><small>MOVE</small><strong id="cardMove">30 ft</strong></div></div>
+    </div>
+    <div class="card-secondary"><span>PROFICIENCY <b id="cardProf">+3</b></span><span>INITIATIVE <b id="cardInit">+1</b></span><span>ATTACKS/ACTION <b id="cardExtra">2</b></span></div>
+    <div class="action-header"><b>ONE-TOUCH ACTIONS</b><span>Tap to roll</span></div>
+    <div id="actionButtons" class="action-buttons"></div>
+    <div class="feature-row" id="featureRow"></div>
+    <div id="assassinOptions" class="assassin-options" hidden><label><input type="checkbox" id="foeNotActed"> Target has not acted yet</label><label><input type="checkbox" id="foeSurprised"> DM: target is surprised</label></div>
+    <div class="roll-result" role="status" aria-live="polite" id="resultBox">
+     <span class="result-label">LATEST ACTION</span><h3 id="resultTitle">Ready to play</h3><div id="resultNumbers" class="result-numbers"><div class="result-cell"><small>READY</small><strong>⚔</strong></div></div><p id="resultNote">Press a weapon to roll your Attack action.</p>
+    </div>
+    <div class="action-footer"><button type="button" id="restButton">Short rest ↺</button><button type="button" id="tablePreview">Show table view <span>↗</span></button></div>
+   </div>
+   <p class="preview-disclaimer">Prototype: 2014 Fighter calculations only. Homebrew cross-class archetypes require DM approval. Combat rolls do not determine hits without target AC.</p>
+  </section>
+ </div>
+ <div class="bottom-help"><div><b>What recalculates?</b> Ability modifiers, attack rolls, weapon damage, Fighter HP, initiative, proficiency, AC from equipment, attacks per Attack action, and implemented archetype features.</div><div><b>What doesn't?</b> Cross-class subclasses don't silently grant Rogue levels, Sneak Attack, spellcasting or unavailable features. <a href="https://www.dndbeyond.com/sources/dnd/basic-rules-2014/classes" target="_blank" rel="noopener">2014 Fighter rules ↗</a></div></div>
+</main>
+<div id="tableOverlay" class="table-overlay" hidden role="dialog" aria-modal="true" aria-label="Projected table action"><button type="button" id="closeTable" class="close-overlay" aria-label="Close table projection">✕</button><span class="overlay-kicker">AT THE TABLE</span><h2 id="overlayActor">KAEL VOSS</h2><div class="overlay-glyph">⚔</div><h1 id="overlayAction">READY FOR COMBAT</h1><div id="overlayNumbers" class="overlay-numbers"></div><p id="overlayNote">Press a weapon action on the card</p></div>
+<script defer src="./character-workshop.js?v=workshop-20261027"></script>
+</body></html>
