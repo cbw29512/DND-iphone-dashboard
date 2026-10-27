@@ -148,3 +148,36 @@ button:disabled{cursor:not-allowed;opacity:.55}
 @media(max-width:770px){.site-header{padding:9px 13px}.edition{display:none}.workshop{padding:20px 12px}.intro{display:block}.intro-tip{justify-content:start;margin-top:14px;font-size:9px}.three-lanes{grid-template-columns:1fr}.lane{min-height:0}.preview{grid-column:auto}.library-group{margin-bottom:13px}.library-group .block-tile{display:inline-flex;width:calc(50% - 5px);vertical-align:top;margin-right:5px}.bottom-help{grid-template-columns:1fr}.lane-title{margin-bottom:14px}}
 @media(max-width:500px){.site-header nav{gap:5px}.back-link{font-size:10px}.brand strong{font-size:14px}.brand-emblem{width:34px;height:34px;font-size:19px}.intro h1{font-size:28px}.lane{padding:12px}.library-group .block-tile{width:100%}.ability-grid{gap:5px}.ability-tile{padding:7px 5px}.ability-edit{grid-template-columns:22px minmax(0,1fr) 22px}.ability-edit button{height:28px}.card-secondary{font-size:9px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
+
+/* Complete 2014 PHB option library: manageable without a hundred-tile long page. */
+.catalog-list{max-height:354px;overflow:auto;overscroll-behavior:contain;scrollbar-color:#6e8da1 #12283b;scrollbar-width:thin;padding:2px 4px 2px 0}
+#subclassLibrary{max-height:312px}
+.catalog-list .block-tile{min-height:58px;margin-bottom:6px;padding:7px 9px}
+.catalog-list .block-tile b{font-size:12px}
+.catalog-list .block-tile small{font-size:10px}
+.catalog-list .tile-icon{font-size:21px;flex-basis:29px}
+.search-label{font-size:9px;letter-spacing:.12em;font-weight:800;color:#e5c18d;display:block;margin:1px 0 9px}
+.search-label input{display:block;margin-top:5px;width:100%;border:1px solid #58738b;border-radius:8px;
+ padding:9px 11px;background:#0f2537;color:#f3f1e8;font:12px 'DM Sans',system-ui,sans-serif}
+.cross-class-toggle{display:flex;align-items:center;gap:8px;min-height:29px;cursor:pointer;
+ margin:0 0 9px;color:#f1d3a6;font-size:11px;line-height:1.35}
+.cross-class-toggle input{width:17px;height:17px;accent-color:#dbad71;flex:0 0 17px}
+.catalog-list .crossclass{border:1px dashed #947a91}
+.catalog-list .crossclass.chosen{border-color:#e3b777;background:#493742}
+.spell-summary{margin:9px 0;padding:11px;border:1px solid #617997;border-radius:10px;background:#142f43}
+.spell-summary strong{display:block;font-size:11px;color:#f1d49c;letter-spacing:.03em}
+.spell-summary p{font-size:12px;font-weight:800;color:#ebf1f0;margin:7px 0}
+.spell-summary small{display:block;font-size:10px;color:#a9bfcd}
+#spellStatus{color:#dcba7e}
+.preview{scroll-margin-top:10px}
+@media(min-width:1251px){
+ .preview{position:sticky;top:12px;max-height:calc(100vh - 25px);overflow:auto;scrollbar-width:thin}
+}
+@media(max-width:770px){
+ .catalog-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ .catalog-list .block-tile{width:100%!important;min-width:0;margin:0!important}
+ .catalog-list .tile-icon{font-size:19px;flex-basis:24px}
+}
+@media(max-width:440px){
+ .catalog-list{grid-template-columns:1fr}
+}
