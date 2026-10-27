@@ -53,7 +53,7 @@ try{
  for(const [k,v]of Object.entries(before))assert.equal(ids[k],v,"Same DOM node for "+k);
  assert.equal(ids.who.children.length,1,"Name input lives in play's name element");
  assert.equal(ids.identity.children.length,1,"Class input lives in play's identity element");
- assert.equal(ids.stats.children.length,6,"Editable values occupy the six existing portrait tiles");
+ assert.equal(ids.stats.children.length,3,"Only HP, AC and movement belong on the portrait");
  assert.equal(ids.actions.children[0].textContent,"ATTACKS & AT-WILL CANTRIPS");
  const quick=ids.actions.children[1];
  assert.equal(quick.className,"quick-grid");
