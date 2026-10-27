@@ -210,6 +210,7 @@ function rollWeapon(id){
  setResult(result);
 }
 function restoreWind(){
+ if(state.classId!=="fighter"){setResult({type:"notice",name:"Second Wind",note:"This is a Fighter feature."});return;}
  if(state.secondWindUsed){setResult({type:"notice",name:"Second Wind",note:"Already used. Take a short or long rest to regain this feature."});return;}
  const d=derive(state),heal=Math.floor(Math.random()*10)+1+d.prof*0+state.level;
  const current=Math.min(d.maxHP,state.currentHP==null?d.maxHP:state.currentHP);
@@ -218,6 +219,7 @@ function restoreWind(){
  render();
 }
 function surge(){
+ if(state.classId!=="fighter"){setResult({type:"notice",name:"Action Surge",note:"This is a Fighter feature."});return;}
  if(state.level<2){setResult({type:"notice",name:"Action Surge",note:"Fighter gets Action Surge at level 2."});return;}
  if(state.surgeUsed){setResult({type:"notice",name:"Action Surge",note:"Action Surge is expended. Short or long rest restores it."});return;}
  state.surgeUsed=true;setResult({type:"feature",name:"Action Surge",note:"You gain one additional action this turn. Choose another action to use it; attacks are not silently rolled."});
@@ -256,15 +258,17 @@ function render(){
  const d=derive(state);
  $("characterName").value=state.name;
  $("levelSelect").value=String(state.level);
- $("className").textContent="Fighter";$("classMeta").textContent="2014 martial class · d10 Hit Die";
- $("subclassName").textContent=state.subclass==="champion"?"Champion":state.subclass==="assassin"?"Assassin":"Choose an archetype";
- $("subclassMeta").textContent=state.subclass==="champion"?"Fighter subclass · 2014 RAW":
- state.subclass==="assassin"?"Rogue subclass · HOMEBREW":"Drop or tap a subclass";
+ const c=d.classData,sub=d.subclassData;
+ $("className").textContent=c.name;
+ $("classMeta").textContent="2014 "+c.description+" · d"+c.die+" Hit Die";
+ $("subclassName").textContent=sub?.name||"Choose an archetype";
+ $("subclassMeta").textContent=sub?(CATALOG.byClass(sub.classId).name+" · "+(d.mode==="HOMEBREW"?"Homebrew":"RAW")):
+  "Unlocks at "+c.name+" level "+c.archetypeLevel;
  $("classDrop").classList.toggle("selected",true);
- $("subclassDrop").classList.toggle("selected",!!state.subclass);
+ $("subclassDrop").classList.toggle("selected",!!sub);
  $("rulesNotice").className="rules-notice"+(d.alerts.length?" has-warning":"");
  $("rulesNotice").textContent=d.alerts.length?d.alerts.join("  "):
- "2014 Fighter rules are applied to the calculations below. Choose Champion for a standard Fighter subclass.";
+  (c.name+" core stats use 2014 class rules. "+(sub?sub.name+" selected; specialized features need rules setup.":"Choose a subclass from the library."));
  for(const k of ABILITIES){
   const input=$("score"+k);if(input&&document.activeElement!==input)input.value=state.scores[k];
   $("bonus"+k).textContent=sign(d.mods[k]);
@@ -278,7 +282,7 @@ function render(){
  }
  const held=state.weapons;
  document.querySelectorAll(".block-tile").forEach(button=>{
-  const {kind,id}=button.dataset;const sel=kind==="class"?true:
+  const {kind,id}=button.dataset;const sel=kind==="class"?state.classId===id:
    kind==="subclass"?state.subclass===id:kind==="shield"?state.shield:held.includes(id);
   button.classList.toggle("chosen",sel);
   button.setAttribute("aria-pressed",String(sel));
@@ -287,22 +291,34 @@ function render(){
  $("cardMode").textContent=d.mode;
  $("cardMode").classList.toggle("homebrew",d.mode==="HOMEBREW");
  $("cardName").textContent=state.name.trim()||"Your character";
- $("cardClass").textContent="Level "+state.level+" Fighter"+(state.subclass?" · "+(state.subclass==="champion"?"Champion":"Assassin (homebrew)"):"");
+ $("cardClass").textContent="Level "+state.level+" "+c.name+(sub?" · "+sub.name+(d.mode==="HOMEBREW"?" (homebrew)":""):"");
+ $("cardIcon").textContent=c.icon;
+ $("cardRole").textContent=c.description.toUpperCase();
  $("cardHp").textContent=String(d.maxHP);
  $("cardAc").textContent=String(d.ac);
  $("cardMove").textContent=d.speed+" ft";
  $("cardProf").textContent=sign(d.prof);
  $("cardInit").textContent=sign(d.initiative);
  $("cardExtra").textContent=String(d.attacks);
+ $("spellStatus").hidden=!d.spellStat;
+ $("cardSpellDC").textContent=d.spellDC??"—";
+ const slotsEl=$("spellSummary");slotsEl.replaceChildren();slotsEl.hidden=!d.spellStat;
+ if(d.spellStat){
+  const heading=document.createElement("strong");heading.textContent="SPELLCASTING · "+d.spellStat+" · ATTACK "+sign(d.spellAttack)+" · DC "+d.spellDC;
+  const summary=document.createElement("p");summary.textContent=Object.keys(d.slots).length?
+   Object.entries(d.slots).map(([level,count])=>"L"+level+": "+count).join("  ·  "):"Spell slots not yet available at this level.";
+  const caveat=document.createElement("small");caveat.textContent="Spell selection, casting, and most subclass effects are not automated yet.";
+  slotsEl.append(heading,summary,caveat);
+ }
  const root=$("actionButtons");root.replaceChildren();
  for(const w of d.weaponList){
   const b=document.createElement("button");b.type="button";b.className="play-attack";
   const icon=document.createElement("span");icon.className="attack-icon";
-  icon.textContent=w.id==="longbow"?"🏹":"⚔";
+  icon.textContent=["longbow","shortbow","lightcrossbow"].includes(w.id)?"🏹":w.id==="quarterstaff"?"🪄":"⚔";
   const content=document.createElement("span");content.className="attack-content";
   const name=document.createElement("strong");name.textContent=w.label;
   const subtitle=document.createElement("small");
-  subtitle.textContent=w.blocked?"Doff shield to use":w.bonus+" to hit · "+w.damageLabel;
+  subtitle.textContent=w.blocked?"Doff shield to use":w.bonus+" to hit · "+w.damageLabel+(w.proficient?"":" · NOT PROFICIENT");
   content.append(name,subtitle);
   const arrow=document.createElement("span");arrow.className="attack-go";arrow.textContent="ROLL";
   b.append(icon,content,arrow);
@@ -314,19 +330,28 @@ function render(){
   hint.textContent="Add a weapon from the left to create a one-touch attack button.";root.append(hint);
  }
  const features=$("featureRow");features.replaceChildren();
- const wind=document.createElement("button");wind.type="button";wind.className="feature-button";
- wind.textContent="Second Wind"+(state.secondWindUsed?" · used":" · 1d10+"+state.level);
- wind.disabled=state.secondWindUsed;wind.addEventListener("click",restoreWind);features.append(wind);
- if(state.level>=2){
-  const surgeButton=document.createElement("button");surgeButton.type="button";surgeButton.className="feature-button";
-  surgeButton.textContent="Action Surge"+(state.surgeUsed?" · used":" · +1 action");
-  surgeButton.disabled=state.surgeUsed;surgeButton.addEventListener("click",surge);features.append(surgeButton);
+ if(c.id==="fighter"){
+  const wind=document.createElement("button");wind.type="button";wind.className="feature-button";
+  wind.textContent="Second Wind"+(state.secondWindUsed?" · used":" · 1d10+"+state.level);
+  wind.disabled=state.secondWindUsed;wind.addEventListener("click",restoreWind);features.append(wind);
+  if(state.level>=2){
+   const surgeButton=document.createElement("button");surgeButton.type="button";surgeButton.className="feature-button";
+   surgeButton.textContent="Action Surge"+(state.surgeUsed?" · used":" · +1 action");
+   surgeButton.disabled=state.surgeUsed;surgeButton.addEventListener("click",surge);features.append(surgeButton);
+  }
  }
- if(state.subclass==="champion"&&state.level>=3){
+ if(state.subclass==="champion"&&d.subclassActive){
   const tag=document.createElement("span");tag.className="trait-tag";tag.textContent="Critical "+d.critMin+"–20";
   features.append(tag);
+ }else if(sub&&d.subclassActive&&sub.id!=="assassin"){
+  const tag=document.createElement("span");tag.className="trait-tag";tag.textContent=sub.name+" · features require setup";
+  features.append(tag);
  }
- $("assassinOptions").hidden=state.subclass!=="assassin"||state.level<3;
+ if(!["fighter"].includes(c.id)){
+  const tag=document.createElement("span");tag.className="trait-tag";tag.textContent=c.name+" specialized class features · manual rules";
+  features.append(tag);
+ }
+ $("assassinOptions").hidden=state.subclass!=="assassin"||!d.subclassActive;
  $("foeNotActed").checked=state.foeNotActed;$("foeSurprised").checked=state.foeSurprised;
  renderResult();
 }
