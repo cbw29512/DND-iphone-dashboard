@@ -52,7 +52,7 @@ try{
  const userSketch=parser.parse("Mage\nHP 31 AC 13 Movement 30\n<Mace of Disruption>\n<Crossbow>\n<Cantrip: Light>\nSpells 5/4/3/3\n1: Magic Missile, Alarm\n2: Alter Self\n3: Fireball\n4: Ice Storm");
  assert.equal(userSketch.name,"Mage");
  assert.equal(userSketch.weapons.length,2);
- assert.equal(userSketch.spells.length,5);
+ assert.equal(userSketch.spells.length,6);
  assert.equal(userSketch.slots[1],5);
  assert.equal(userSketch.warnings.length,1,"Incomplete weapon metadata flagged, not guessed");
  assert.equal(userSketch.weapons[0].formula,"");
