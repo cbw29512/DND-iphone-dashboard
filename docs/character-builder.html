@@ -68,7 +68,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
  <p id="cardEditMessage" role="status" class="hint"></p>
 </section>
 <div id="play" class="hidden" aria-label="Playable character card preview"><div class="pane-heading preview-heading">PLAY CARD <span>Tap a button to use it</span></div>
-<div class="panel titlebar"><div><h2 id="who">Character</h2><div id="identity" class="subtitle"></div></div><div class="row"><button id="editCharacterBtn" class="primary">Edit Card</button><button id="backupBtn">Export Card JSON</button><button id="deleteBtn" class="danger">Delete Saved Card</button></div></div>
+<div class="panel titlebar"><div><h2 id="who">Character</h2><div id="identity" class="subtitle"></div></div><div class="row"><button id="editCharacterBtn" class="primary">Edit Card</button><details class="card-management"><summary aria-label="Card management">⋯</summary><button id="backupBtn">Export JSON</button><button id="deleteBtn" class="danger">Delete Card</button></details></div></div>
 <div class="layout">
 <div>
 <section class="panel">
@@ -76,6 +76,9 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
  <div class="portrait-visual"><img id="portraitImage" alt="Character picture" hidden><div id="portraitInitials" aria-hidden="true"></div></div>
  <div id="stats" class="stats portrait-stats"></div>
 </section>
+
+</section>
+<section class="panel"><div id="actions" class="buttons"></div>
 <details class="card-tools"><summary>Combat tools · HP, saves, rests</summary><div class="row"><button id="initiativeBtn" class="primary">Roll Initiative</button><button id="nextBtn">Next Turn</button><button id="fightBtn">New Fight</button><button id="shortRestBtn">Short Rest</button><button id="restBtn" class="good">Long Rest</button><button id="resetBtn" class="danger">Reset All</button></div>
 <div class="resources"><div class="resource"><label>HIT POINTS</label><strong id="hpLabel">—</strong><div class="row"><button data-hp="-5">−5</button><button data-hp="5">+5</button><input id="hpChange" aria-label="Damage or healing amount" type="number" min="1" value="10"><button id="damageBtn">Damage</button><button id="healBtn">Heal</button></div></div>
 <div class="resource"><label>SPELL SLOTS REMAINING</label><strong id="slotsLabel">—</strong><div class="row"><span class="note">Select Upcast level on each spell card. Base level is used by default.</span></div></div></div>
@@ -88,8 +91,7 @@ body.phone-only #phoneView{min-height:100dvh;display:flex!important;background:l
 <div id="turnTrack" class="row action-economy" aria-label="Turn action economy"><span id="actionUsed" class="turnchip">ACTION READY</span><span id="bonusUsed" class="turnchip">BONUS READY</span><button id="reactionBtn" type="button">REACTION READY</button><span id="slotUsed" class="turnchip">SLOTTED SPELL READY</span></div>
 <div class="inset" style="margin-top:9px"><div class="row"><label>Other d20 rolls:</label><div class="counter" id="modes"><button data-mode="normal" class="active">Normal</button><button data-mode="adv">ADV</button><button data-mode="dis">DIS</button></div><label>Heal targets:</label><select id="healTargets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><label for="healWho">Include self:</label><select id="healWho"><option value="others">Allies only</option><option value="self">Donovan / Self first</option></select><label for="wounded">Target wounded:</label><input id="wounded" type="checkbox" aria-label="Target is wounded for Toll the Dead"></div></div>
 </details>
-</section>
-<section class="panel"><details class="card-tools card-other-tabs"><summary>Other rolls &amp; features</summary><div class="tabs" id="tabs"><button data-tab="fight" class="active">Fight</button><button data-tab="spells">Spells</button><button data-tab="checks">Saves &amp; Skills</button><button data-tab="features">Features</button><button data-tab="sheet">Sheet</button></div></details><div id="actions" class="buttons"></div></section>
+<details class="card-tools card-other-tabs"><summary>Other rolls &amp; features</summary><div class="tabs" id="tabs"><button data-tab="fight" class="active">Fight</button><button data-tab="spells">Spells</button><button data-tab="checks">Saves &amp; Skills</button><button data-tab="features">Features</button><button data-tab="sheet">Sheet</button></div></details></section>
 </div>
 <div class="sticky">
 <section class="panel" id="latestPanel"><h2>Other event result</h2><div id="result" role="status" aria-live="polite"><h3>READY</h3><div class="big">ROLL INITIATIVE</div></div></section>
