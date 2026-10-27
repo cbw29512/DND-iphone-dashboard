@@ -358,7 +358,18 @@ function render(){
 function initialize(){
  for(let lv=1;lv<=20;lv++){const opt=document.createElement("option");opt.value=lv;opt.textContent=lv;$("levelSelect").append(opt);}
  for(const k of ABILITIES)$("abilityGrid").append(cardScore(k,state.scores[k]));
+ buildClassLibrary();
+ const equipmentSection=document.querySelector('[data-kind="shield"][data-id="shield"]').closest(".library-group");
+ for(const [id,w] of Object.entries(WEAPONS)){
+  if(document.querySelector('[data-kind="weapon"][data-id="'+id+'"]'))continue;
+  equipmentSection.append(catalogTile("weapon",id,w.twoHanded?"⚔️":"🗡️",w.label,w.damage+" · "+(w.stat==="DEX"?"Dex":w.stat==="STR"?"Str":"Finesse")));
+ }
+ $("showAllSubclasses").addEventListener("change",renderSubclassLibrary);
+ $("subclassSearch").addEventListener("input",renderSubclassLibrary);
+ renderSubclassLibrary();
  document.querySelectorAll(".block-tile").forEach(btn=>{
+  if(["classLibrary","subclassLibrary"].includes(btn.parentElement?.id))return;
+
   btn.addEventListener("click",()=>pick(btn.dataset.kind,btn.dataset.id));
   btn.addEventListener("dragstart",e=>{
    e.dataTransfer.setData("text/plain",btn.dataset.kind+":"+btn.dataset.id);
@@ -381,17 +392,17 @@ function initialize(){
   zone.addEventListener("click",e=>{
    if(e.target!==zone&&e.target.closest?.(".gear-chip"))return;
    const kind=zone.dataset.accept.split(",")[0];
-   if(kind==="class")pick("class","fighter");
-   else if(kind==="subclass")pick("subclass","champion");
+   if(kind==="class")$("classLibrary").scrollIntoView({behavior:"smooth",block:"nearest"});
+   else if(kind==="subclass")$("subclassLibrary").scrollIntoView({behavior:"smooth",block:"nearest"});
   });
   zone.addEventListener("keydown",e=>{
    if(e.key==="Enter"||e.key===" "){e.preventDefault();const kind=zone.dataset.accept.split(",")[0];
-    if(kind==="class")pick("class","fighter");else if(kind==="subclass")pick("subclass","champion");
+    if(kind==="class")$("classLibrary").scrollIntoView({behavior:"smooth",block:"nearest"});else if(kind==="subclass")$("subclassLibrary").scrollIntoView({behavior:"smooth",block:"nearest"});
    }
   });
  });
  $("clearSubclass").addEventListener("click",()=>{state.subclass=null;state.result=null;render();});
- $("resetGear").addEventListener("click",()=>{state.weapons=["longsword"];state.shield=true;state.armor="chain";state.result=null;render();});
+ $("resetGear").addEventListener("click",()=>{const c=CATALOG.byClass(state.classId);state.weapons=[c.defaultWeapon];state.shield=c.shield&&c.id!=="ranger";state.armor=defaultArmor(c);state.result=null;render();});
  $("resetScores").addEventListener("click",()=>{state.scores={...START_SCORES};state.result=null;render();});
  $("resetAll").addEventListener("click",()=>{state=fresh();render();});
  $("characterName").addEventListener("input",e=>{state.name=e.target.value; $("cardName").textContent=state.name.trim()||"Your character"; $("overlayActor").textContent=state.name||"Adventurer";});
@@ -399,7 +410,7 @@ function initialize(){
  $("armorSelect").addEventListener("change",e=>{state.armor=e.target.value;state.result=null;render();});
  $("foeNotActed").addEventListener("change",e=>{state.foeNotActed=e.target.checked;state.result=null;render();});
  $("foeSurprised").addEventListener("change",e=>{state.foeSurprised=e.target.checked;state.result=null;render();});
- $("restButton").addEventListener("click",()=>{state.secondWindUsed=false;state.surgeUsed=false;state.result={type:"notice",name:"Short Rest",note:"Second Wind and Action Surge restored. HP does not automatically reset after a short rest."};render();});
+ $("restButton").addEventListener("click",()=>{state.secondWindUsed=false;state.surgeUsed=false;state.result={type:"notice",name:"Short Rest",note:state.classId==="fighter"?"Second Wind and Action Surge restored. HP does not automatically reset after a short rest.":"Short rest recorded. Class-specific resources and Hit Dice are not automatically tracked in this prototype."};render();});
  $("tablePreview").addEventListener("click",()=>{$("tableOverlay").hidden=false;$("closeTable").focus();renderResult();});
  $("closeTable").addEventListener("click",()=>{$("tableOverlay").hidden=true;$("tablePreview").focus();});
  $("tableOverlay").addEventListener("click",e=>{if(e.target===$("tableOverlay"))$("closeTable").click();});
