@@ -300,7 +300,8 @@ function weaponCard(parent,w){
   b.setAttribute("aria-label",w.name+" — roll "+(chosen==="adv"?"with advantage":chosen==="dis"?"with disadvantage":"normally"));
   b.addEventListener("click",()=>doAttack(w,chosen));row.append(b);
  }
- article.append(row);
+ const options=document.createElement("details");options.className="play-action-options";
+ const optionsSummary=document.createElement("summary");optionsSummary.textContent="⋯";optionsSummary.setAttribute("aria-label",w.name+" attack options");options.append(optionsSummary,row);
  const special=weaponExtra(w),wrap=document.createElement("div");wrap.className="weapon-special-row";
  const label=document.createElement("label"),box=document.createElement("input");
  box.type="checkbox";box.checked=!!w.includeSpecial;box.disabled=!special;
@@ -308,7 +309,7 @@ function weaponCard(parent,w){
  box.addEventListener("change",()=>{w.includeSpecial=box.checked;persist();});
  const words=document.createElement("span");
  words.textContent=special?"Include "+special.formula+" "+special.label+" (if applicable)":"Special: none configured";
- label.append(box,words);wrap.append(label);article.append(wrap);
+ label.append(box,words);wrap.append(label);options.append(wrap);
  const details=document.createElement("details");details.className="weapon-editor";
  const summary=document.createElement("summary");summary.textContent="Configure special damage";details.append(summary);
  const config=document.createElement("div");config.className="row";
@@ -325,7 +326,7 @@ function weaponCard(parent,w){
   if(!formula)w.includeSpecial=false;
   persist();renderActions();
  });
- config.append(diceInput,typeInput,save,feedback);details.append(config);article.append(details);parent.append(article);
+ config.append(diceInput,typeInput,save,feedback);details.append(config);options.append(details);article.append(options);parent.append(article);
 }
 
 function spellBtn(root,sp){
@@ -344,6 +345,7 @@ function spellBtn(root,sp){
   (attack?"SPELL ATTACK "+signed(Number(character.spellAttack)||0):
    save?save+" SAVE · DC "+character.spellDC:rule?.type==="heal"?"HEALING":"SPELL EFFECT");
  head.append(name,desc);card.append(head);
+ let upcastLine=null;
  if(sp.level>0){
   const line=document.createElement("label");line.className="spell-upcast";
   const title=document.createElement("span");title.textContent="UPCAST";
@@ -367,7 +369,7 @@ function spellBtn(root,sp){
   }else{
    select.add(new Option("No available slot level","0"));select.disabled=true;
   }
-  line.append(title,select);card.append(line);
+  line.append(title,select);upcastLine=line;
  }
  const rolls=document.createElement("div");rolls.className="spell-rolls";
  for(const [chosen,label] of (attack?[["adv","ADV"],["dis","DIS"]]:[])){
@@ -375,7 +377,12 @@ function spellBtn(root,sp){
   button.setAttribute("aria-label",sp.name+" · "+(chosen==="adv"?"advantage":chosen==="dis"?"disadvantage":"cast"));
   button.addEventListener("click",()=>cast(sp,chosen));rolls.append(button);
  }
- card.append(rolls);root.append(card);
+ if(upcastLine||rolls.children.length){
+  const options=document.createElement("details");options.className="play-action-options";
+  const summary=document.createElement("summary");summary.textContent="⋯";summary.setAttribute("aria-label",sp.name+" cast options");
+  options.append(summary);if(upcastLine)options.append(upcastLine);options.append(rolls);card.append(options);
+ }
+ root.append(card);
 }
 function orderedSpells(spells){
  return [...spells].sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
