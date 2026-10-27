@@ -40,8 +40,8 @@ const proficient=(classId,id)=>{
  const policy=PROFICIENCIES[classId],w=WEAPONS[id];
  return policy==="all"||!!(w&&!w.martial&&policy==="simple")||(Array.isArray(policy)&&(policy.includes(id)||(!w?.martial&&["bard","monk","rogue"].includes(classId))));
 };
-const spellStat=(c,sub)=>c.casting||(["eldritch-knight","arcane-trickster"].includes(sub)&&["fighter","rogue"].includes(c.id))?
- (sub==="eldritch-knight"||sub==="arcane-trickster"?"INT":c.primary):null;
+const spellStat=(c,sub)=>c.casting?c.primary:
+ (c.id==="fighter"&&sub==="eldritch-knight")||(c.id==="rogue"&&sub==="arcane-trickster")?"INT":null;
 function derive(s){
  const lv=clamp(s.level,1,20),c=CATALOG.byClass(s.classId),scores=s.scores||START_SCORES;
  const selected=CATALOG.bySubclass(s.subclass),homebrew=!!(selected&&selected.classId!==c.id);
