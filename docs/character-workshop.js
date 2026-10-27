@@ -49,7 +49,8 @@ function derive(s){
  const mods=Object.fromEntries(ABILITIES.map(k=>[k,mod(clamp(scores[k],1,30))]));
  const prof=Math.min(6,2+Math.floor((lv-1)/4));
  const average=Math.floor(c.die/2)+1;
- const maxHP=Math.max(1,c.die+mods.CON)+(lv-1)*Math.max(1,average+mods.CON);
+ const draconicHP=c.id==="sorcerer"&&activeSubclass?.id==="draconic"?lv:0;
+ const maxHP=Math.max(1,c.die+mods.CON)+(lv-1)*Math.max(1,average+mods.CON)+draconicHP;
  let baseAC=s.armor==="leather"?11+mods.DEX:s.armor==="scale"?14+Math.min(2,mods.DEX):s.armor==="chain"?16:10+mods.DEX;
  if(s.armor==="none"){
   if(c.id==="barbarian")baseAC=10+mods.DEX+mods.CON;
@@ -57,14 +58,17 @@ function derive(s){
   if(c.id==="sorcerer"&&activeSubclass?.id==="draconic")baseAC=13+mods.DEX;
  }
  const ac=baseAC+(s.shield?2:0);
- const speed=s.armor==="chain"&&scores.STR<13?20:30;
+ let speed=s.armor==="chain"&&scores.STR<13?20:30;
+ if(c.id==="barbarian"&&lv>=5&&s.armor!=="chain")speed+=10;
+ if(c.id==="monk"&&lv>=2&&s.armor==="none"&&!s.shield)speed+=lv>=18?30:lv>=14?25:lv>=10?20:lv>=6?15:10;
  const attacks=c.id==="fighter"?(lv>=20?4:lv>=11?3:lv>=5?2:1):
  ["barbarian","monk","paladin","ranger"].includes(c.id)&&lv>=5?2:
  c.id==="bard"&&activeSubclass?.id==="valor"&&lv>=6?2:1;
  const critMin=activeSubclass?.id==="champion"?(lv>=15?18:19):20;
  const characterWeapons=(s.weapons||[]).filter(k=>WEAPONS[k]).map(k=>{
   const w=WEAPONS[k],attackMod=w.stat==="FINESSE"?Math.max(mods.STR,mods.DEX):mods[w.stat];
-  const profWeapon=proficient(c.id,k);
+  const profWeapon=proficient(c.id,k)||(c.id==="bard"&&activeSubclass?.id==="valor")||
+   (c.id==="cleric"&&activeSubclass&&["tempest","war"].includes(activeSubclass.id));
   return {id:k,label:w.label,damage:w.damage,attack:attackMod+(profWeapon?prof:0),
    modifier:attackMod,bonus:sign(attackMod+(profWeapon?prof:0)),damageLabel:w.damage+sign(attackMod),
    ability:w.stat==="FINESSE"?(mods.DEX>mods.STR?"DEX":"STR"):w.stat,proficient:profWeapon,
@@ -75,12 +79,16 @@ function derive(s){
  if(selected&&lv<c.archetypeLevel)alerts.push(c.name+" gains its subclass at level "+c.archetypeLevel+"; "+selected.name+" features are inactive until then.");
  if(s.armor==="chain"&&scores.STR<13)alerts.push("Chain mail requires STR 13 to avoid a 10 ft speed penalty (subject to race/feature exceptions).");
  const armorRank={none:0,leather:1,scale:2,chain:3},limit={none:0,light:1,medium:2,heavy:3};
- if(armorRank[s.armor]>(limit[c.armor]||0))alerts.push(c.name+" lacks proficiency in "+s.armor+" armor. RAW imposes penalties; that armor is not a recommended default.");
+ const subclassHeavy=c.id==="cleric"&&activeSubclass&&["life","nature","tempest","war"].includes(activeSubclass.id);
+ const subclassMedium=c.id==="bard"&&activeSubclass?.id==="valor";
+ const allowedArmor=subclassHeavy?3:subclassMedium?2:(limit[c.armor]||0);
+ if(armorRank[s.armor]>allowedArmor)alerts.push(c.name+" lacks proficiency in "+s.armor+" armor. RAW imposes penalties; that armor is not a recommended default.");
  if(s.shield&&!c.shield&&!(c.id==="bard"&&activeSubclass?.id==="valor"))alerts.push(c.name+" lacks shield proficiency. RAW penalties apply while using it.");
  if(c.id==="monk"&&(s.shield||s.armor!=="none"))alerts.push("Monk Unarmored Defense and Martial Arts require no armor and no shield; these features are not automated with this equipment.");
  if(s.armor==="scale"&&c.id==="druid")alerts.push("Druids normally do not wear metal armor; check equipment materials.");
  if(s.shield&&characterWeapons.some(w=>w.blocked))alerts.push("Two-handed weapons require both hands. Doff the shield first.");
  if(characterWeapons.some(w=>!w.proficient))alerts.push("A nonproficient weapon does not receive the proficiency bonus to its attack roll.");
+ if(c.id==="druid"&&s.armor==="scale")alerts.push("Check the armor material: 2014 Druids do not wear metal armor.");
  const casting=spellStat(c,activeSubclass?.id);
  const slots=CATALOG.spellSlots(c.id,activeSubclass?.id,lv);
  const spellDC=casting?8+prof+mods[casting]:null;
