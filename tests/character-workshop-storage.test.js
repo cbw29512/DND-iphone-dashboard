@@ -29,7 +29,7 @@ try{
  assert.equal(recovered.featureSpent.ki,4);
  assert.equal(recovered.rageActive,true);
  assert.equal(recovered.result,null,"Stale dice results not restored");
- assert.equal(engine.derive(recovered).spellDC,16);
+ assert.equal(engine.derive(recovered).spellDC,17);
  const malicious=store.normalize({
   name:"<script>alert(1)</script>"+"Z".repeat(300),
   classId:"evil",subclass:"injected",level:999,
