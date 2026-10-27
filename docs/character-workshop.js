@@ -92,41 +92,94 @@ function derive(s){
 }
 function seededRoll(s,weapon,random=Math.random){
  const d=derive(s),w=d.weaponList.find(x=>x.id===weapon);
- if(!w||w.blocked)return {error:w?.blocked?"Longbow needs two hands. Doff your shield first.":"Add a weapon to your build."};
- const adv=s.subclass==="assassin"&&s.level>=3&&!!s.foeNotActed;
- const hitIfSurprised=s.subclass==="assassin"&&s.level>=3&&!!s.foeSurprised;
+ if(!w||w.blocked)return {error:w?.blocked?"A two-handed weapon cannot be used while holding a shield. Doff the shield first.":"Add a weapon to your build."};
+ const adv=d.subclassActive&&s.subclass==="assassin"&&!!s.foeNotActed;
+ const hitIfSurprised=d.subclassActive&&s.subclass==="assassin"&&!!s.foeSurprised;
  const rows=[];
  for(let i=0;i<d.attacks;i++){
   const first=Math.floor(random()*20)+1,second=adv?Math.floor(random()*20)+1:null;
   const natural=adv?Math.max(first,second):first;
   const crit=natural>=d.critMin;
-  const rolls=crit?2:1;
-  const damageDie=Array.from({length:rolls},()=>Math.floor(random()*8)+1);
+  const match=/^(\d+)d(\d+)$/i.exec(w.damage);
+  const sides=Number(match?.[2]||8),rolls=Number(match?.[1]||1)*(crit?2:1);
+  const damageDie=Array.from({length:rolls},()=>Math.floor(random()*sides)+1);
   const damage=damageDie.reduce((a,b)=>a+b,0)+w.modifier;
   rows.push({natural,second,attack:natural+w.attack,damage,crit,rolls,damageDie});
  }
  const note=hitIfSurprised?
-  "Assassin homebrew: if the DM confirms a hit against a surprised creature, the hit is critical. This preview does not assume the target was hit.":
+  "Assassin feature: if the DM confirms a hit against a surprised creature, that hit is critical. This preview does not assume the target was hit.":
   "These are attack rolls and potential damage, not confirmed hits. The DM checks target AC.";
  return {type:"weapon",name:w.label,rows,note,adv,critMin:d.critMin,homebrew:hitIfSurprised};
 }
-root.CharacterWorkshopEngine=Object.freeze({fresh,derive,seededRoll,mod,sign,clamp,WEAPONS,START_SCORES});
+root.CharacterWorkshopEngine=Object.freeze({fresh,derive,seededRoll,mod,sign,clamp,WEAPONS,START_SCORES,proficient,defaultArmor});
 if(typeof document==="undefined")return;
 const $=id=>document.getElementById(id);
 const pick=(kind,id)=>{
- const d=derive(state);
- if(kind==="class"){state.classId="fighter";}
- else if(kind==="subclass"){
-  if(state.subclass===id)state.subclass=null;
-  else state.subclass=id;
+ if(kind==="class"){
+  const cls=CATALOG.classes.find(c=>c.id===id);
+  if(!cls)return;
+  if(state.classId!==cls.id){
+   state.classId=cls.id;state.subclass=null;
+   state.weapons=[cls.defaultWeapon];state.shield=cls.shield&&cls.id!=="ranger";
+   state.armor=defaultArmor(cls);state.secondWindUsed=false;state.surgeUsed=false;
+   state.currentHP=null;state.foeNotActed=false;state.foeSurprised=false;
+  }
+ }else if(kind==="subclass"){
+  const sub=CATALOG.bySubclass(id);
+  if(!sub)return;
+  if(!document.getElementById("showAllSubclasses").checked&&sub.classId!==state.classId)return;
+  state.subclass=state.subclass===id?null:id;
  }else if(kind==="weapon"){
+  if(!WEAPONS[id])return;
   if(state.weapons.includes(id))state.weapons=state.weapons.filter(x=>x!==id);
   else state.weapons.push(id);
  }else if(kind==="shield")state.shield=!state.shield;
  state.result=null;
+ renderSubclassLibrary();
  render();
 };
-const eventFor={class:"classDrop",subclass:"subclassDrop",weapon:"equipmentDrop",shield:"equipmentDrop"};
+function bindTile(button){
+ button.addEventListener("click",()=>pick(button.dataset.kind,button.dataset.id));
+ button.addEventListener("dragstart",e=>{
+  e.dataTransfer.setData("text/plain",button.dataset.kind+":"+button.dataset.id);
+  e.dataTransfer.effectAllowed="copy";
+ });
+}
+function catalogTile(kind,id,icon,name,note){
+ const b=document.createElement("button");b.type="button";b.draggable=true;
+ b.className="block-tile"+(kind==="subclass"&&CATALOG.bySubclass(id)?.classId!==state.classId?" crossclass":"");
+ b.dataset.kind=kind;b.dataset.id=id;
+ const glyph=document.createElement("span");glyph.className="tile-icon";glyph.textContent=icon;
+ const content=document.createElement("span");
+ const title=document.createElement("b");title.textContent=name;
+ const desc=document.createElement("small");desc.textContent=note;
+ content.append(title,desc);
+ const plus=document.createElement("span");plus.className="tile-add";plus.textContent="+";
+ b.append(glyph,content,plus);bindTile(b);return b;
+}
+function buildClassLibrary(){
+ const list=$("classLibrary");list.replaceChildren();
+ for(const cls of CATALOG.classes)
+  list.append(catalogTile("class",cls.id,cls.icon,cls.name,"d"+cls.die+" Hit Die · "+cls.description));
+ $("classCount").textContent=CATALOG.classes.length+" classes";
+}
+function renderSubclassLibrary(){
+ const list=$("subclassLibrary");if(!list)return;
+ const all=$("showAllSubclasses").checked,term=$("subclassSearch").value.trim().toLowerCase();
+ const subs=CATALOG.subclasses.filter(x=>(all||x.classId===state.classId)&&
+  (!term||[x.name,CATALOG.byClass(x.classId).name].some(t=>t.toLowerCase().includes(term))));
+ list.replaceChildren();
+ for(const sub of subs){
+  const own=sub.classId===state.classId;
+  const c=CATALOG.byClass(sub.classId);
+  const note=c.name+" · "+(own?"RAW":"HOMEBREW");
+  const tile=catalogTile("subclass",sub.id,c.icon,sub.name,note);
+  if(state.subclass===sub.id){tile.classList.add("chosen");tile.setAttribute("aria-pressed","true");}
+  list.append(tile);
+ }
+ $("subclassCount").textContent=all?subs.length+" / "+CATALOG.subclasses.length+" subclasses":subs.length+" for "+CATALOG.byClass(state.classId).name;
+ if(!subs.length){const empty=document.createElement("p");empty.className="empty-actions";empty.textContent="No matching subclasses. Clear the search to see options.";list.append(empty);}
+}
 function cardScore(key,value){
  const cell=document.createElement("div");cell.className="ability-tile";
  const head=document.createElement("div");head.className="ability-top";
