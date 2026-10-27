@@ -3,7 +3,8 @@
 (function(root){
 "use strict";
 const CATALOG=root.CharacterWorkshopCatalog;
-if(!CATALOG)throw Error("Character workshop class catalog failed to load.");
+const FEATURES=root.CharacterWorkshopFeatures;
+if(!CATALOG||!FEATURES)throw Error("Workshop class catalog or features failed to load.");
 const ABILITIES=["STR","DEX","CON","INT","WIS","CHA"];
 const WEAPONS={
  longsword:{label:"Longsword",damage:"1d8",stat:"STR",twoHanded:false,martial:true},
@@ -30,7 +31,8 @@ const PROFICIENCIES={
 const START_SCORES={STR:16,DEX:12,CON:14,INT:10,WIS:10,CHA:8};
 const fresh=()=>({name:"Kael Voss",classId:"fighter",subclass:null,level:5,
  scores:{...START_SCORES},weapons:["longsword"],shield:true,armor:"chain",
- foeNotActed:false,foeSurprised:false,currentHP:null,secondWindUsed:false,surgeUsed:false,result:null});
+ foeNotActed:false,foeSurprised:false,currentHP:null,secondWindUsed:false,surgeUsed:false,
+ featureSpent:{},rageActive:false,result:null});
 let state=fresh();
 const mod=n=>Math.floor((n-10)/2);
 const sign=n=>(n>=0?"+":"")+n;
@@ -112,12 +114,16 @@ function seededRoll(s,weapon,random=Math.random){
   const match=/^(\d+)d(\d+)$/i.exec(w.damage);
   const sides=Number(match?.[2]||8),rolls=Number(match?.[1]||1)*(crit?2:1);
   const damageDie=Array.from({length:rolls},()=>Math.floor(random()*sides)+1);
-  const damage=damageDie.reduce((a,b)=>a+b,0)+w.modifier;
+  const rageApplicable=s.classId==="barbarian"&&s.rageActive&&w.ability==="STR"&&
+   !["longbow","shortbow","lightcrossbow"].includes(w.id)&&s.armor!=="chain";
+  const rageDamage=rageApplicable?FEATURES.rageBonus(s.level):0;
+  const damage=damageDie.reduce((a,b)=>a+b,0)+w.modifier+rageDamage;
   rows.push({natural,second,attack:natural+w.attack,damage,crit,rolls,damageDie});
  }
+ const rageNote=s.classId==="barbarian"&&s.rageActive?" Active Rage adds its bonus only to melee Strength damage.":"";
  const note=hitIfSurprised?
   "Assassin feature: if the DM confirms a hit against a surprised creature, that hit is critical. This preview does not assume the target was hit.":
-  "These are attack rolls and potential damage, not confirmed hits. The DM checks target AC.";
+  "These are attack rolls and potential damage, not confirmed hits. The DM checks target AC."+rageNote;
  return {type:"weapon",name:w.label,rows,note,adv,critMin:d.critMin,homebrew:hitIfSurprised};
 }
 root.CharacterWorkshopEngine=Object.freeze({fresh,derive,seededRoll,mod,sign,clamp,WEAPONS,START_SCORES,proficient,defaultArmor});
@@ -132,6 +138,7 @@ const pick=(kind,id)=>{
    state.weapons=[cls.defaultWeapon];state.shield=cls.shield&&cls.id!=="ranger";
    state.armor=defaultArmor(cls);state.secondWindUsed=false;state.surgeUsed=false;
    state.currentHP=null;state.foeNotActed=false;state.foeSurprised=false;
+   state.featureSpent={};state.rageActive=false;
   }
  }else if(kind==="subclass"){
   const sub=CATALOG.bySubclass(id);
@@ -235,13 +242,33 @@ function surge(){
  state.surgeUsed=true;setResult({type:"feature",name:"Action Surge",note:"You gain one additional action this turn. Choose another action to use it; attacks are not silently rolled."});
  render();
 }
+function useClassFeature(id){
+ const d=derive(state);
+ const choice=FEATURES.activate(state,d,id);
+ setResult(choice.result);
+ render();
+}
+function useSneakAttack(){
+ setResult(FEATURES.sneakAttack(state));
+ render();
+}
+function recover(kind){
+ if(kind!=="short"&&kind!=="long")return;
+ const notice=FEATURES.rest(state,derive(state),kind);
+ if(state.classId==="fighter"){
+  state.secondWindUsed=false;state.surgeUsed=false;
+ }
+ state.result=notice;
+ render();
+}
 function renderResult(){
  const r=state.result,title=$("resultTitle"),numbers=$("resultNumbers"),note=$("resultNote");
  const ov=$("overlayNumbers");numbers.replaceChildren();ov.replaceChildren();
  title.textContent=r?.name||"Ready to play";
  note.textContent=r?.note||"Press a weapon to roll your Attack action.";
  const cells=[];
- if(r?.type==="weapon")r.rows.forEach((roll,i)=>{
+ if(r?.type==="feature"&&typeof r.roll==="number"){cells.push({label:"EXTRA DICE "+r.dice,value:r.roll});}
+ else if(r?.type==="weapon")r.rows.forEach((roll,i)=>{
   cells.push({label:"ATTACK "+(i+1),value:roll.attack});
   cells.push({label:"DAMAGE "+(i+1),value:roll.damage,tip:roll.crit?"CRITICAL":r.adv?"ADV":"POTENTIAL"});
  });
@@ -357,10 +384,26 @@ function render(){
   const tag=document.createElement("span");tag.className="trait-tag";tag.textContent=sub.name+" · features require setup";
   features.append(tag);
  }
- if(!["fighter"].includes(c.id)){
-  const tag=document.createElement("span");tag.className="trait-tag";tag.textContent=c.name+" specialized class features · manual rules";
-  features.append(tag);
+ const resources=FEATURES.descriptors(state,d);
+ for(const f of resources){
+  const button=document.createElement("button");button.type="button";button.className="feature-button";
+  const amount=f.max===Infinity?"∞":f.remaining+"/"+f.max;
+  const action=f.id==="rage"&&f.active?"End Rage":f.name;
+  button.textContent=action+" · "+amount+(f.die?" "+f.die:"")+(f.id==="rage"&&f.active?" · ACTIVE":"");
+  button.disabled=f.remaining<=0&&!(f.id==="rage"&&f.active);
+  button.title="Spend or track 2014 "+f.name+"; resolution may require the DM";
+  button.addEventListener("click",()=>useClassFeature(f.id));features.append(button);
  }
+ if(c.id==="rogue"){
+  const sneak=document.createElement("button");sneak.type="button";sneak.className="feature-button";
+  sneak.textContent="Sneak Attack · "+Math.ceil(state.level/2)+"d6";
+  sneak.title="Roll conditional Sneak Attack bonus dice; verify hit and eligibility first";
+  sneak.addEventListener("click",useSneakAttack);features.append(sneak);
+ }
+ const unfinished=["ranger","wizard"].includes(c.id)?"Some core class features still need a rules module. ":
+  "Subclass abilities not shown as actions still need implementation. ";
+ $("featureHelp").textContent=(resources.length?"Uses update immediately; short or long rests restore the correct resource pools. ":"")+
+  unfinished+"The DM must confirm targets, effects and qualifying hits.";
  $("assassinOptions").hidden=state.subclass!=="assassin"||!d.subclassActive;
  $("foeNotActed").checked=state.foeNotActed;$("foeSurprised").checked=state.foeSurprised;
  renderResult();
@@ -417,11 +460,13 @@ function initialize(){
  $("resetScores").addEventListener("click",()=>{state.scores={...START_SCORES};state.result=null;render();});
  $("resetAll").addEventListener("click",()=>{state=fresh();render();});
  $("characterName").addEventListener("input",e=>{state.name=e.target.value; $("cardName").textContent=state.name.trim()||"Your character"; $("overlayActor").textContent=state.name||"Adventurer";});
- $("levelSelect").addEventListener("change",e=>{state.level=clamp(e.target.value,1,20);state.secondWindUsed=false;state.surgeUsed=false;state.currentHP=null;state.result=null;render();});
+ $("levelSelect").addEventListener("change",e=>{state.level=clamp(e.target.value,1,20);state.secondWindUsed=false;state.surgeUsed=false;state.currentHP=null;state.result=null;
+  state.featureSpent={};state.rageActive=false;render();});
  $("armorSelect").addEventListener("change",e=>{state.armor=e.target.value;state.result=null;render();});
  $("foeNotActed").addEventListener("change",e=>{state.foeNotActed=e.target.checked;state.result=null;render();});
  $("foeSurprised").addEventListener("change",e=>{state.foeSurprised=e.target.checked;state.result=null;render();});
- $("restButton").addEventListener("click",()=>{state.secondWindUsed=false;state.surgeUsed=false;state.result={type:"notice",name:"Short Rest",note:state.classId==="fighter"?"Second Wind and Action Surge restored. HP does not automatically reset after a short rest.":"Short rest recorded. Class-specific resources and Hit Dice are not automatically tracked in this prototype."};render();});
+ $("restButton").addEventListener("click",()=>recover("short"));
+ $("longRestButton").addEventListener("click",()=>recover("long"));
  $("tablePreview").addEventListener("click",()=>{$("tableOverlay").hidden=false;$("closeTable").focus();renderResult();});
  $("closeTable").addEventListener("click",()=>{$("tableOverlay").hidden=true;$("tablePreview").focus();});
  $("tableOverlay").addEventListener("click",e=>{if(e.target===$("tableOverlay"))$("closeTable").click();});
