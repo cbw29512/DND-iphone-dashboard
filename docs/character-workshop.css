@@ -193,3 +193,7 @@ button:disabled{cursor:not-allowed;opacity:.55}
 .action-footer button{min-height:38px;flex:1 1 auto}
 #longRestButton{background:#254738;border-color:#4e886c;color:#cff0d9}
 @media(max-width:450px){.feature-row .feature-button{flex:1 1 calc(50% - 6px)}}
+
+/* Passive save indicator: no distracting action or manual form required. */
+.autosave-info{margin:8px 1px;color:#bfe2c9;font-size:11px;line-height:1.4;
+ padding:7px 10px;border-left:3px solid #658f79;background:#163339;border-radius:0 5px 5px 0}
