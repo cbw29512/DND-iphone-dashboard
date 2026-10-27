@@ -22,7 +22,7 @@ const WEAPONS={
 };
 const PROFICIENCIES={
  barbarian:"all",bard:["longsword","rapier","shortsword"],cleric:"simple",
- druid:["scimitar","dagger","quarterstaff","mace","shortsword","handaxe"],
+ druid:["scimitar","dagger","quarterstaff","mace"],
  fighter:"all",monk:["shortsword"],paladin:"all",ranger:"all",
  rogue:["longsword","rapier","shortsword"],sorcerer:["dagger","quarterstaff","lightcrossbow"],
  warlock:"simple",wizard:["dagger","quarterstaff","lightcrossbow"]
@@ -38,7 +38,7 @@ const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(n))?Math.t
 const defaultArmor=c=>c.armor==="heavy"?"chain":c.armor==="medium"?(c.id==="druid"?"leather":"scale"):c.armor==="light"?"leather":"none";
 const proficient=(classId,id)=>{
  const policy=PROFICIENCIES[classId],w=WEAPONS[id];
- return policy==="all"||!!(w&&!w.martial&&policy==="simple")||(Array.isArray(policy)&&(policy.includes(id)||(!w?.martial&&["bard","monk","rogue","druid"].includes(classId))));
+ return policy==="all"||!!(w&&!w.martial&&policy==="simple")||(Array.isArray(policy)&&(policy.includes(id)||(!w?.martial&&["bard","monk","rogue"].includes(classId))));
 };
 const spellStat=(c,sub)=>c.casting||(["eldritch-knight","arcane-trickster"].includes(sub)&&["fighter","rogue"].includes(c.id))?
  (sub==="eldritch-knight"||sub==="arcane-trickster"?"INT":c.primary):null;
@@ -139,6 +139,7 @@ const pick=(kind,id)=>{
  render();
 };
 function bindTile(button){
+ button.dataset.bound="true";
  button.addEventListener("click",()=>pick(button.dataset.kind,button.dataset.id));
  button.addEventListener("dragstart",e=>{
   e.dataTransfer.setData("text/plain",button.dataset.kind+":"+button.dataset.id);
@@ -368,7 +369,8 @@ function initialize(){
  $("subclassSearch").addEventListener("input",renderSubclassLibrary);
  renderSubclassLibrary();
  document.querySelectorAll(".block-tile").forEach(btn=>{
-  if(["classLibrary","subclassLibrary"].includes(btn.parentElement?.id))return;
+  if(btn.dataset.bound==="true")return;
+  btn.dataset.bound="true";
 
   btn.addEventListener("click",()=>pick(btn.dataset.kind,btn.dataset.id));
   btn.addEventListener("dragstart",e=>{
