@@ -2,12 +2,13 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
 try{
  const base=path.resolve(__dirname,".."),read=p=>fs.readFileSync(path.join(base,p),"utf8");
- for(const file of ["character-workshop-catalog.js","character-workshop.js","character-workshop-features.js","character-workshop.css","workshop.html"])
+ for(const file of ["character-workshop-catalog.js","character-workshop.js","character-workshop-features.js","character-workshop-storage.js","character-workshop.css","workshop.html"])
   assert.equal(read(file),read("docs/"+file),"Deployment mirror "+file);
  const catalogSource=read("character-workshop-catalog.js"),engineSource=read("character-workshop.js"),html=read("workshop.html");
  new vm.Script(catalogSource);new vm.Script(engineSource);
  const ctx={console,Math,Date};vm.createContext(ctx);
  new vm.Script(read("character-workshop-features.js"),{filename:"character-workshop-features.js"}).runInContext(ctx);
+ new vm.Script(read("character-workshop-storage.js"),{filename:"character-workshop-storage.js"}).runInContext(ctx);
  vm.runInContext(catalogSource,ctx);vm.runInContext(engineSource,ctx);
  const data=ctx.CharacterWorkshopCatalog,e=ctx.CharacterWorkshopEngine;
  const expected=["barbarian","bard","cleric","druid","fighter","monk","paladin","ranger","rogue","sorcerer","warlock","wizard"];
