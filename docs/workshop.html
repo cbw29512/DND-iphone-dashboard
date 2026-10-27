@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Character Workshop · Drag, Build, Play</title>
 <meta name="description" content="Interactive D&D 2014 twelve-class character workshop. Drag or tap classes, subclasses and equipment to build a live playable card.">
-<link rel="stylesheet" href="./character-workshop.css?v=features-20261027"></head>
+<link rel="stylesheet" href="./character-workshop.css?v=autosave-20261027"></head>
 <body>
 <header class="site-header">
  <a class="brand" href="./character-builder.html"><span class="brand-emblem">⚔</span><span><strong>CHARACTER FORGE</strong><small>One-touch D&amp;D workshop</small></span></a>
@@ -50,6 +50,7 @@
      </div>
      <label class="armor-label">ARMOR <select id="armorSelect"><option value="chain">Chain mail · base AC 16</option><option value="none">No armor · 10 + DEX modifier</option></select></label>
    </div>
+   <p class="autosave-info" id="saveStatus" role="status">Saving changes locally…</p>
    <button type="button" id="resetAll" class="reset-action">↺ Start over</button>
   </section>
   <section class="preview lane" aria-label="Live playable character card">
@@ -78,5 +79,6 @@
 <div id="tableOverlay" class="table-overlay" hidden role="dialog" aria-modal="true" aria-label="Projected table action"><button type="button" id="closeTable" class="close-overlay" aria-label="Close table projection">✕</button><span class="overlay-kicker">AT THE TABLE</span><h2 id="overlayActor">KAEL VOSS</h2><div class="overlay-glyph">⚔</div><h1 id="overlayAction">READY FOR COMBAT</h1><div id="overlayNumbers" class="overlay-numbers"></div><p id="overlayNote">Press a weapon action on the card</p></div>
 <script defer src="./character-workshop-catalog.js?v=classes-20261027"></script>
 <script defer src="./character-workshop-features.js?v=features-20261027"></script>
-<script defer src="./character-workshop.js?v=features-20261027"></script>
+<script defer src="./character-workshop-storage.js?v=autosave-20261027"></script>
+<script defer src="./character-workshop.js?v=autosave-20261027"></script>
 </body></html>
